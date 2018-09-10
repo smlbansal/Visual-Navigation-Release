@@ -1,0 +1,14 @@
+jupyter
+matplotlib
+ipython
+numpy
+scipy
+opencv-python
+scikit-image
+yattag
+gym
+pytest
+cloudpickle
+dotmap
+line_profiler
+scikit-fmm
