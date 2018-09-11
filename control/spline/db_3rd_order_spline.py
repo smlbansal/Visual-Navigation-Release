@@ -2,7 +2,7 @@ from .spline import Spline
 import tensorflow as tf
 import numpy as np
 
-class DB_3rd_Order_Spline(Spline):
+class DB3rdOrderSpline(Spline):
 
   def __init__(self):
     self.start, self.goal, self.factors = None, None, None

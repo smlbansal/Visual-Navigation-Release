@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pdb
 
 def test_db_3rd_order():
-  from control.spline.db_3rd_order_spline import DB_3rd_Order_Spline
+  from control.spline.db_3rd_order_spline import DB3rdOrderSpline
   np.random.seed(seed=1)
 
   target_state = np.random.uniform(-np.pi, np.pi, 3)
@@ -28,7 +28,7 @@ def test_db_3rd_order():
   factors_t = tf.convert_to_tensor([factor1, factor2], name='factors', dtype=tf.float32)
   ts_t = tf.convert_to_tensor(ts, name='ts', dtype=tf.float32)
   
-  db_spline = DB_3rd_Order_Spline()
+  db_spline = DB3rdOrderSpline()
   db_spline.fit(start_t, goal_t, factors_t)
   db_spline.evaluate(ts_t)
   
