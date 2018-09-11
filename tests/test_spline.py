@@ -4,7 +4,6 @@ tf.enable_eager_execution()
 import matplotlib
 matplotlib.use('tkAgg')
 import matplotlib.pyplot as plt
-import pdb
 
 def test_db_3rd_order():
   from control.spline.db_3rd_order_spline import DB3rdOrderSpline
