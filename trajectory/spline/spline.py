@@ -1,4 +1,6 @@
-class Spline:
+from trajectory.trajectory import Trajectory
+
+class Spline(Trajectory):
 
   def fit(self, start, goal):
     raise NotImplementedError
