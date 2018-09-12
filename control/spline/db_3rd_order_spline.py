@@ -1,4 +1,4 @@
-from .spline import Spline
+from control.spline.spline import Spline
 import tensorflow as tf
 import numpy as np
 
