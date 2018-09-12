@@ -12,5 +12,5 @@ class AngleDistance(Objective):
         self.fmm_map = fmm_map
 
     def evaluate_objective(self, trajectory):
-        angular_dist_to_optimal_path_nk = self.fmm_map.angular_distance(trajectory.angle_nk1())
+        angular_dist_to_optimal_path_nk = self.fmm_map.angular_distance(trajectory.heading_nk1())
         return self.p.angle_cost*tf.pow(angular_dist_to_optimal_path_nk, self.p.power)

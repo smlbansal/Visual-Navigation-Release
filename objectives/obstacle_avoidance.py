@@ -12,6 +12,6 @@ class ObstacleAvoidance(Objective):
         self.obstacle_map = obstacle_map
 
     def evaluate_objective(self, trajectory):
-        dist_to_obstacles_nk = self.obstacle_map.dist_to_nearest_obs(trajectory.position_nk3())
+        dist_to_obstacles_nk = self.obstacle_map.dist_to_nearest_obs(trajectory.position_nk2())
         infringement_nk = tf.nn.relu(self.p.obstacle_margin - dist_to_obstacles_nk)
         return self.p.obstacle_cost*tf.pow(infringement_nk, self.p.power)
