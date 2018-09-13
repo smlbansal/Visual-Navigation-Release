@@ -2,7 +2,7 @@ import tensorflow as tf
 
 class Dynamics:
     
-    def __init__(self, dt, x_dim, u_dim, dynamics_fn=None, ctrlBounds=None):
+    def __init__(self, dt, x_dim, u_dim, ctrlBounds=None):
         self._dt = dt
         self._x_dim = x_dim
         self._u_dim = u_dim
