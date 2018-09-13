@@ -12,8 +12,19 @@ class Dynamics:
         self.isNonlinear = True
         self.isContinuous = False
 
-    def simulate(self, x, u, t=None):
+    def simulate(self, s, u, t=None):
+        """ Apply one action u from state s
+        """
         raise NotImplementedError
+
+    def simulate_T(self, s, u, T):
+        """ Apply T actions from state s
+        """
+        s_tp1 = s*1.
+        for t in range(T):
+            s_tp1 = self.simulate(s_tp1, u[:,t:t+1])
+            s = tf.concat([s, s_tp1], axis=1)
+        return s
 
     def affine_factors(self, s_hat, u_hat):
         if s_hat is None:
