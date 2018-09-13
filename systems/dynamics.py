@@ -12,29 +12,29 @@ class Dynamics:
         self.isNonlinear = True
         self.isContinuous = False
 
-    def simulate(self, s, u, t=None):
-        """ Apply one action u from state s
+    def simulate(self, x, u, t=None):
+        """ Apply one action u from state x
         """
         raise NotImplementedError
 
-    def simulate_T(self, s, u, T):
-        """ Apply T actions from state s
+    def simulate_T(self, x, u, T):
+        """ Apply T actions from state x
         """
-        s_tp1 = s*1.
+        x_tp1 = x*1.
         for t in range(T):
-            s_tp1 = self.simulate(s_tp1, u[:,t:t+1])
-            s = tf.concat([s, s_tp1], axis=1)
-        return s
+            x_tp1 = self.simulate(x_tp1, u[:,t:t+1])
+            x = tf.concat([x, x_tp1], axis=1)
+        return x
 
-    def affine_factors(self, s_hat, u_hat):
-        if s_hat is None:
-            s_hat = tf.zeros((self._x_dim, 1))
+    def affine_factors(self, x_hat, u_hat):
+        if x_hat is None:
+            x_hat = tf.zeros((self._x_dim, 1))
         if u_hat is None:
             u_hat = tf.zeros((self._u_dim, 1))
 
-        A = self.jac_x(s_hat, u_hat)
-        B = self.jac_u(s_hat, u_hat)
-        c = self.simulate(s_hat, u_hat)
+        A = self.jac_x(x_hat, u_hat)
+        B = self.jac_u(x_hat, u_hat)
+        c = self.simulate(x_hat, u_hat)
         return A,B,c
 
     def jac_x(self, x, u):
