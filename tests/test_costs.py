@@ -9,7 +9,7 @@ from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 def test_quad_cost_with_wrapping():
     x_dim, u_dim = 3,2
     n,k = 2,3
-    a,a,b = 1., 0.
+    a,b = 1., 0.
     goal_x, goal_y = 10., 10.
     C = np.array([[a, 0., 0., 0., 0.],
                 [0., a, 0., 0., 0.],
