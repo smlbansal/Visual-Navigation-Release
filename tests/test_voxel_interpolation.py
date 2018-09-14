@@ -14,12 +14,12 @@ def test_voxel_interpolation():
     y = np.linspace(grid_origin[1], grid_origin[1] + scale * (grid_size[1]-1), grid_size[1])
   
     xv, yv = np.meshgrid(x, y, sparse=False, indexing='xy')
-    zv = np.sqrt(xv**2 + yv**2)
+    zv = 3*xv + 5*yv
   
     voxel_map = VoxelMap(scale=scale,
                          origin_2=tf.constant(grid_origin/scale, dtype=tf.float32),
                          map_size_2=tf.constant(grid_size, dtype=tf.float32),
-                         function_array=tf.constant(zv, dtype=tf.float32))
+                         function_array_mn=tf.constant(zv, dtype=tf.float32))
   
     # Let's have a bunch of points to test the interpolation
     test_positions = tf.constant([[[5.02, 6.01], [5.67, 7.73], [6.93, 6.93]], [[9.1, 7.2], [7.889, 8.22], [7.1, 8.1]]],
@@ -30,18 +30,18 @@ def test_voxel_interpolation():
     interpolated_values = tf.reshape(interpolated_values, [-1]).numpy()
   
     # Expected interpolated values
-    expected_interpolated_values = tf.norm(test_positions, axis=2)
+    expected_interpolated_values = 3*test_positions[:, :, 0] + 5*test_positions[:, :, 1]
     expected_interpolated_values = tf.reshape(expected_interpolated_values, [-1]).numpy()
     expected_interpolated_values[3] = -1.
   
     # Scipy Interpolated values
-    f_scipy = interpolate.RectBivariateSpline(x, y, zv, kx=1, ky=1)
-    scipy_interpolated_values = f_scipy.ev(tf.reshape(test_positions[:, :, 0], [-1]).numpy(),
-                                        tf.reshape(test_positions[:, :, 1], [-1]).numpy())
+    f_scipy = interpolate.RectBivariateSpline(y, x, zv, kx=1, ky=1)
+    scipy_interpolated_values = f_scipy.ev(tf.reshape(test_positions[:, :, 1], [-1]).numpy(),
+                                           tf.reshape(test_positions[:, :, 0], [-1]).numpy())
     scipy_interpolated_values[3] = -1.
   
-    assert np.sum(abs(expected_interpolated_values - interpolated_values) <= 0.15) == 6
-    assert np.sum(abs(scipy_interpolated_values - interpolated_values) <= 0.15) == 6
+    assert np.sum(abs(expected_interpolated_values - interpolated_values) <= 0.01) == 6
+    assert np.sum(abs(scipy_interpolated_values - interpolated_values) <= 0.01) == 6
 
 
 if __name__ == '__main__':
