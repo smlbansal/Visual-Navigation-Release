@@ -12,3 +12,5 @@ cloudpickle
 dotmap
 line_profiler
 scikit-fmm
+dotmap
+commentjson

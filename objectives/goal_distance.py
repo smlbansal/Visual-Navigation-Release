@@ -7,6 +7,8 @@ class GoalDistance(Objective):
     """
     Define the goal reaching objective.
     """
+    tag = 'goal_distance'
+
     def __init__(self, params, fmm_map):
         self.p = params
         self.fmm_map = fmm_map
