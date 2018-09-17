@@ -46,7 +46,8 @@ class QuadraticRegulatorRef(DiscreteCost):
             Cz_nkg = self.matrix_vector_prod_nkgg(C_nkgg, z_nkg) 
             zCz_nk = tf.reduce_sum(z_nkg*Cz_nkg, axis=2)
             cz_nk = tf.reduce_sum(c_nkg*z_nkg, axis=2)
-            return .5*zCz_nk + cz_nk
+            cost = .5*zCz_nk + cz_nk
+            return cost, tf.reduce_sum(cost, axis=1)
 
     def quad_coeffs(self, x_nkd, u_nkf):
         # Return terms H_xx, H_xu, H_uu, J_x, J_u

@@ -1,9 +1,6 @@
 from systems.dynamics import Dynamics
+from trajectory.trajectory import Trajectory
 import tensorflow as tf
-import numpy as np
-
-def angle_normalize(x):
-    return (((x + np.pi) % (2 * np.pi)) - np.pi)
 
 class Dubins_v1(Dynamics):
     """ A discrete time dubins car with dynamics
@@ -13,8 +10,9 @@ class Dubins_v1(Dynamics):
     """
     def __init__(self, dt):
         super().__init__(dt, x_dim=3, u_dim=2)
+        self._angle_dims = 2
 
-    def simulate(self, x_nk3, u_nk2, t=None):
+    def simulate(self, x_nk3, u_nk2):
         with tf.name_scope('simulate'):
             x_nk, y_nk, t_nk = x_nk3[:,:,0], x_nk3[:,:,1], x_nk3[:,:,2]
             v_nk, w_nk = u_nk2[:,:,0], u_nk2[:,:,1]
@@ -25,7 +23,8 @@ class Dubins_v1(Dynamics):
             x_tp1_nk3 = tf.stack([x_tp1_nk, y_tp1_nk, t_tp1_nk], axis=2)
             return x_tp1_nk3
     
-    def jac_x(self, x_nk3, u_nk2):
+    def jac_x(self, trajectory):
+        x_nk3, u_nk2 = self.parse_trajectory(trajectory)
         with tf.name_scope('jac_x'):
             v_nk, t_nk = u_nk2[:,:,0], x_nk3[:,:,2]
             ones_nk = tf.ones(shape=v_nk.shape, dtype=tf.float32)
@@ -41,7 +40,8 @@ class Dubins_v1(Dynamics):
             A_nk33 = tf.stack([a1_nk3, a2_nk3, a3_nk3], axis=3)
             return A_nk33
 
-    def jac_u(self, x_nk3, u_nk2):
+    def jac_u(self, trajectory):
+        x_nk3, u_nk2 = self.parse_trajectory(trajectory)
         with tf.name_scope('jac_u'):
             t_nk = x_nk3[:,:,2]
 
@@ -56,3 +56,14 @@ class Dubins_v1(Dynamics):
             
             B_nk23 = tf.stack([b1_nk2, b2_nk2], axis=3)
             return B_nk23
+
+    def parse_trajectory(self, trajectory):
+        return trajectory.position_and_heading_nk3(), trajectory.speed_and_angular_speed()
+
+    def assemble_trajectory(self, x_nk3, u_nk2):
+        position_nk2, heading_nk1 = x_nk3[:,:,:2], x_nk3[:,:,2:3]
+        speed_nk1, angular_speed_nk1 = u_nk2[:,:,0:1], u_nk2[:,:,1:2]
+        k = x_nk3.shape[1].value
+        return Trajectory(dt=self._dt, k=k, position_nk2=position_nk2,
+                        heading_nk1=heading_nk1, speed_nk1=speed_nk1,
+                        angular_speed_nk1=angular_speed_nk1)

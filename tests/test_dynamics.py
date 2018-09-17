@@ -17,20 +17,22 @@ def test_dubins_v1():
     
     state_nk3 = tf.constant(np.zeros((n,k, x_dim), dtype=np.float32))
     ctrl_nk2 = tf.constant(np.random.randn(n,k,u_dim), dtype=np.float32)
-    
+   
+    trajectory = db.assemble_trajectory(state_nk3, ctrl_nk2) 
     state_tp1_nk3 = db.simulate(state_nk3, ctrl_nk2)
     s = state_tp1_nk3.shape
     assert(s[0].value==n and s[1].value==k and s[2].value==x_dim)
- 
-    jac_x_nk33 = db.jac_x(state_nk3, ctrl_nk2)
+    
+    import pdb; pdb.set_trace() 
+    jac_x_nk33 = db.jac_x(trajectory)
     s = jac_x_nk33.shape
     assert(s[0].value==n and s[1].value==k and s[2].value==x_dim and s[3].value==x_dim) 
 
-    jac_u_nk32 = db.jac_u(state_nk3, ctrl_nk2)
+    jac_u_nk32 = db.jac_u(trajectory)
     s = jac_u_nk32.shape
     assert(s[0].value==n and s[1].value==k and s[2].value==x_dim and s[3].value==u_dim)
     
-    A,B,c = db.affine_factors(state_nk3, ctrl_nk2)
+    A,B,c = db.affine_factors(trajectory)
     
     #Test that computation is occurring correctly
     n,k = 2,3
@@ -45,7 +47,8 @@ def test_dubins_v1():
     assert(np.allclose(x3, [.1+.1*np.cos(.1), .1*np.sin(.1), .2]))
     assert(np.allclose(x4, [.2975, .0298, .3], atol=1e-4))
 
-    A,B,c = db.affine_factors(state_nk3[:,:-1], ctrl_nk2)
+    trajectory = db.assemble_trajectory(state_nk3[:,:-1], ctrl_nk2)
+    A,B,c = db.affine_factors(trajectory)
     A0, A1, A2 = A[0,0], A[0,1], A[0,2]   
     A0_c = np.array([[1., 0., 0.], [0., 1., .1], [0., 0., 1.]])
     A1_c = np.array([[1., 0., -.1*np.sin(.1)], [0., 1., .1*np.cos(.1)], [0., 0., 1.]])

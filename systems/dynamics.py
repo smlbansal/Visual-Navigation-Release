@@ -26,20 +26,27 @@ class Dynamics:
             x = tf.concat([x, x_tp1], axis=1)
         return x
 
-    def affine_factors(self, x_hat, u_hat):
-        if x_hat is None:
-            x_hat = tf.zeros((self._x_dim, 1))
-        if u_hat is None:
-            u_hat = tf.zeros((self._u_dim, 1))
-
-        A = self.jac_x(x_hat, u_hat)
-        B = self.jac_u(x_hat, u_hat)
-        c = self.simulate(x_hat, u_hat)
+    def affine_factors(self, trajectory_hat):
+        A = self.jac_x(trajectory_hat)
+        B = self.jac_u(trajectory_hat)
+        x_nk3, u_nk2 = self.parse_trajectory(trajectory_hat)
+        c = self.simulate(x_nk3, u_nk2)
         return A,B,c
 
-    def jac_x(self, x, u):
+    def jac_x(self, trajectory):
         raise NotImplementedError
 
-    def jac_u(self, x, u):
+    def jac_u(self, trajectory):
         raise NotImplementedError
- 
+
+    def parse_trajectory(self, trajectory):
+        """ Parse a trajectory object
+        returning x_nkd, u_nkf
+        the state and actions of the trajectory
+        """
+        raise NotImplementedError
+
+    def assemble_trajectory(self, x_nkd, u_nkf):
+        """ Assembles a trajectory object from
+        states x_nkd and actions u_nkf """
+        raise NotImplementedError

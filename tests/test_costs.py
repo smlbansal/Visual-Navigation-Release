@@ -27,7 +27,7 @@ def test_quad_cost_with_wrapping():
     cost_fn = QuadraticRegulatorRef(x_ref_nk3, u_ref_nk2, C, c, angle_dims)
     x_nk3 = tf.constant(np.zeros((n,k, x_dim), dtype=np.float32))
     u_nk2 = tf.constant(np.zeros((n,k,u_dim), dtype=np.float32))
-    cost_nk = cost_fn.compute_trajectory_cost(x_nk3, u_nk2)
+    cost_nk, _ = cost_fn.compute_trajectory_cost(x_nk3, u_nk2)
    
     cost = .5*(a*goal_x**2+a*goal_y**2) 
     assert(cost_nk.shape[0].value ==n and cost_nk.shape[1].value==k)
