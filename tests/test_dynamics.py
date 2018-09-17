@@ -38,7 +38,8 @@ def test_dubins_v1():
     ctrl = 1
     state_n13 = tf.constant(np.zeros((n,1,x_dim)), dtype=tf.float32)
     ctrl_nk2 = tf.constant(np.ones((n,k,u_dim))*ctrl, dtype=tf.float32)
-    state_nk3 = db.simulate_T(state_n13, ctrl_nk2, T=k)
+    trajectory = db.simulate_T(state_n13, ctrl_nk2, T=k)
+    state_nk3 = trajectory.position_and_heading_nk3()
     
     x1,x2,x3,x4=state_nk3[0,0].numpy(), state_nk3[0,1].numpy(), state_nk3[0,2].numpy(), state_nk3[0,3].numpy()
     assert((x1 == np.zeros(3)).all())
@@ -69,8 +70,9 @@ def test_dubins_v1():
     state_113 = tf.constant(np.zeros((1,1,x_dim)), dtype=tf.float32)
     v_1k, w_1k = np.ones((k,1))*.2, np.linspace(1.1, .9, k)[:,None]
     ctrl_1k2 = tf.constant(np.concatenate([v_1k, w_1k],axis=1)[None], dtype=tf.float32)
-    state_1k3 = db.simulate_T(state_113, ctrl_1k2, T=k)
-   
+    trajectory = db.simulate_T(state_113, ctrl_1k2, T=k)
+    state_1k3, _ = db.parse_trajectory(trajectory)
+
     fig = plt.figure()
     ax = fig.add_subplot(111)
     xs, ys, ts = state_1k3[0,:,0], state_1k3[0,:,1], state_1k3[0,:,2]
