@@ -23,7 +23,6 @@ def test_dubins_v1():
     s = state_tp1_nk3.shape
     assert(s[0].value==n and s[1].value==k and s[2].value==x_dim)
     
-    import pdb; pdb.set_trace() 
     jac_x_nk33 = db.jac_x(trajectory)
     s = jac_x_nk33.shape
     assert(s[0].value==n and s[1].value==k and s[2].value==x_dim and s[3].value==x_dim) 

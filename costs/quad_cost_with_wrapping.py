@@ -12,26 +12,25 @@ class QuadraticRegulatorRef(DiscreteCost):
     the cost.
     """
 
-    def __init__(self, x_ref_nkd, u_ref_nkf, C, c, angle_dims):
+    def __init__(self, trajectory_ref, C, c, system):
         """
         :param: x_ref, u_ref: state and controller reference trajectories
                 C, c: Quadratic and linear penalties
                 angle_dims: index array which specifies the dimensions of the state that corresponds to angles and 
                 should be wrapped.
         """
-        x_dim = x_ref_nkd.shape[2].value#d
-        u_dim = u_ref_nkf.shape[2].value#f
-        horizon = x_ref_nkd.shape[1].value
-        n = x_ref_nkd.shape[0].value
-        u_ref_nkf = tf.concat([u_ref_nkf, tf.zeros((n,1,u_dim))],axis=1)#0 control @ last time step
+      
+        self.system = system 
+        x_dim, u_dim = system._x_dim, system._u_dim #d,f
         assert (tf.reduce_all(tf.equal(C[:x_dim, x_dim:], tf.transpose(C[x_dim:, :x_dim]))).numpy())
         assert (x_dim + u_dim) == C.shape[0].value == C.shape[1].value == c.shape[0].value
+        x_ref_nkd, u_ref_nkf = system.parse_trajectory(trajectory_ref)
         self._x_ref_nkd = x_ref_nkd
         self._u_ref_nkf = u_ref_nkf 
         self._x_dim = x_dim
         self._u_dim = u_dim
         self._z_ref_nkg = tf.concat([x_ref_nkd, u_ref_nkf],axis=2) 
-        self.angle_dims = angle_dims
+        self.angle_dims = system._angle_dims
         self._C_nkgg = C[None,None] + 0.*self._z_ref_nkg[:,:,:,None]
         self._c_nkg = c[None,None] + 0. *self._z_ref_nkg
         super().__init__(x_dim=self._x_dim, u_dim=self._u_dim)
@@ -39,9 +38,9 @@ class QuadraticRegulatorRef(DiscreteCost):
         self.isTimevarying = False
         self.isNonquadratic = False
 
-    def compute_trajectory_cost(self, x_nkd, u_nkf):
+    def compute_trajectory_cost(self, trajectory):
         with tf.name_scope('compute_traj_cost'):
-            z_nkg = self.construct_z(x_nkd, u_nkf)
+            z_nkg = self.construct_z(trajectory)
             C_nkgg, c_nkg = self._C_nkgg, self._c_nkg
             Cz_nkg = self.matrix_vector_prod_nkgg(C_nkgg, z_nkg) 
             zCz_nk = tf.reduce_sum(z_nkg*Cz_nkg, axis=2)
@@ -49,12 +48,12 @@ class QuadraticRegulatorRef(DiscreteCost):
             cost = .5*zCz_nk + cz_nk
             return cost, tf.reduce_sum(cost, axis=1)
 
-    def quad_coeffs(self, x_nkd, u_nkf):
+    def quad_coeffs(self, trajectory, t=None):
         # Return terms H_xx, H_xu, H_uu, J_x, J_u
         with tf.name_scope('quad_coeffs'):
             H_nkgg = self._C_nkgg
             J_nkg = self._c_nkg
-            z_nkg = self.construct_z(x_nkd, u_nkf)
+            z_nkg = self.construct_z(trajectory)
             Hz_nkg = self.matrix_vector_prod_nkgg(H_nkgg, z_nkg) 
             return H_nkgg[:,:,:self._x_dim, :self._x_dim], \
                    H_nkgg[:,:,:self._x_dim, self._x_dim:], \
@@ -62,12 +61,12 @@ class QuadraticRegulatorRef(DiscreteCost):
                    J_nkg[:,:,:self._x_dim] + Hz_nkg[:,:,:self._x_dim], \
                    J_nkg[:,:,self._x_dim:] + Hz_nkg[:,:,self._x_dim:]
 
-
-    def construct_z(self, x_nkd, u_nkf):
-        """ Input: x_nkd, u_nkf- tensors of states and actions
+    def construct_z(self, trajectory):
+        """ Input: A trajectory with x_dim =d and u_dim=f
             Output: z_nkg - a tensor of size n,k,g where g=d+f
         """
         with tf.name_scope('construct_z'):
+            x_nkd, u_nkf = self.system.parse_trajectory(trajectory)
             delx_nkd = self._x_ref_nkd - x_nkd 
             delu_nkf = self._u_ref_nkf - u_nkf
             z_nkg = tf.concat([delx_nkd[:,:,:self.angle_dims],
