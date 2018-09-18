@@ -42,7 +42,7 @@ class QuadraticRegulatorRef(DiscreteCost):
         with tf.name_scope('compute_traj_cost'):
             z_nkg = self.construct_z(trajectory)
             C_nkgg, c_nkg = self._C_nkgg, self._c_nkg
-            Cz_nkg = self.matrix_vector_prod_nkgg(C_nkgg, z_nkg) 
+            Cz_nkg = tf.squeeze(tf.matmul(C_nkgg, z_nkg[:,:,:,None]))
             zCz_nk = tf.reduce_sum(z_nkg*Cz_nkg, axis=2)
             cz_nk = tf.reduce_sum(c_nkg*z_nkg, axis=2)
             cost = .5*zCz_nk + cz_nk
@@ -54,7 +54,7 @@ class QuadraticRegulatorRef(DiscreteCost):
             H_nkgg = self._C_nkgg
             J_nkg = self._c_nkg
             z_nkg = self.construct_z(trajectory)
-            Hz_nkg = self.matrix_vector_prod_nkgg(H_nkgg, z_nkg) 
+            Hz_nkg = tf.squeeze(tf.matmul(H_nkgg, z_nkg[:,:,:,None]))
             return H_nkgg[:,:,:self._x_dim, :self._x_dim], \
                    H_nkgg[:,:,:self._x_dim, self._x_dim:], \
                    H_nkgg[:,:,self._x_dim:, self._x_dim:], \
@@ -74,15 +74,4 @@ class QuadraticRegulatorRef(DiscreteCost):
                             delx_nkd[:,:,self.angle_dims+1:],
                             delu_nkf], axis=2)
             return z_nkg
-
-    def matrix_vector_prod_nkgg(self, C_nkgg, z_nkg):
-        """Input: C_nkgg, z_nkg a matrix and vector
-        Calculates the matrix vector dot product 
-            C_gg*z_g
-        broadcast across the n and k dimensions
-        """
-        with tf.name_scope('dot_product'):
-            zr_nkgg = z_nkg[:,:,None] + 0.*C_nkgg
-            Cz_dot_prod_nkg = tf.reduce_sum(C_nkgg * zr_nkgg, axis=3)
-            return Cz_dot_prod_nkg
 
