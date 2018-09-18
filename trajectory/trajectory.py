@@ -17,20 +17,20 @@ class Trajectory(object):
 
         # Translational trajectories
         self._position_nk2 = tfe.Variable(tf.zeros([1, k, 2], dtype=dtype) if position_nk2 is None
-                                          else tf.constant(position_nk2))
+                                          else tf.constant(position_nk2, dtype=dtype))
         self._speed_nk1 = tfe.Variable(tf.zeros([1, k, 1], dtype=dtype) if speed_nk1 is None
-                                       else tf.constant(speed_nk1))
+                                       else tf.constant(speed_nk1, dtype=dtype))
         self._acceleration_nk1 = tfe.Variable(tf.zeros([1, k, 1], dtype=dtype) if acceleration_nk1 is None
-                                              else tf.constant(acceleration_nk1))
+                                              else tf.constant(acceleration_nk1, dtype=dtype))
 
         # Rotational trajectories
         self._heading_nk1 = tfe.Variable(tf.zeros([1, k, 1], dtype=dtype) if heading_nk1 is None
-                                         else tf.constant(heading_nk1))
+                                         else tf.constant(heading_nk1, dtype=dtype))
         self._angular_speed_nk1 = tfe.Variable(tf.zeros([1, k, 1], dtype=dtype) if angular_speed_nk1 is None
-                                               else tf.constant(angular_speed_nk1))
+                                               else tf.constant(angular_speed_nk1, dtype=dtype))
         self._angular_acceleration_nk1 = tfe.Variable(
             tf.zeros([1, k, 1], dtype=dtype) if angular_acceleration_nk1 is None
-            else tf.constant(angular_acceleration_nk1))
+            else tf.constant(angular_acceleration_nk1, dtype=dtype))
 
     def position_nk2(self):
         return self._position_nk2
