@@ -81,24 +81,19 @@ class LQRSolver:
             J_hist = [J_opt]
 
             k_array, K_array = self.back_propagation(trajectory)
-            #norm_k = np.mean(np.linalg.norm(k_array, axis=1))
             trajectory_new = self.apply_control(x0, trajectory, k_array, K_array)
             # evaluate the cost of this trial
-            J_new = self.evaluate_trajectory_cost(x_array_new, u_array_new)
+            J_new = self.evaluate_trajectory_cost(trajectory_new)
             J_opt = J_new
-            trajectory = trajectory_new
-            print('Iteration {0}:\tJ = {1};\tnorm_k = {2}'.format(1, J_opt, norm_k))
 
             J_hist.append(J_opt)
 
-
             # prepare result dictionary
             res_dict = {
-                'J_hist': np.array(J_hist),
-                'x_array_opt': np.array(x_array),
-                'u_array_opt': np.array(u_array),
-                'k_array_opt': np.array(k_array),
-                'K_array_opt': np.array(K_array)
+                'J_hist': J_hist,
+                'trajectory_opt': trajectory_new,
+                'k_array_opt': k_array,
+                'K_array_opt': K_array
             }
 
             return res_dict
@@ -110,8 +105,6 @@ class LQRSolver:
         with tf.name_scope('apply_control'):
             assert(len(x0_n1d.shape) == 3) #[n,1,x_dim]
             angle_dims = self.plant_dyn._angle_dims
-            #x_new_array = [None] * len(x_array)
-            #u_new_array = [None] * len(u_array)
             n = x0_n1d.shape[0].value
             u_nkf = tf.zeros((n, 0, self.plant_dyn._u_dim), dtype=tf.float32)
             x_ref_nkd, u_ref_nkf = self.plant_dyn.parse_trajectory(trajectory)
@@ -123,12 +116,13 @@ class LQRSolver:
                 error_t = tf.concat([error_t[:,:, :angle_dims],
                                         angle_normalize(error_t[:,:, angle_dims:angle_dims+1])], axis=2)
                 fdback = tf.matmul(K_array[t], tf.transpose(error_t, perm=[0,2,1]))
-                import pdb; pdb.set_trace()
-                u_new_array[t] = u_ref_n1f + k_array[t] + fdback
-                x_new_array[t + 1] = self.fwdSim(x_new_array[t], u_new_array[t], t)
+                u_n1f = u_ref_n1f + tf.transpose(k_array[t] + fdback, perm=[0,2,1])
+                x_tp1_n1d = self.fwdSim(x_tp1_n1d, u_n1f)
+                u_nkf = tf.concat([u_nkf, u_n1f], axis=1)
+                x_nkd = tf.concat([x_nkd, x_tp1_n1d], axis=1)
 
-            #return a trajectory object
-            return np.array(x_new_array), np.array(u_new_array)
+            trajectory = self.plant_dyn.assemble_trajectory(x_nkd, u_nkf, zero_pad_u=True)
+            return trajectory
 
     def forward_propagation(self, x0, u_array):
         """
@@ -166,7 +160,7 @@ class LQRSolver:
                                     angle_normalize(error_t[:, angle_dims:angle_dims+1])], axis=1)
                 error_t = error_t[:,:,None] 
                 dfdx, dfdu = lqr_sys['dfdx'][:,t], lqr_sys['dfdu'][:,t]
-                dfdx_T, dfdu_T = tf.transpose(dfdx, perm=[0,2,1]), tf.transpose(dfdu, perm=[0,2,1])
+                dfdx_T, dfdu_T = tf.transpose(dfdx, perm=[0,2,1]), tf.transpose(dfdu, perm=[0,2,1]) #transpose for matrix mult
                 dfdx_T_dot_Vxx ,dfdu_T_dot_Vxx =  tf.matmul(dfdx_T, Vxx), tf.matmul(dfdu_T, Vxx)
                
                 Qx = lqr_sys['dldx'][:,t][:,:,None] + tf.matmul(dfdx_T, Vx)+ tf.matmul(dfdx_T_dot_Vxx, error_t) 

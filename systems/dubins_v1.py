@@ -60,7 +60,14 @@ class Dubins_v1(Dynamics):
     def parse_trajectory(self, trajectory):
         return trajectory.position_and_heading_nk3(), trajectory.speed_and_angular_speed()
 
-    def assemble_trajectory(self, x_nk3, u_nk2):
+    def assemble_trajectory(self, x_nk3, u_nk2, zero_pad_u=False):
+        if zero_pad_u: # the last action is 0
+            n = x_nk3.shape[0].value
+            k = x_nk3.shape[1].value
+            if u_nk2.shape[1]+1 == k:
+                u_nk2 = tf.concat([u_nk2, tf.zeros((n, 1, self._u_dim))], axis=1) #0 control @ last time step
+            else:
+                assert(u_nk2.shape[1] == k)
         position_nk2, heading_nk1 = x_nk3[:,:,:2], x_nk3[:,:,2:3]
         speed_nk1, angular_speed_nk1 = u_nk2[:,:,0:1], u_nk2[:,:,1:2]
         k = x_nk3.shape[1].value

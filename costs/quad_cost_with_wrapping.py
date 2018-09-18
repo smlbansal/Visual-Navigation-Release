@@ -67,8 +67,8 @@ class QuadraticRegulatorRef(DiscreteCost):
         """
         with tf.name_scope('construct_z'):
             x_nkd, u_nkf = self.system.parse_trajectory(trajectory)
-            delx_nkd = self._x_ref_nkd - x_nkd 
-            delu_nkf = self._u_ref_nkf - u_nkf
+            delx_nkd = x_nkd - self._x_ref_nkd 
+            delu_nkf = u_nkf - self._u_ref_nkf
             z_nkg = tf.concat([delx_nkd[:,:,:self.angle_dims],
                             angle_normalize(delx_nkd[:,:,self.angle_dims:self.angle_dims+1]),
                             delx_nkd[:,:,self.angle_dims+1:],

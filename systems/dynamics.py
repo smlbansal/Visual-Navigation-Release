@@ -26,8 +26,7 @@ class Dynamics:
         for t in range(T):
             x_tp1 = self.simulate(x_tp1, u[:,t:t+1])
             x = tf.concat([x, x_tp1], axis=1)
-        u = tf.concat([u, tf.zeros((n, 1, self._u_dim))], axis=1) #0 control @ last time step
-        trajectory = self.assemble_trajectory(x, u)
+        trajectory = self.assemble_trajectory(x, u, zero_pad_u=True)
         return trajectory 
 
     def affine_factors(self, trajectory_hat):
