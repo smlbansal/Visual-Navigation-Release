@@ -44,7 +44,7 @@ def test_goal_angle_distance():
     objective = AngleDistance(params=p.goal_angle_objective, fmm_map=fmm_map)
     
     # Define a set of positions and evaluate objective
-    pos_nk2 = tf.constant([[[-1., 1.], [0., 0.], [-2., -2.]]], dtype=tf.float32)
+    pos_nk2 = tf.constant([[[-1., 1.], [0.1, 0.1], [-0.1, -0.1]]], dtype=tf.float32)
     trajectory = Trajectory(dt=0.1, k=3, position_nk2=pos_nk2)
 
     # Compute the objective
@@ -52,17 +52,11 @@ def test_goal_angle_distance():
     assert objective_values_13.shape == (1, 3)
 
     # Expected objective values
-    expected_angles = np.array([-np.pi/4, -np.pi/4, 0.])
+    expected_angles = np.array([-np.pi/4, -3*np.pi/4, np.pi/4])
     expected_objective = 25. * abs(expected_angles)
-    
-    import pdb; pdb.set_trace()
-    
-    # Error in objetives
-    # We have to allow a little bit of leeway in this test because the computation of FMM distance is not exact.
-    objetive_error = abs(expected_objective - objective_values_13.numpy()[0]) / (expected_objective + 1e-6)
-    
-    assert max(objetive_error) <= 0.1
 
+    assert np.allclose(objective_values_13.numpy()[0], expected_objective, atol=1e-2)
+    
 
 if __name__ == '__main__':
     test_goal_angle_distance()

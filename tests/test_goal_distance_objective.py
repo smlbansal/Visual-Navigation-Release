@@ -58,7 +58,7 @@ def test_goal_distance():
     expected_distance = np.array([dist2, dist1, dist3])
     expected_objective = 25. * expected_distance * expected_distance
     
-    # Error in objetives
+    # Error in objectives
     # We have to allow a little bit of leeway in this test because the computation of FMM distance is not exact.
     objetive_error = abs(expected_objective - objective_values_13.numpy()[0]) / (expected_objective + 1e-6)
     
