@@ -1,11 +1,14 @@
 from trajectory.spline.spline  import Spline
 import tensorflow as tf
+import tensorflow.contrib.eager as tfe
 
 class DB3rdOrderSpline(Spline):
-    def __init__(self, dt, k, start_n5, goal_n5, factors_n2):
+    def __init__(self, dt, k, start_n5, goal_n5, factors_n2, dtype=tf.float32):
         super().__init__(dt=dt, k=k)
         self.ts = tf.linspace(0., dt*k, k)
-        self.start_n5, self.goal_n5, self.factors_n2 = start_n5, goal_n5, factors_n2
+        self.start_n5 = tfe.Variable(start_n5, dtype=dtype)
+        self.goal_n5 = tfe.Variable(goal_n5, dtype=dtype)
+        self. factors_n2 = tfe.Variable(factors_n2, dtype=dtype)
         self.fit()
         self.evaluate()
  
