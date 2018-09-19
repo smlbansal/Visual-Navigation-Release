@@ -3,20 +3,19 @@ import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 
 class DB3rdOrderSpline(Spline):
-    def __init__(self, dt, k, start_n5, goal_n5, factors_n2=None, dtype=tf.float32):
-        super().__init__(dt=dt, k=k)
-        self.ts = tf.linspace(0., dt*k, k)
+    def __init__(self, dt, n, k, start_n5):
+        super().__init__(dt=dt, n=n, k=k)
+        self.k = k
+        self.ts_nk = tf.tile(tf.linspace(0., dt*k, k)[None], [self.n,1])
         self.start_n5 = start_n5
-        self.goal_n5 = tfe.Variable(goal_n5, dtype=dtype)
-        self.factors_n2 = factors_n2
-        if factors_n2 is None: #compute them heuristically based on dist to goal
-            factors = tf.norm(self.goal_n5[:,:2], axis=1)
-            self.factors_n2 = tf.stack([factors, factors],axis=1)
-        self.fit()
-        self.evaluate()
  
-    def fit(self):
-        start_n5, goal_n5, factors_n2 = self.start_n5, self.goal_n5, self.factors_n2
+    def fit(self, goal_n5, factors_n2=None):
+        assert(isinstance(goal_n5, tfe.Variable))
+        self.goal_n5 = goal_n5
+        if factors_n2 is None: #compute them heuristically based on dist to goal
+            factors = tf.norm(goal_n5[:,:2], axis=1)
+            factors_n2 = tf.stack([factors, factors],axis=1)
+        start_n5 = self.start_n5
         with tf.name_scope('fit_spline'):
             f1, f2 = factors_n2[:,0:1], factors_n2[:,1:]
             xg, yg, tg = goal_n5[:,0:1], goal_n5[:,1:2], goal_n5[:,2:3]
@@ -37,8 +36,8 @@ class DB3rdOrderSpline(Spline):
             self.y_coeffs = [a2,b2,b2*0.]
             self.p_coeffs = [a3,b3,c3]
 
-    def evaluate(self):
-        ts = self.ts
+    def evaluate(self, calculate_speeds=True):
+        ts = self.ts_nk
         a1,b1,c1 = self.x_coeffs
         a2,b2,c2 = self.y_coeffs
         a3,b3,c3 = self.p_coeffs
@@ -59,17 +58,25 @@ class DB3rdOrderSpline(Spline):
             ys_ddot = 6*a2*ps+2*b2
 
             self._position_nk2 = tf.stack([xs,ys],axis=2)
-            self._speed_ps_nk1 = tf.sqrt(xs_dot**2 + ys_dot**2)
-            self._speed_nk1 = self._speed_ps_nk1*ps_dot
-            self._heading_nk1 = tf.atan2(ys_dot, xs_dot)
-            
-            with tf.name_scope('omega'):
-                ps_sq = tf.square(ps_dot)
-                num_l = tf.multiply(ys_ddot, ps_sq) + tf.multiply(ys_dot, ps_ddot)
-                num_l = tf.multiply(num_l, tf.multiply(xs_dot, ps_dot))
-                num_r = tf.multiply(xs_ddot, ps_sq) + tf.multiply(xs_dot, ps_ddot)
-                num_r = tf.multiply(num_r, tf.multiply(ys_dot, ps_dot))
-                self._angular_speed_nk1 = (num_l + num_r) / tf.square(self._speed_nk1)
+            heading_nk = tf.atan2(ys_dot, xs_dot)
+            self._heading_nk1 = heading_nk[:,:,None]
+           
+            if calculate_speeds:
+                speed_ps_nk = tf.sqrt(xs_dot**2 + ys_dot**2)
+                speed_nk = (speed_ps_nk*ps_dot)
+                with tf.name_scope('omega'):
+                    ps_sq = tf.square(ps_dot)
+                    num_l = tf.multiply(ys_ddot, ps_sq) + tf.multiply(ys_dot, ps_ddot)
+                    num_l = tf.multiply(num_l, tf.multiply(xs_dot, ps_dot))
+                    num_r = tf.multiply(xs_ddot, ps_sq) + tf.multiply(xs_dot, ps_ddot)
+                    num_r = tf.multiply(num_r, tf.multiply(ys_dot, ps_dot))
+                    angular_speed_nk = (num_l + num_r) / tf.square(speed_nk)
+                self._speed_ps_nk1 = speed_ps_nk[:,:,None] 
+                self._speed_nk1 = speed_nk[:,:,None]
+                self._angular_speed_nk1 = angular_speed_nk[:,:,None]
+            else:
+                self._speed_nk1 = tf.zeros([self.n, self.k, 1], dtype=tf.float32)
+                self._angular_speed_nk1 = tf.zeros([self.n, self.k, 1], dtype=tf.float32)
 
     def render(self, ax, freq=4):
         if self._heading_nk1.shape[0].value > 1:

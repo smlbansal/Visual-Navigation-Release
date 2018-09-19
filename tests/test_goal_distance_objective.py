@@ -45,7 +45,7 @@ def test_goal_distance():
     
     # Define a set of positions and evaluate objective
     pos_nk2 = tf.constant([[[-1., 1.], [0., 0.], [-2., -2.]]], dtype=tf.float32)
-    trajectory = Trajectory(dt=0.1, k=3, position_nk2=pos_nk2)
+    trajectory = Trajectory(dt=0.1, n=1, k=3, position_nk2=pos_nk2)
 
     # Compute the objective
     objective_values_13 = objective.evaluate_objective(trajectory)

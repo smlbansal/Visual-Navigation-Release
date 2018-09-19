@@ -61,6 +61,8 @@ class Dubins_v1(Dynamics):
         return trajectory.position_and_heading_nk3(), trajectory.speed_and_angular_speed()
 
     def assemble_trajectory(self, x_nk3, u_nk2, zero_pad_u=False):
+        n = x_nk3.shape[0].value
+        k = x_nk3.shape[1].value
         if zero_pad_u: # the last action is 0
             n = x_nk3.shape[0].value
             k = x_nk3.shape[1].value
@@ -70,7 +72,6 @@ class Dubins_v1(Dynamics):
                 assert(u_nk2.shape[1] == k)
         position_nk2, heading_nk1 = x_nk3[:,:,:2], x_nk3[:,:,2:3]
         speed_nk1, angular_speed_nk1 = u_nk2[:,:,0:1], u_nk2[:,:,1:2]
-        k = x_nk3.shape[1].value
-        return Trajectory(dt=self._dt, k=k, position_nk2=position_nk2,
+        return Trajectory(dt=self._dt, n=n, k=k, position_nk2=position_nk2,
                         heading_nk1=heading_nk1, speed_nk1=speed_nk1,
-                        angular_speed_nk1=angular_speed_nk1)
+                        angular_speed_nk1=angular_speed_nk1, variable=False)

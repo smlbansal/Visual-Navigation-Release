@@ -54,7 +54,7 @@ class QuadraticRegulatorRef(DiscreteCost):
             H_nkgg = self._C_nkgg
             J_nkg = self._c_nkg
             z_nkg = self.construct_z(trajectory)
-            Hz_nkg = tf.squeeze(tf.matmul(H_nkgg, z_nkg[:,:,:,None]))
+            Hz_nkg = tf.squeeze(tf.matmul(H_nkgg, z_nkg[:,:,:,None]), axis=-1)
             return H_nkgg[:,:,:self._x_dim, :self._x_dim], \
                    H_nkgg[:,:,:self._x_dim, self._x_dim:], \
                    H_nkgg[:,:,self._x_dim:, self._x_dim:], \

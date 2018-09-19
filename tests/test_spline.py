@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import tensorflow.contrib.eager as tfe
 tf.enable_eager_execution()
 import matplotlib
 matplotlib.use('tkAgg')
@@ -22,10 +23,12 @@ def test_db_3rd_order():
     start_n5 = np.tile(start, n).reshape((n,5))
     goal_n5 = np.tile(goal, n).reshape((n,5))
     
-    start_n5 = tf.convert_to_tensor(start_n5, name='start', dtype=tf.float32)
-    goal_n5 = tf.convert_to_tensor(goal_n5, name='goal', dtype=tf.float32)
+    start_n5 = tf.constant(start_n5, name='start', dtype=tf.float32)
+    goal_n5 = tfe.Variable(goal_n5, name='goal', dtype=tf.float32)
 
-    db_spline_traj = DB3rdOrderSpline(dt=dt, k=k, start_n5=start_n5, goal_n5=goal_n5, factors_n2=None)
+    db_spline_traj = DB3rdOrderSpline(dt=dt, k=k, n=n, start_n5=start_n5)
+    db_spline_traj.fit(goal_n5=goal_n5, factors_n2=None)
+    db_spline_traj.evaluate()
 
     fig = plt.figure()
     ax = fig.add_subplot(111)

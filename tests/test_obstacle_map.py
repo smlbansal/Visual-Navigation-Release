@@ -21,7 +21,7 @@ def test_random_circular_obstacle_map():
 
     # Trajectory
     pos_nk2 = tf.zeros((n, k, 2), dtype=tf.float32)
-    trajectory = Trajectory(dt=dt, k=k, position_nk2=pos_nk2)
+    trajectory = Trajectory(dt=dt, n=n, k=k, position_nk2=pos_nk2)
 
     # Expected_distances
     expected_distances_m = tf.norm(grid.obstacle_centers_m2, axis=1) - grid.obstacle_radii_m1[:, 0]
@@ -56,7 +56,7 @@ def test_circular_obstacle_map():
     map_bounds = [(-2, -2), (2, 2)] #[(min_x, min_y), (max_x, max_y)]
 
     pos_nk2 = tf.zeros((n, k, 2), dtype=tf.float32)
-    trajectory = Trajectory(dt=dt, k=k, position_nk2=pos_nk2)
+    trajectory = Trajectory(dt=dt, n=n, k=k, position_nk2=pos_nk2)
 
     cs = np.array([[-.75, .5], [0, .5], [.75, .5], [-.35, 1.], [.35, 1.]])
     rs = np.array([[.1], [.1], [.1], [.1], [.1]])
