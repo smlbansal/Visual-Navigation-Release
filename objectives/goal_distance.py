@@ -12,6 +12,7 @@ class GoalDistance(Objective):
     def __init__(self, params, fmm_map):
         self.p = params
         self.fmm_map = fmm_map
+        self.tag = 'distance_to_goal'
 
     def evaluate_objective(self, trajectory):
         dist_to_goal_nk = self.fmm_map.fmm_distance_map.compute_voxel_function(trajectory.position_nk2())

@@ -73,10 +73,8 @@ class FmmMap(object):
         Create a fmm map based on a given goal position.
         """
         goal_array_mn = np.ones((map_size_2[1], map_size_2[0]))
-
-        goal_index_x = np.floor((goal_positions_n2[:, 0]) / dx - map_origin_2[0]).astype(np.int32)
-        goal_index_y = np.floor((goal_positions_n2[:, 1]) / dx - map_origin_2[1]).astype(np.int32)
-
+        goal_index_x = np.floor((goal_positions_n2[:, 0] / dx) - map_origin_2[0]).astype(np.int32)
+        goal_index_y = np.floor((goal_positions_n2[:, 1] / dx) - map_origin_2[1]).astype(np.int32)
         goal_array_mn[goal_index_y, goal_index_x] = -1.
         return cls(goal_grid_mn=goal_array_mn,
                    dx=dx,
