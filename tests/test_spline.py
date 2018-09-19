@@ -18,18 +18,14 @@ def test_db_3rd_order():
 
     start = [0., 0., 0., v0, 0.]
     goal = [target_state[0], target_state[1], target_state[2], 0., 0.]
-    factor1 = np.linalg.norm(target_state[:2])
-    factor2 = np.linalg.norm(target_state[:2])
 
     start_n5 = np.tile(start, n).reshape((n,5))
     goal_n5 = np.tile(goal, n).reshape((n,5))
-    factors_n2 = np.tile([factor1, factor2], n).reshape((n,2))
     
     start_n5 = tf.convert_to_tensor(start_n5, name='start', dtype=tf.float32)
     goal_n5 = tf.convert_to_tensor(goal_n5, name='goal', dtype=tf.float32)
-    factors_n2 = tf.convert_to_tensor(factors_n2, name='factors', dtype=tf.float32)
 
-    db_spline_traj = DB3rdOrderSpline(dt=dt, k=k, start_n5=start_n5, goal_n5=goal_n5, factors_n2=factors_n2)
+    db_spline_traj = DB3rdOrderSpline(dt=dt, k=k, start_n5=start_n5, goal_n5=goal_n5, factors_n2=None)
 
     fig = plt.figure()
     ax = fig.add_subplot(111)

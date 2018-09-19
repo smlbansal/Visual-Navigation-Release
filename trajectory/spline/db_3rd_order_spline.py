@@ -3,12 +3,15 @@ import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 
 class DB3rdOrderSpline(Spline):
-    def __init__(self, dt, k, start_n5, goal_n5, factors_n2, dtype=tf.float32):
+    def __init__(self, dt, k, start_n5, goal_n5, factors_n2=None, dtype=tf.float32):
         super().__init__(dt=dt, k=k)
         self.ts = tf.linspace(0., dt*k, k)
-        self.start_n5 = tfe.Variable(start_n5, dtype=dtype)
+        self.start_n5 = start_n5
         self.goal_n5 = tfe.Variable(goal_n5, dtype=dtype)
-        self. factors_n2 = tfe.Variable(factors_n2, dtype=dtype)
+        self.factors_n2 = factors_n2
+        if factors_n2 is None: #compute them heuristically based on dist to goal
+            factors = tf.norm(self.goal_n5[:,:2], axis=1)
+            self.factors_n2 = tf.stack([factors, factors],axis=1)
         self.fit()
         self.evaluate()
  
