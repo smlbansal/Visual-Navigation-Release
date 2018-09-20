@@ -5,10 +5,7 @@ import tensorflow.contrib.eager as tfe
 class DB3rdOrderSpline(Spline):
     def __init__(self, dt, n, k, start_n5):
         super().__init__(dt=dt, n=n, k=k)
-        t_end = dt*k
-        self.t_end= [t_end, t_end**2, t_end**3]
         self.k = k
-        self.ts_nk = tf.tile(tf.linspace(0., dt*k, k)[None], [self.n,1])
         self.start_n5 = start_n5
  
     def fit(self, goal_n5, factors_n2=None):
@@ -29,18 +26,25 @@ class DB3rdOrderSpline(Spline):
 
             a2 = f2*tf.sin(tg)-2*yg
             b2 = 3*yg-f2*tf.sin(tg)
-            
-            t_end, t_end2, t_end3 = self.t_end
+
             c3 = v0 / f1
-            a3 = ((vf*t_end/f2) + c3*t_end - 2.) / t_end3
-            b3 = (1. - c3*t_end - a3*t_end3)/t_end2 
+            a3 = (vf/f2) + c3 - 2.
+            b3 = 1. - c3 - a3 
 
             self.x_coeffs = [a1,b1,c1]
             self.y_coeffs = [a2,b2,b2*0.]
             self.p_coeffs = [a3,b3,c3]
 
-    def evaluate(self, calculate_speeds=True):
-        ts = self.ts_nk
+    def eval_spline(self, ts, calculate_speeds=True):
+        """ Evaluates the spline on points in ts
+        where ts is unnormalized time"""
+        ts = ts / self.t_end
+
+        return self._evan_spline(ts, calculate_speeds)
+    def _eval_spline(self, ts, calculate_speeds=True):
+        """ Evaluates the spline on points in ts
+        Assumes ts is normalized to be in [0, 1.]
+        """
         a1,b1,c1 = self.x_coeffs
         a2,b2,c2 = self.y_coeffs
         a3,b3,c3 = self.p_coeffs
