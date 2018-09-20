@@ -26,10 +26,9 @@ def test_db_3rd_order():
     start_n5 = tf.constant(start_n5, name='start', dtype=tf.float32)
     goal_n5 = tfe.Variable(goal_n5, name='goal', dtype=tf.float32)
 
-    ts_nk = tf.tile(tf.linspace(0., dt*k, k)[None], [self.n,1])
+    ts_nk = tf.tile(tf.linspace(0., dt*k, k)[None], [n,1])
     db_spline_traj = DB3rdOrderSpline(dt=dt, k=k, n=n, start_n5=start_n5)
     db_spline_traj.fit(goal_n5=goal_n5, factors_n2=None)
-    import pdb; pdb.set_trace()
     db_spline_traj.eval_spline(ts_nk)
 
     fig = plt.figure()

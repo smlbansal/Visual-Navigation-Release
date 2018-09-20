@@ -38,9 +38,9 @@ class DB3rdOrderSpline(Spline):
     def eval_spline(self, ts, calculate_speeds=True):
         """ Evaluates the spline on points in ts
         where ts is unnormalized time"""
-        ts = ts / self.t_end
+        ts = ts / tf.reduce_max(ts,axis=1,keep_dims=1)
+        return self._eval_spline(ts, calculate_speeds)
 
-        return self._evan_spline(ts, calculate_speeds)
     def _eval_spline(self, ts, calculate_speeds=True):
         """ Evaluates the spline on points in ts
         Assumes ts is normalized to be in [0, 1.]
