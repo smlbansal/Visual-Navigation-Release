@@ -11,12 +11,13 @@ from trajectory.spline.db_3rd_order_spline import DB3rdOrderSpline
 from data_gen.data_gen import Data_Generator
 from obstacles.circular_obstacle_map import CircularObstacleMap
 from dotmap import DotMap
+from utils import utils
 
 def create_params():
     p = DotMap()
     p.seed = 1
     p.n = 1
-    p.k = 20
+    p.k = 100
     p.map_bounds = [[-2.0, -2.0], [2.0, 2.0]]
     p.dx, p.dt = .05, .1
       
@@ -50,24 +51,26 @@ def create_obj_params(p, cs, rs):
     params._obstacle_map = CircularObstacleMap
     params._plant = Dubins_v1 
     return params
- 
-def test_data_gen0():
-    p = create_params()#load_params('v0')
+
+def build_data_gen(n):
+    p = create_params()
+    p.n=int(n)
     np.random.seed(seed=p.seed)
     tf.set_random_seed(seed=p.seed)
     n,k = p.n, p.k
     map_bounds = p.map_bounds
     dx, dt = p.dx, p.dt 
     v0, vf = 0., 0.
-    wx = np.random.uniform(map_bounds[0][0], map_bounds[1][0])
-    wy = np.random.uniform(map_bounds[0][1], map_bounds[1][1])
-    wt = np.random.uniform(-np.pi, np.pi)
+    wx = np.random.uniform(map_bounds[0][0], map_bounds[1][0], size=n)
+    wy = np.random.uniform(map_bounds[0][1], map_bounds[1][1], size=n)
+    wt = np.random.uniform(-np.pi, np.pi, size=n)
+    vf = np.ones(n)*vf
+    wf = np.zeros(n)
     
-    waypt_15 = np.array([wx,wy,wt, vf, 0.])[None]
-    start_15 = np.array([0., 0., 0., v0, 0.])[None]
+    start_15 = np.array([-2., -2., 0., v0, 0.])[None]
     goal_pos_12 = np.array([0., 0.])[None]  
     
-    waypt_n5 = np.repeat(waypt_15, n, axis=0)
+    waypt_n5 = np.stack([wx,wy,wt,vf,wf], axis=1)
     start_n5 = np.repeat(start_15, n, axis=0)
     goal_pos_n2 = np.repeat(goal_pos_12, n, axis=0)
     
@@ -81,14 +84,51 @@ def test_data_gen0():
                             start_n5=start_n5,
                             goal_pos_n2=goal_pos_n2,
                             k=k)
-    num_iter = 100
-    learning_rate = 1e-4
+    waypt_n5 = tfe.Variable(waypt_n5, name='waypt', dtype=tf.float32)
+    return data_gen, waypt_n5
+
+def test_random_data_gen():
+    data_gen, waypt_n5 = build_data_gen(n=5e4)
+    obj_vals = data_gen.eval_objective(waypt_n5)
+    min_idx = tf.argmin(obj_vals)
+    min_waypt = waypt_n5[min_idx]
+    min_cost = obj_vals[min_idx]
+
+    #visualize stuff
+    fig, _, axes = utils.subplot2(plt, (2,2), (8,8), (.4, .4))
+    fig.suptitle('Random Based Opt, Cost*: %.03f, Waypt*: [%.03f, %.03f, %.03f]'%(min_cost, min_waypt[0], min_waypt[1], min_waypt[2]))
+    axes = axes[::-1]
+    data_gen.render(axes, batch_idx=min_idx.numpy())
+    plt.show()
+ 
+def test_gradient_based_data_gen():
+    data_gen, waypt_n5 = build_data_gen(n=1)
+    num_iter = 30
+    learning_rate = 1e-1
     opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
     waypt_n5 = tfe.Variable(waypt_n5, name='waypt', dtype=tf.float32)
+    objs = []
     for i in range(num_iter):
         obj_val, grads, variables = data_gen.compute_obj_val_and_grad(waypt_n5)
-        print('Iter: %.05f'%(obj_val))
+        objs.append(obj_val)
+        print('Iter %d: %.02f'%(i+1, obj_val))
         opt.apply_gradients(zip(grads, variables)) 
+    obj_vals = data_gen.eval_objective(waypt_n5)
+    min_waypt = waypt_n5[0]
+    min_cost = obj_vals[0]
     
+    #visualize stuff
+    fig, _, axes = utils.subplot2(plt, (3,3), (8,8), (.4, .4))
+    fig.suptitle('Gradient Based Opt, Cost*: %.03f, Waypt*: [%.03f, %.03f, %.03f]'%(min_cost, min_waypt[0], min_waypt[1], min_waypt[2]))
+    axes = axes[::-1]
+    ax4, axes = axes[:4], axes[4:]
+    data_gen.render(ax4, batch_idx=0)
+    ax = axes[0]
+    ax.plot(objs, 'r--')
+    ax.set_title('Cost Vs Opt Iter')
+    plt.show()
+
 if __name__=='__main__':
-    test_data_gen0()
+    plt.style.use('ggplot')
+    test_random_data_gen()
+    test_gradient_based_data_gen()

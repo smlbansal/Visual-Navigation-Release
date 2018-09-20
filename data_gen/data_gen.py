@@ -21,19 +21,20 @@ class Data_Generator:
 
     def compute_obj_val_and_grad(self, waypt_n5):
         with tf.GradientTape() as tape:
-            obj_val = self._eval_objective(waypt_n5)
+            obj_val = tf.reduce_mean(self.eval_objective(waypt_n5))
             grads = tape.gradient(obj_val, [waypt_n5])
         return obj_val, grads, [waypt_n5]
 
-    def _eval_objective(self, waypt_n5):
-        self.traj_spline.fit(goal_n5=waypt_n5)
-        self.traj_spline.evaluate(calculate_speeds=False)
+    def eval_objective(self, waypt_n5):
+        p1, p2 = self._exp_params, self._obj_params
+        ts_nk = tf.tile(tf.linspace(0., p1.dt*p1.k, p1.k)[None], [p1.n,1])
+        self.traj_spline.fit(goal_n5=waypt_n5, factors_n2=None)
+        self.traj_spline.eval_spline(ts_nk, calculate_speeds=False)
         x_nkd, u_nkf = self.plant.parse_trajectory(self.traj_spline)
         x0_n1d = x_nkd[:,0:1] 
         lqr_res = self.lqr_solver.lqr(x0_n1d, self.traj_spline, verbose=False)
-        trajectory_lqr = lqr_res['trajectory_opt']
-        obj_val = self.obj_fn.evaluate_function(trajectory_lqr)
-        obj_val = tf.reduce_mean(obj_val)
+        self.traj_lqr = lqr_res['trajectory_opt']
+        obj_val = self.obj_fn.evaluate_function(self.traj_lqr)
         return obj_val 
 
     def _init_objective(self):
@@ -63,4 +64,13 @@ class Data_Generator:
                                                            map_origin_2=np.array([-int(Nx/2), -int(Ny/2)]), #lower left
                                                            mask_grid_mn=obstacle_occupancy_grid)
         return fmm_map
-    
+
+    def render(self, axs, batch_idx=0, freq=4):
+        assert(len(axs) == 4)
+        self.obstacle_map.render(axs[0])
+        self.fmm_map.render_distance_map(axs[1])
+        self.obstacle_map.render(axs[2])
+        self.traj_spline.render(axs[2], batch_idx=batch_idx, freq=freq)
+        self.obstacle_map.render(axs[3])
+        self.traj_lqr.render(axs[3], batch_idx=batch_idx, freq=freq)
+        axs[3].set_title('LQR Traj')

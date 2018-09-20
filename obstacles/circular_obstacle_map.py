@@ -50,3 +50,4 @@ class CircularObstacleMap(ObstacleMap):
         x_min, y_min, x_max, y_max = map_bounds[0][0], map_bounds[0][1], map_bounds[1][0], map_bounds[1][1]
         ax.set_xlim([x_min, x_max])
         ax.set_ylim([y_min, y_max])
+        ax.set_title('Obstacle Map')
