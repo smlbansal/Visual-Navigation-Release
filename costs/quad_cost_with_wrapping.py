@@ -24,20 +24,17 @@ class QuadraticRegulatorRef(DiscreteCost):
         x_dim, u_dim = system._x_dim, system._u_dim #d,f
         assert (tf.reduce_all(tf.equal(C[:x_dim, x_dim:], tf.transpose(C[x_dim:, :x_dim]))).numpy())
         assert (x_dim + u_dim) == C.shape[0].value == C.shape[1].value == c.shape[0].value
-        x_ref_nkd, u_ref_nkf = system.parse_trajectory(trajectory_ref)
-        self._x_ref_nkd = x_ref_nkd
-        self._u_ref_nkf = u_ref_nkf 
-        self._x_dim = x_dim
-        self._u_dim = u_dim
-        self._z_ref_nkg = tf.concat([x_ref_nkd, u_ref_nkf],axis=2) 
+        self._x_dim, self._u_dim = x_dim, u_dim
         self.angle_dims = system._angle_dims
-        self._C_nkgg = C[None,None] + 0.*self._z_ref_nkg[:,:,:,None]
-        self._c_nkg = c[None,None] + 0. *self._z_ref_nkg
+        self.trajectory_ref = trajectory_ref
+        n, k, g = trajectory_ref.n, trajectory_ref.k, C.shape[0]
+        self._C_nkgg = tf.broadcast_to(C, (n,k,g,g))
+        self._c_nkg = tf.broadcast_to(c, (n,k,g))
         super().__init__(x_dim=self._x_dim, u_dim=self._u_dim)
 
         self.isTimevarying = False
         self.isNonquadratic = False
-
+    
     def compute_trajectory_cost(self, trajectory):
         with tf.name_scope('compute_traj_cost'):
             z_nkg = self.construct_z(trajectory)
@@ -67,8 +64,9 @@ class QuadraticRegulatorRef(DiscreteCost):
         """
         with tf.name_scope('construct_z'):
             x_nkd, u_nkf = self.system.parse_trajectory(trajectory)
-            delx_nkd = x_nkd - self._x_ref_nkd 
-            delu_nkf = u_nkf - self._u_ref_nkf
+            x_ref_nkd, u_ref_nkf = self.system.parse_trajectory(self.trajectory_ref)
+            delx_nkd = x_nkd - x_ref_nkd 
+            delu_nkf = u_nkf - u_ref_nkf
             z_nkg = tf.concat([delx_nkd[:,:,:self.angle_dims],
                             angle_normalize(delx_nkd[:,:,self.angle_dims:self.angle_dims+1]),
                             delx_nkd[:,:,self.angle_dims+1:],
