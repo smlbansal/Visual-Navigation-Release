@@ -6,7 +6,7 @@ class DB3rdOrderSpline(Spline):
     def __init__(self, dt, n, k, start_n5):
         super().__init__(dt=dt, n=n, k=k)
         self.k = k
-        self.start_n5 = start_n5
+        self.start_n5 = tf.constant(start_n5, name='spline_start', dtype=tf.float32)
  
     def fit(self, goal_n5, factors_n2=None):
         assert(isinstance(goal_n5, tfe.Variable))
@@ -17,22 +17,26 @@ class DB3rdOrderSpline(Spline):
         start_n5 = self.start_n5
         with tf.name_scope('fit_spline'):
             f1, f2 = factors_n2[:,0:1], factors_n2[:,1:]
+            x0, y0, t0 = self.start_n5[:,0:1], self.start_n5[:,1:2], self.start_n5[:,2:3]
             xg, yg, tg = goal_n5[:,0:1], goal_n5[:,1:2], goal_n5[:,2:3]
             v0, vf = start_n5[:,3:4], goal_n5[:,3:4]
 
-            c1 = f1
-            a1 = f2*tf.cos(tg)-2*xg+c1
-            b1 = 3*xg-f2*tf.cos(tg)-2*c1
-
-            a2 = f2*tf.sin(tg)-2*yg
-            b2 = 3*yg-f2*tf.sin(tg)
+            d1 = x0
+            c1 = f1*tf.cos(t0)
+            a1 = f2*tf.cos(tg)-2*xg+c1+2*d1
+            b1 = 3*xg-f2*tf.cos(tg)-2*c1-3*d1
+            
+            d2 = y0
+            c2 = f1*tf.sin(t0)
+            a2 = f2*tf.sin(tg)-2*yg+c2+2*d2
+            b2 = 3*yg-f2*tf.sin(tg)-2*c2-3*d2
 
             c3 = v0 / f1
             a3 = (vf/f2) + c3 - 2.
-            b3 = 1. - c3 - a3 
+            b3 = 1. - c3 - a3
 
-            self.x_coeffs = [a1,b1,c1]
-            self.y_coeffs = [a2,b2,b2*0.]
+            self.x_coeffs = [a1,b1,c1,d1]
+            self.y_coeffs = [a2,b2,c2,d2]
             self.p_coeffs = [a3,b3,c3]
 
     def eval_spline(self, ts, calculate_speeds=True):
@@ -45,20 +49,20 @@ class DB3rdOrderSpline(Spline):
         """ Evaluates the spline on points in ts
         Assumes ts is normalized to be in [0, 1.]
         """
-        a1,b1,c1 = self.x_coeffs
-        a2,b2,c2 = self.y_coeffs
+        a1,b1,c1,d1 = self.x_coeffs
+        a2,b2,c2,d2 = self.y_coeffs
         a3,b3,c3 = self.p_coeffs
 
         with tf.name_scope('eval_spline'):
             t2, t3 = ts*ts, ts*ts*ts
             ps = a3*t3+b3*t2+c3*ts
             p2, p3 = ps*ps, ps*ps*ps
-            xs = a1*p3+b1*p2+c1*ps
-            ys = a2*p3+b2*p2
+            xs = a1*p3+b1*p2+c1*ps+d1
+            ys = a2*p3+b2*p2+d2
 
             ps_dot = 3*a3*t2+2*b3*ts+c3
             xs_dot = 3*a1*p2+2*b1*ps+c1
-            ys_dot = 3*a2*p2+2*b2*ps
+            ys_dot = 3*a2*p2+2*b2*ps+c2
 
             ps_ddot = 6*a3*ts+2*b3
             xs_ddot = 6*a1*ps+2*b1
@@ -87,7 +91,7 @@ class DB3rdOrderSpline(Spline):
 
     def render(self, ax, batch_idx=0, freq=4):
         super().render(ax, batch_idx, freq) 
-        target_state = self.goal_n5[0]
+        target_state = self.goal_n5[batch_idx]
         ax.quiver([target_state[0]], [target_state[1]], [tf.cos(target_state[2])], [tf.sin(target_state[2])], units='width')
         ax.set_title('3rd Order Spline')
 
