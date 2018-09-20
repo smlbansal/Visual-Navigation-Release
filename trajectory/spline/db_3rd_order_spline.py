@@ -5,6 +5,8 @@ import tensorflow.contrib.eager as tfe
 class DB3rdOrderSpline(Spline):
     def __init__(self, dt, n, k, start_n5):
         super().__init__(dt=dt, n=n, k=k)
+        t_end = dt*k
+        self.t_end= [t_end, t_end**2, t_end**3]
         self.k = k
         self.ts_nk = tf.tile(tf.linspace(0., dt*k, k)[None], [self.n,1])
         self.start_n5 = start_n5
@@ -27,10 +29,11 @@ class DB3rdOrderSpline(Spline):
 
             a2 = f2*tf.sin(tg)-2*yg
             b2 = 3*yg-f2*tf.sin(tg)
-
+            
+            t_end, t_end2, t_end3 = self.t_end
             c3 = v0 / f1
-            a3 = (vf/f2) + c3 - 2.
-            b3 = 1. - c3 - a3 
+            a3 = ((vf*t_end/f2) + c3*t_end - 2.) / t_end3
+            b3 = (1. - c3*t_end - a3*t_end3)/t_end2 
 
             self.x_coeffs = [a1,b1,c1]
             self.y_coeffs = [a2,b2,b2*0.]
@@ -61,7 +64,7 @@ class DB3rdOrderSpline(Spline):
             heading_nk = tf.atan2(ys_dot, xs_dot)
             self._heading_nk1 = heading_nk[:,:,None]
            
-            if calculate_speeds:
+            if calculate_speeds: ####CHECK FOR NANS if calculating speeds!!!!
                 speed_ps_nk = tf.sqrt(xs_dot**2 + ys_dot**2)
                 speed_nk = (speed_ps_nk*ps_dot)
                 with tf.name_scope('omega'):
@@ -78,16 +81,9 @@ class DB3rdOrderSpline(Spline):
                 self._speed_nk1 = tf.zeros([self.n, self.k, 1], dtype=tf.float32)
                 self._angular_speed_nk1 = tf.zeros([self.n, self.k, 1], dtype=tf.float32)
 
-    def render(self, ax, freq=4):
-        if self._heading_nk1.shape[0].value > 1:
-            print('Warning. Splines generated for multiple trajectories. Only the 1st will be rendered')
-        
-        xs, ys, thetas = self._position_nk2[0,:,0], self._position_nk2[0,:,1], self._heading_nk1[0]
-        speed = self._speed_ps_nk1[0]
+    def render(self, ax, batch_idx=0, freq=4):
+        super().render(ax, batch_idx, freq) 
         target_state = self.goal_n5[0]
-        xs_dot, ys_dot = tf.cos(thetas), tf.sin(thetas)
-        ax.plot(xs, ys, 'r-')
-        ax.quiver(xs[::freq], ys[::freq], xs_dot[::freq]/speed[::freq], ys_dot[::freq]/speed[::freq], units='width')
         ax.quiver([target_state[0]], [target_state[1]], [tf.cos(target_state[2])], [tf.sin(target_state[2])], units='width')
         ax.set_title('3rd Order Spline')
 

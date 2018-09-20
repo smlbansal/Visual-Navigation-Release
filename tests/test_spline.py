@@ -32,7 +32,7 @@ def test_db_3rd_order():
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    db_spline_traj.render(ax)
+    db_spline_traj.render(ax, freq=4)
     plt.show()
 
 if __name__ == '__main__':

@@ -75,3 +75,8 @@ class Trajectory(object):
 
     def speed_and_angular_speed(self):
         return tf.concat([self.speed_nk1(), self.angular_speed_nk1()], axis=2)
+
+    def render(self, ax, batch_idx=0, freq=4):
+        xs, ys, thetas = self._position_nk2[batch_idx,:,0], self._position_nk2[batch_idx,:,1], self._heading_nk1[batch_idx]
+        ax.plot(xs,ys,'r-')
+        ax.quiver(xs[::freq], ys[::freq], tf.cos(thetas[::freq]), tf.sin(thetas[::freq]))

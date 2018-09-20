@@ -28,12 +28,10 @@ class Data_Generator:
     def _eval_objective(self, waypt_n5):
         self.traj_spline.fit(goal_n5=waypt_n5)
         self.traj_spline.evaluate(calculate_speeds=False)
-        ####CHECK FOR NANS!!!
         x_nkd, u_nkf = self.plant.parse_trajectory(self.traj_spline)
         x0_n1d = x_nkd[:,0:1] 
         lqr_res = self.lqr_solver.lqr(x0_n1d, self.traj_spline, verbose=False)
         trajectory_lqr = lqr_res['trajectory_opt']
-        J_opt = lqr_res['J_hist'][-1]
         obj_val = self.obj_fn.evaluate_function(trajectory_lqr)
         obj_val = tf.reduce_mean(obj_val)
         return obj_val 
