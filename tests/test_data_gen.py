@@ -68,6 +68,7 @@ def build_data_gen(n):
     wf = np.zeros(n)
     
     start_15 = np.array([-2., -2., 0., v0, 0.])[None]
+    map_origin_2 = (start_15[0,:2]/dx).astype(np.int32)
     goal_pos_12 = np.array([0., 0.])[None]  
     
     waypt_n5 = np.stack([wx,wy,wt,vf,wf], axis=1)
@@ -83,7 +84,8 @@ def build_data_gen(n):
                             obj_params=obj_params,
                             start_n5=start_n5,
                             goal_pos_n2=goal_pos_n2,
-                            k=k)
+                            k=k,
+                            map_origin_2=map_origin_2)
     waypt_n5 = tfe.Variable(waypt_n5, name='waypt', dtype=tf.float32)
     return data_gen, waypt_n5
 
@@ -93,7 +95,7 @@ def test_random_data_gen(n=5e4, visualize=False):
     min_idx = tf.argmin(obj_vals)
     min_waypt = waypt_n5[min_idx]
     min_cost = obj_vals[min_idx]
-
+    print(min_cost.numpy())
     if visualize:
         fig, _, axes = utils.subplot2(plt, (2,2), (8,8), (.4, .4))
         fig.suptitle('Random Based Opt (n=%.02e), Cost*: %.03f, Waypt*: [%.03f, %.03f, %.03f]'%(n, min_cost, min_waypt[0], min_waypt[1], min_waypt[2]))
@@ -202,10 +204,10 @@ def visualize_heatmap(n, theta_bins=10, plot_3d=False, log_cost=False):
     plt.show()
     
 def main():
-    visualize_heatmap(n=80, theta_bins=21, plot_3d=False)
+    #visualize_heatmap(n=80, theta_bins=21, plot_3d=False)
     #plt.style.use('ggplot')
-    test_random_data_gen(n=5e5)
-    test_gradient_based_data_gen()
+    test_random_data_gen(n=5e4, visualize=False)
+    #test_gradient_based_data_gen()
 if __name__=='__main__':
     main()
     
