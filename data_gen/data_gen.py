@@ -9,13 +9,14 @@ from objectives.objective_function import ObjectiveFunction
 import numpy as np
 
 class Data_Generator:
-    def __init__(self, exp_params, obj_params, start_n5, goal_pos_n2, k):
+    def __init__(self, exp_params, obj_params, start_n5, goal_pos_n2, k, map_origin_2):
         self._exp_params = exp_params
         self._obj_params = obj_params
         assert(isinstance(start_n5, np.ndarray) and isinstance(goal_pos_n2, np.ndarray))
         self.start_n5 = tf.constant(start_n5, name='start', dtype=tf.float32)
         self.goal_pos_n2 = goal_pos_n2
         self.k = k
+        self.map_origin_2 = map_origin_2
         self._init_objective()
 
 
@@ -61,16 +62,25 @@ class Data_Generator:
         fmm_map = FmmMap.create_fmm_map_based_on_goal_position(goal_positions_n2=self.goal_pos_n2,
                                                            map_size_2=np.array([Nx, Ny]),
                                                            dx=p1.dx,
-                                                           map_origin_2=np.array([-int(Nx/2), -int(Ny/2)]), #lower left
+                                                           map_origin_2=self.map_origin_2,
                                                            mask_grid_mn=obstacle_occupancy_grid)
         return fmm_map
 
     def render(self, axs, batch_idx=0, freq=4):
         assert(len(axs) == 4)
+        for ax in axs:
+            ax.clear()
         self.obstacle_map.render(axs[0])
+        self._render_goal(axs[0])
         self.fmm_map.render_distance_map(axs[1])
         self.obstacle_map.render(axs[2])
+        self._render_goal(axs[2])
         self.traj_spline.render(axs[2], batch_idx=batch_idx, freq=freq)
         self.obstacle_map.render(axs[3])
+        self._render_goal(axs[3])
         self.traj_lqr.render(axs[3], batch_idx=batch_idx, freq=freq)
         axs[3].set_title('LQR Traj')
+    
+    def _render_goal(self, ax, batch_idx=0):
+        x, y = self.goal_pos_n2[batch_idx]
+        ax.plot(x,y, 'g*', markersize=12)

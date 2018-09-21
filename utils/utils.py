@@ -14,6 +14,9 @@ def load_params(version):
         p = dotmap.DotMap(params)
     return p
 
+def mkdir_if_missing(dirname):
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
 # Copyright 2016 The TensorFlow Authors All Rights Reserved.
 #
