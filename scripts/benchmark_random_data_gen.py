@@ -166,7 +166,7 @@ def random_data_gen(n=5e4, problem=0, visualize=False, fig=None, axes=None):
         data_gen.render(axes, batch_idx=min_idx.numpy())
     return min_cost, delta_t
 
-def test_random_data_gen():
+def benchmark_random_data_gen():
     ns  = [500, 1e3, 5e3, 1e4, 5e4, 1e5]
     problems = np.r_[:10]
     fig, _, axes = utils.subplot2(plt, (2,2), (8,8), (.4, .4))
@@ -175,7 +175,7 @@ def test_random_data_gen():
     ax2 = fig2.add_subplot(212)
     for problem in problems:
         costs, times = [], []
-        problem_dir = './tmp/test_random_data_gen/problem_%s'%(problem)
+        problem_dir = './tmp/benchmark_random_data_gen/problem_%s'%(problem)
         utils.mkdir_if_missing(problem_dir)
         for n in ns:
             cost, delta_t = random_data_gen(n=n, problem=problem, visualize=True, fig=fig, axes=axes)
@@ -192,8 +192,10 @@ def test_random_data_gen():
         fig2.savefig(filename, bbox_inches='tight', pad_inches=0, dpi=100)
 
 def main():
+    """ Benchmark the random data generation method (runtime and cost of optimal waypoint)
+    with different batch sizes on 10 different test problems"""
     plt.style.use('ggplot')
-    test_random_data_gen()
+    benchmark_random_data_gen()
 
 if __name__=='__main__':
     main()

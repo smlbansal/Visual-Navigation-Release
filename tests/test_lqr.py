@@ -22,8 +22,8 @@ def create_params():
     p.ctrl = 1.
     return p 
 
-def test_lqr0():
-    p = create_params()#load_params('v0')
+def test_lqr0(visualize=False):
+    p = create_params()
     np.random.seed(seed=p.seed)
     n,k = p.n, p.k
     map_bounds = p.map_bounds
@@ -58,17 +58,20 @@ def test_lqr0():
     assert((J_opt.numpy() == 8.).all())
     assert(np.allclose(trajectory_opt.position_nk2()[:,1:,0], 4.0)) 
 
-    pos_ref = trajectory_ref.position_nk2()[0]
-    pos_opt = trajectory_opt.position_nk2()[0]
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter(pos_ref[:,0], pos_ref[:,1])
-    ax.plot(pos_opt[:,0], pos_opt[:,1], 'b--', label='opt')
-    ax.legend()
-    plt.show()
+    if visualize:
+        pos_ref = trajectory_ref.position_nk2()[0]
+        pos_opt = trajectory_opt.position_nk2()[0]
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.scatter(pos_ref[:,0], pos_ref[:,1])
+        ax.plot(pos_opt[:,0], pos_opt[:,1], 'b--', label='opt')
+        ax.legend()
+        plt.show()
+    else:
+        print('rerun test_lqr0 with visualize=True to visualize the test')
 
-def test_lqr1():
-    p = create_params()#load_params('v0')
+def test_lqr1(visualize=False):
+    p = create_params()
     np.random.seed(seed=p.seed)
     n,k = p.n, 50
     map_bounds = p.map_bounds
@@ -98,23 +101,26 @@ def test_lqr1():
     trajectory_opt = lqr_res['trajectory_opt']
     assert((lqr_res['J_hist'][1] < lqr_res['J_hist'][0]).numpy().all())
 
-    pos_ref = trajectory_ref.position_nk2()[0]
-    pos_opt = trajectory_opt.position_nk2()[0]
-    heading_ref = trajectory_ref.heading_nk1()[0]
-    heading_opt = trajectory_opt.heading_nk1()[0]
-    fig = plt.figure()
-    ax = fig.add_subplot(121)
-    ax.plot(pos_ref[:,0], pos_ref[:,1], 'r-', label='ref')
-    ax.quiver(pos_ref[:,0], pos_ref[:,1], tf.cos(heading_ref), tf.sin(heading_ref))
-    ax.plot(pos_opt[:,0], pos_opt[:,1], 'b-', label='opt')
-    ax.quiver(pos_opt[:,0], pos_opt[:,1], tf.cos(heading_opt), tf.sin(heading_opt))
-    ax.legend()
+    if visualize:
+        pos_ref = trajectory_ref.position_nk2()[0]
+        pos_opt = trajectory_opt.position_nk2()[0]
+        heading_ref = trajectory_ref.heading_nk1()[0]
+        heading_opt = trajectory_opt.heading_nk1()[0]
+        fig = plt.figure()
+        ax = fig.add_subplot(121)
+        ax.plot(pos_ref[:,0], pos_ref[:,1], 'r-', label='ref')
+        ax.quiver(pos_ref[:,0], pos_ref[:,1], tf.cos(heading_ref), tf.sin(heading_ref))
+        ax.plot(pos_opt[:,0], pos_opt[:,1], 'b-', label='opt')
+        ax.quiver(pos_opt[:,0], pos_opt[:,1], tf.cos(heading_opt), tf.sin(heading_opt))
+        ax.legend()
 
-    plt.show()
+        plt.show()
+    else:    
+        print('rerun test_lqr1 with visualize=True to visualize the test')
 
 
-def test_lqr2():
-    p = create_params()#load_params('v0')
+def test_lqr2(visualize=False):
+    p = create_params()
     np.random.seed(seed=p.seed)
     n,k = 2, 50
     map_bounds = p.map_bounds
@@ -155,34 +161,37 @@ def test_lqr2():
     trajectory_opt = lqr_res['trajectory_opt']
     assert((lqr_res['J_hist'][1] < lqr_res['J_hist'][0]).numpy().all())
 
-    pos_ref = trajectory_ref.position_nk2()[0]
-    pos_opt = trajectory_opt.position_nk2()[0]
-    heading_ref = trajectory_ref.heading_nk1()[0]
-    heading_opt = trajectory_opt.heading_nk1()[0]
-    fig = plt.figure()
-    ax = fig.add_subplot(121)
-    ax.plot(pos_ref[:,0], pos_ref[:,1], 'r-', label='ref')
-    ax.quiver(pos_ref[:,0], pos_ref[:,1], tf.cos(heading_ref), tf.sin(heading_ref))
-    ax.plot(pos_opt[:,0], pos_opt[:,1], 'b-', label='opt')
-    ax.quiver(pos_opt[:,0], pos_opt[:,1], tf.cos(heading_opt), tf.sin(heading_opt))
-    ax.set_title('Goal [4.0, 0.0]')
-    ax.legend()
+    if visualize:
+        pos_ref = trajectory_ref.position_nk2()[0]
+        pos_opt = trajectory_opt.position_nk2()[0]
+        heading_ref = trajectory_ref.heading_nk1()[0]
+        heading_opt = trajectory_opt.heading_nk1()[0]
+        fig = plt.figure()
+        ax = fig.add_subplot(121)
+        ax.plot(pos_ref[:,0], pos_ref[:,1], 'r-', label='ref')
+        ax.quiver(pos_ref[:,0], pos_ref[:,1], tf.cos(heading_ref), tf.sin(heading_ref))
+        ax.plot(pos_opt[:,0], pos_opt[:,1], 'b-', label='opt')
+        ax.quiver(pos_opt[:,0], pos_opt[:,1], tf.cos(heading_opt), tf.sin(heading_opt))
+        ax.set_title('Goal [4.0, 0.0]')
+        ax.legend()
 
-    pos_ref = trajectory_ref.position_nk2()[1]
-    pos_opt = trajectory_opt.position_nk2()[1]
-    heading_ref = trajectory_ref.heading_nk1()[1]
-    heading_opt = trajectory_opt.heading_nk1()[1]
-    ax = fig.add_subplot(122)
-    ax.plot(pos_ref[:,0], pos_ref[:,1], 'r-', label='ref')
-    ax.quiver(pos_ref[:,0], pos_ref[:,1], tf.cos(heading_ref), tf.sin(heading_ref))
-    ax.plot(pos_opt[:,0], pos_opt[:,1], 'b-', label='opt')
-    ax.quiver(pos_opt[:,0], pos_opt[:,1], tf.cos(heading_opt), tf.sin(heading_opt))
-    ax.set_title('Nonlinear Traj')
-    ax.legend()
+        pos_ref = trajectory_ref.position_nk2()[1]
+        pos_opt = trajectory_opt.position_nk2()[1]
+        heading_ref = trajectory_ref.heading_nk1()[1]
+        heading_opt = trajectory_opt.heading_nk1()[1]
+        ax = fig.add_subplot(122)
+        ax.plot(pos_ref[:,0], pos_ref[:,1], 'r-', label='ref')
+        ax.quiver(pos_ref[:,0], pos_ref[:,1], tf.cos(heading_ref), tf.sin(heading_ref))
+        ax.plot(pos_opt[:,0], pos_opt[:,1], 'b-', label='opt')
+        ax.quiver(pos_opt[:,0], pos_opt[:,1], tf.cos(heading_opt), tf.sin(heading_opt))
+        ax.set_title('Nonlinear Traj')
+        ax.legend()
 
-    plt.show()
+        plt.show()
+    else:
+        print('rerun test_lqr2 with visualize=True to visualize the test')
 
 if __name__=='__main__':
-    test_lqr0() #robot should move to goal in 1 step and stay there
-    test_lqr1() #robot should track a trajectory
-    test_lqr2() #LQR should track 2 trajectories in a batch
+    test_lqr0(visualize=False) #robot should move to goal in 1 step and stay there
+    test_lqr1(visualize=False) #robot should track a trajectory
+    test_lqr2(visualize=False) #LQR should track 2 trajectories in a batch

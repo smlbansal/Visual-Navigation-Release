@@ -2,7 +2,11 @@ from trajectory.spline.spline  import Spline
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 
-class DB3rdOrderSpline(Spline):
+class Spline3rdOrder(Spline):
+    """ A class representing a 3rd order spline for a mobile ground robot (in a 2d cartesian plane).
+    The 3rd order spline allows for constraints on the start state, [x0, y0, theta0, v0], 
+    and goal state, [xg, yg, thetag, vg]. Angular speeds w0 and wg are not constrainable.
+    """
     def __init__(self, dt, n, k, start_n5):
         super().__init__(dt=dt, n=n, k=k)
         self.k = k
@@ -85,9 +89,6 @@ class DB3rdOrderSpline(Spline):
                 self._speed_ps_nk1 = speed_ps_nk[:,:,None] 
                 self._speed_nk1 = speed_nk[:,:,None]
                 self._angular_speed_nk1 = angular_speed_nk[:,:,None]
-            else:
-                self._speed_nk1 = tf.zeros([self.n, self.k, 1], dtype=tf.float32)
-                self._angular_speed_nk1 = tf.zeros([self.n, self.k, 1], dtype=tf.float32)
 
     def render(self, ax, batch_idx=0, freq=4):
         super().render(ax, batch_idx, freq) 

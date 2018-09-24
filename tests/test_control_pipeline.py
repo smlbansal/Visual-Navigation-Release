@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from optCtrl.lqr import LQRSolver
 from systems.dubins_v1 import Dubins_v1
-from trajectory.spline.db_3rd_order_spline import DB3rdOrderSpline
+from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from utils.fmm_map import FmmMap
 from obstacles.circular_obstacle_map import CircularObstacleMap
 from objectives.obstacle_avoidance import ObstacleAvoidance
@@ -21,8 +21,8 @@ from dotmap import DotMap
 def create_params():
     p = DotMap()
     p.seed = 1
-    p.n = 1
-    p.k = 20
+    p.n = 3
+    p.k = 100
     p.map_bounds = [[-2.0, -2.0], [2.0, 2.0]]
     p.dx, p.dt = .05, .1
       
@@ -52,16 +52,16 @@ def create_obj_params(p, cs, rs):
     params.spline_params = {}
      
     params._cost = QuadraticRegulatorRef
-    params._spline = DB3rdOrderSpline
+    params._spline = Spline3rdOrder
     params._obstacle_map = CircularObstacleMap
     params._plant = Dubins_v1 
     return params
  
-def test_control_pipeline():
+def test_control_pipeline(visualize=False):
     p = create_params()
     np.random.seed(seed=p.seed)
     tf.set_random_seed(seed=p.seed)
-    n,k = 3, 100
+    n,k = p.n,p.k
     map_bounds = p.map_bounds
     dx, dt = p.dx, p.dt 
     v0, vf = 0., 0.
@@ -119,52 +119,55 @@ def test_control_pipeline():
     obj_val = obj_fn.evaluate_function(trajectory_lqr)
     obj1, obj2, obj3 = obj_val.numpy()
     assert(obj2 > obj1 and obj1 > obj3)
-    
-    fig, _, axes = utils.subplot2(plt, (4,2), (8,8), (.4, .4))
-    axes = axes[::-1]
-    ax = axes[0]
-    obstacle_map.render(ax)
-    ax.set_title('Occupancy Grid')
+   
+    if visualize: 
+        fig, _, axes = utils.subplot2(plt, (4,2), (8,8), (.4, .4))
+        axes = axes[::-1]
+        ax = axes[0]
+        obstacle_map.render(ax)
+        ax.set_title('Occupancy Grid')
 
-    ax = axes[1]
-    ax.contour(fmm_map.fmm_distance_map.voxel_function_mn, cmap='gray')
-    ax.set_xlim(0,80)
-    ax.set_ylim(0,80)
-    ax.set_title('Fmm Distance Map')
-  
-    wpt_13 = waypt_n5[0,:3] 
-    ax = axes[2]
-    obstacle_map.render(ax)
-    traj_spline.render(ax, batch_idx=0)
-    ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'%(wpt_13[0], wpt_13[1], wpt_13[2])) 
+        ax = axes[1]
+        ax.contour(fmm_map.fmm_distance_map.voxel_function_mn, cmap='gray')
+        ax.set_xlim(0,80)
+        ax.set_ylim(0,80)
+        ax.set_title('Fmm Distance Map')
+      
+        wpt_13 = waypt_n5[0,:3] 
+        ax = axes[2]
+        obstacle_map.render(ax)
+        traj_spline.render(ax, batch_idx=0)
+        ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'%(wpt_13[0], wpt_13[1], wpt_13[2])) 
+         
+        ax = axes[3]
+        obstacle_map.render(ax)
+        trajectory_lqr.render(ax, batch_idx=0)
+        ax.set_title('LQR Traj, Cost: %.05f'%(obj_val[0])) 
+        
+        wpt_13 = waypt_n5[1,:3]
+        ax = axes[4]
+        obstacle_map.render(ax)
+        traj_spline.render(ax, batch_idx=1)
+        ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'%(wpt_13[0], wpt_13[1], wpt_13[2])) 
      
-    ax = axes[3]
-    obstacle_map.render(ax)
-    trajectory_lqr.render(ax, batch_idx=0)
-    ax.set_title('LQR Traj, Cost: %.05f'%(obj_val[0])) 
-    
-    wpt_13 = waypt_n5[1,:3]
-    ax = axes[4]
-    obstacle_map.render(ax)
-    traj_spline.render(ax, batch_idx=1)
-    ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'%(wpt_13[0], wpt_13[1], wpt_13[2])) 
- 
-    ax = axes[5]
-    obstacle_map.render(ax)
-    trajectory_lqr.render(ax, batch_idx=1)
-    ax.set_title('LQR Traj, Cost: %.05f'%(obj_val[1])) 
+        ax = axes[5]
+        obstacle_map.render(ax)
+        trajectory_lqr.render(ax, batch_idx=1)
+        ax.set_title('LQR Traj, Cost: %.05f'%(obj_val[1])) 
 
-    wpt_13 = waypt_n5[2,:3]
-    ax = axes[6]
-    obstacle_map.render(ax)
-    traj_spline.render(ax, batch_idx=2)
-    ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'%(wpt_13[0], wpt_13[1], wpt_13[2])) 
- 
-    ax = axes[7]
-    obstacle_map.render(ax)
-    trajectory_lqr.render(ax, batch_idx=2)
-    ax.set_title('LQR Traj, Cost: %.05f'%(obj_val[2])) 
-    plt.show()
+        wpt_13 = waypt_n5[2,:3]
+        ax = axes[6]
+        obstacle_map.render(ax)
+        traj_spline.render(ax, batch_idx=2)
+        ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'%(wpt_13[0], wpt_13[1], wpt_13[2])) 
+     
+        ax = axes[7]
+        obstacle_map.render(ax)
+        trajectory_lqr.render(ax, batch_idx=2)
+        ax.set_title('LQR Traj, Cost: %.05f'%(obj_val[2])) 
+        plt.show()
+    else:
+        print('Run with visualize=True to visualize the control pipeline')
 
 if __name__=='__main__':
-    test_control_pipeline() 
+    test_control_pipeline(visualize=False) 
