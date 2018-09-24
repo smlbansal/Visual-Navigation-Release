@@ -18,10 +18,10 @@ from timeit import default_timer as timer
 def create_params():
     p = DotMap()
     p.seed = 1
-    p.n = 1
-    p.k = 15
+    p.horizon = 1.5 #seconds
+    p.dx, p.dt = .05, .01
+    p.k = int(np.ceil(p.horizon/p.dt))
     p.map_bounds = [[-2.0, -2.0], [2.0, 2.0]]
-    p.dx, p.dt = .05, .1
       
     p.lqr_coeffs = DotMap({'quad' : [1.0, 1.0, 1.0, 1e-10, 1e-10],
                                     'linear' : [0.0, 0.0, 0.0, 0.0, 0.0]})
