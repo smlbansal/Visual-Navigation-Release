@@ -25,7 +25,9 @@ def create_params():
     p.k = 100
     p.map_bounds = [[-2.0, -2.0], [2.0, 2.0]]
     p.dx, p.dt = .05, .1
-      
+    
+    # Note(Somil): Style guide.
+    
     p.lqr_coeffs = DotMap({'quad' : [1.0, 1.0, 1.0, 1e-10, 1e-10],
                                     'linear' : [0.0, 0.0, 0.0, 0.0, 0.0]})
     p.ctrl = 1.
@@ -58,6 +60,7 @@ def create_obj_params(p, cs, rs):
     return params
  
 def test_control_pipeline(visualize=False):
+    # Note(Somil): Style guide.
     p = create_params()
     np.random.seed(seed=p.seed)
     tf.set_random_seed(seed=p.seed)
@@ -119,6 +122,9 @@ def test_control_pipeline(visualize=False):
     obj_val = obj_fn.evaluate_function(trajectory_lqr)
     obj1, obj2, obj3 = obj_val.numpy()
     assert(obj2 > obj1 and obj1 > obj3)
+    # Note(Somil): It will be good to also assert the exact value of some of these objectives. Since the seed is fixed,
+    # the objective values should not change. Therefore, if something in future breaks this code, we will know
+    # something is wrong.
    
     if visualize: 
         fig, _, axes = utils.subplot2(plt, (4,2), (8,8), (.4, .4))
@@ -170,4 +176,4 @@ def test_control_pipeline(visualize=False):
         print('Run with visualize=True to visualize the control pipeline')
 
 if __name__=='__main__':
-    test_control_pipeline(visualize=False) 
+    test_control_pipeline(visualize=True)

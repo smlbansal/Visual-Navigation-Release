@@ -85,6 +85,7 @@ def test_circular_obstacle_map(visualize=False):
     else:
         print('rerun test_circular_obstacle_map with visualize=True to visualize the obstacle_map')
 
+
 if __name__ == '__main__':
     test_random_circular_obstacle_map(visualize=False)
     test_circular_obstacle_map(visualize=False)

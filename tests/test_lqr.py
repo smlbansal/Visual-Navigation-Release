@@ -99,6 +99,7 @@ def test_lqr1(visualize=False):
     x0 = x_nk3[:,0:1,:]
     lqr_res = lqr_solver.lqr(x0,trajectory,verbose=False)
     trajectory_opt = lqr_res['trajectory_opt']
+    # Note(Somil): Asserting the value of the cost will be helpful here.
     assert((lqr_res['J_hist'][1] < lqr_res['J_hist'][0]).numpy().all())
 
     if visualize:

@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 
 def test_spline_3rd_order(visualize=False):
+    # Note(Somil): Style guide.
     np.random.seed(seed=1)
     n=5
     dt = .01
@@ -50,5 +51,6 @@ def test_spline_3rd_order(visualize=False):
         plt.show()
 
 if __name__ == '__main__':
+    # Note(Somil): Style guide. ALso, let's set visualize to False by default.
     test_spline_3rd_order(visualize=True)
 

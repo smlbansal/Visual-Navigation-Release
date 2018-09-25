@@ -21,14 +21,17 @@ def test_dubins_v1(visualize=False):
     trajectory = db.assemble_trajectory(state_nk3, ctrl_nk2) 
     state_tp1_nk3 = db.simulate(state_nk3, ctrl_nk2)
     s = state_tp1_nk3.shape
+    # Note(Somil): we can assert state_tp1_nk3.shape == (n, k, x_dim).
     assert(s[0].value==n and s[1].value==k and s[2].value==x_dim)
     
     jac_x_nk33 = db.jac_x(trajectory)
     s = jac_x_nk33.shape
+    # Note(Somil): Look at my comment above regarding assertion.
     assert(s[0].value==n and s[1].value==k and s[2].value==x_dim and s[3].value==x_dim) 
 
     jac_u_nk32 = db.jac_u(trajectory)
     s = jac_u_nk32.shape
+    # Note(Somil): Look at my comment above regarding assertion.
     assert(s[0].value==n and s[1].value==k and s[2].value==x_dim and s[3].value==u_dim)
     
     A,B,c = db.affine_factors(trajectory)
