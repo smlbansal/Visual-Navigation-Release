@@ -1,13 +1,19 @@
-import tensorflow as tf
 import numpy as np
 
+
 class DiscreteCost:
+    """
+    Implement a discrete cost function.
+    """
     def __init__(self, x_dim, u_dim=None, running_cost=None, terminal_cost=None, Horizon=np.inf):
         self._Horizon = Horizon
         self.isTimevarying = False
         self.isNonquadratic = True
         self._x_dim = x_dim
         self._u_dim = u_dim
+        
+        # Note(Somil): Why are we allowing us_dim to be None? LQR should not be used when u_dim is none. Also, we are
+        # doing nothing with the running/terminal costs that we have taken as inputs to the init function.
         dims = [x_dim]
         if u_dim is not None:
             dims.append(u_dim)

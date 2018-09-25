@@ -13,6 +13,12 @@ class Spline3rdOrder(Spline):
         self.start_n5 = tf.constant(start_n5, name='spline_start', dtype=tf.float32)
  
     def fit(self, goal_n5, factors_n2=None):
+        # Note(Somil):
+        # 1. Let's add some description to the functions.
+        # 2. Start_n5 probably should not be an input to init, but rather to this function. If start_n5 is None, then
+        # we just use zeros.
+        # 3. Match the signature of the function between the child and the parent class.
+        # 4. Style guide.
         assert(isinstance(goal_n5, tfe.Variable))
         self.goal_n5 = goal_n5
         if factors_n2 is None: #compute them heuristically based on dist to goal
@@ -53,6 +59,7 @@ class Spline3rdOrder(Spline):
         """ Evaluates the spline on points in ts
         Assumes ts is normalized to be in [0, 1.]
         """
+        # Note(Somil): These computations should be done in a vector format. That way, they will be much faster.
         a1,b1,c1,d1 = self.x_coeffs
         a2,b2,c2,d2 = self.y_coeffs
         a3,b3,c3 = self.p_coeffs
@@ -76,6 +83,7 @@ class Spline3rdOrder(Spline):
             heading_nk = tf.atan2(ys_dot, xs_dot)
             self._heading_nk1 = heading_nk[:,:,None]
            
+            # Note(Somil): Let's add a todo note for checking for NaNs. Also, why are we encountering NaNs?
             if calculate_speeds: ####CHECK FOR NANS if calculating speeds!!!!
                 speed_ps_nk = tf.sqrt(xs_dot**2 + ys_dot**2)
                 speed_nk = (speed_ps_nk*ps_dot)
@@ -91,6 +99,7 @@ class Spline3rdOrder(Spline):
                 self._angular_speed_nk1 = angular_speed_nk[:,:,None]
 
     def render(self, ax, batch_idx=0, freq=4):
+        # Note(Somil): Function description. Style guide.
         super().render(ax, batch_idx, freq) 
         target_state = self.goal_n5[batch_idx]
         ax.quiver([target_state[0]], [target_state[1]], [tf.cos(target_state[2])], [tf.sin(target_state[2])], units='width')

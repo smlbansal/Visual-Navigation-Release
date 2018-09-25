@@ -8,6 +8,7 @@ from objectives.angle_distance import AngleDistance
 from objectives.objective_function import ObjectiveFunction
 import numpy as np
 
+# Note(Somil): We should probably remove this class and use the simulator class instead.
 class Data_Generator:
     def __init__(self, exp_params, obj_params, start_n5, goal_pos_n2, k, map_origin_2):
         self._exp_params = exp_params

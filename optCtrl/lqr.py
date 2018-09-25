@@ -62,6 +62,7 @@ class LQRSolver:
         """
         Compute the cost incurred by a trajectory.
         """
+        # Note(Somil): Add the dimensions of J?
         _, J = self.cost.compute_trajectory_cost(trajectory)
         return J
 
@@ -79,7 +80,8 @@ class LQRSolver:
             # initialize current trajectory cost
             J_opt = self.evaluate_trajectory_cost(trajectory)
             J_hist = [J_opt]
-
+            
+            # Note(Somil): I'm a bit confused. What are the dimensions of the K_array and k_array here?
             k_array, K_array = self.back_propagation(trajectory)
             trajectory_new = self.apply_control(x0, trajectory, k_array, K_array)
             # evaluate the cost of this trial
@@ -115,6 +117,8 @@ class LQRSolver:
                 error_t = x_tp1_n1d - x_ref_n1d
                 error_t = tf.concat([error_t[:,:, :angle_dims],
                                         angle_normalize(error_t[:,:, angle_dims:angle_dims+1])], axis=2)
+                # Note(Somil): Wouldn't K_array be different for different n? So shouldn't it be K_array[:, t] or
+                # something?
                 fdback = tf.matmul(K_array[t], tf.transpose(error_t, perm=[0,2,1]))
                 u_n1f = u_ref_n1f + tf.transpose(k_array[t] + fdback, perm=[0,2,1])
                 x_tp1_n1d = self.fwdSim(x_tp1_n1d, u_n1f)
@@ -129,6 +133,8 @@ class LQRSolver:
         Apply the forward dynamics to have a trajectory starting from x0 by applying u
         u_array is an array of control signal to apply
         """
+        # Note(Somil): Are we using this function anywhere? Also, apply_controlSeq function does not seem to be defined
+        # in the dynamics class.
         trajX_array, trajU_array, tau = self.plant_dyn.apply_controlSeq(x0, controlSeq=u_array.T,
                                                                         dynamics_sim=self.fwdSim)
         return trajX_array[:, :, 0].T
@@ -141,7 +147,10 @@ class LQRSolver:
         Dynamics needs a time-varying first-order approximation.
         Costs need time-varying second-order approximation.
         """
+        # Note(Somil): It would be really helpful to add dimensions to the variables in this function. There are so
+        # many of them and it is very hard to keep a track of them.
         with tf.name_scope('back_prop'):
+            # Note(Somil): Style guide.
             angle_dims = self.plant_dyn._angle_dims
             lqr_sys = self.build_lqr_system(trajectory)
             x_nkd, u_nkf = self.plant_dyn.parse_trajectory(trajectory)
@@ -183,6 +192,8 @@ class LQRSolver:
             return fdfwd, fdbck_gain
 
     def build_lqr_system(self, trajectory):
+        # Note(Somil): If we are not using these arrays, let's not define them. Also, can we add a function description
+        # here.
         f_array = []
         dfdx_array = []
         dfdu_array = []
@@ -218,10 +229,11 @@ class LQRSolver:
         if self.inv:
             return tf.matrix_inverse(mat)       
         else:
+            # Note(Somil): Let's just use raise NotImplementedError here. We don't have to carry the mess of my other
+            # repo to this repo :)
             s,u,v = tf.svd(mat)
             s = tf.nn.relu(s) #truncate negative values
             #diag_s_inv = np.zeros((v.shape[0], u.shape[1]))
             #diag_s_inv[0:len(s), 0:len(s)] = np.diag(1. / (s + reg))
             #return v.dot(diag_s_inv).dot(u.T)
             raise NotImplementedError
-            

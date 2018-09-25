@@ -15,12 +15,14 @@ class Dynamics:
     def simulate(self, x, u, t=None):
         """ Apply one action u from state x
         """
+        # Note(Somil): Shouldn't x and u be tensors here? If so, could we add their dimensions?
         raise NotImplementedError
 
     def simulate_T(self, x, u, T):
         """ Apply T actions from state x
         return the resulting trajectory
         """
+        # Note(Somil): What is tp1?
         n = x.shape[0].value
         x_tp1 = x*1.
         for t in range(T):
@@ -34,6 +36,7 @@ class Dynamics:
         B = self.jac_u(trajectory_hat)
         x_nk3, u_nk2 = self.parse_trajectory(trajectory_hat)
         c = self.simulate(x_nk3, u_nk2)
+        # Note(Somil): Style guide.
         return A,B,c
 
     def jac_x(self, trajectory):
