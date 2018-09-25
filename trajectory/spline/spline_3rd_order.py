@@ -13,7 +13,6 @@ class Spline3rdOrder(Spline):
         self.start_n5 = tf.constant(start_n5, name='spline_start', dtype=tf.float32)
  
     def fit(self, goal_n5, factors_n2=None):
-        assert(isinstance(goal_n5, tfe.Variable))
         self.goal_n5 = goal_n5
         if factors_n2 is None: #compute them heuristically based on dist to goal
             factors = tf.norm(goal_n5[:,:2], axis=1)
