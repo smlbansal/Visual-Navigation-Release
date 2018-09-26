@@ -84,8 +84,8 @@ class QuadraticRegulatorRef(DiscreteCost):
             delu_nkf = u_nkf - u_ref_nkf
             # Note(Somil): Style guide.
             z_nkg = tf.concat([delx_nkd[:,:,:self.angle_dims],
-                            angle_normalize(delx_nkd[:,:,self.angle_dims:self.angle_dims+1]),
-                            delx_nkd[:,:,self.angle_dims+1:],
-                            delu_nkf], axis=2)
+                              angle_normalize(delx_nkd[:,:,self.angle_dims:self.angle_dims+1]),
+                              delx_nkd[:,:,self.angle_dims+1:],
+                              delu_nkf], axis=2)
             return z_nkg
 
