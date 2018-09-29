@@ -10,6 +10,8 @@ from training_utils.trainer_helper import TrainerHelper
 from models.base import BaseModel
 
 
+# TODO(Somil, Varun): Setup a logger which has all tha parameters, and all the messages printed during the training
+# process.
 class TrainerFrontendHelper(object):
     """
     A base class for setting up a data collector, trainer or test.
@@ -76,7 +78,7 @@ class TrainerFrontendHelper(object):
         """
         Create a trainer for training.
         """
-        self.trainer = TrainerHelper(self.p.trainer)
+        self.trainer = TrainerHelper(self.p)
     
     def generate_data(self, params=None):
         """
@@ -93,28 +95,42 @@ class TrainerFrontendHelper(object):
         if self.p.trainer.seed != -1:
             np.random.seed(seed=self.p.trainer.seed)
             tf.set_random_seed(seed=self.p.trainer.seed)
-        
+
         # Start the training
         with tf.device(self.p.device):
             # First create a data source and load the data
             self.create_data_source()
             self.data_source.load_dataset()
-            
+    
             # Create an input and output model
             self.create_model()
-            
+    
             # Create a trainer
             self.create_trainer()
-            
+    
             # Start the training
             self.trainer.train(model=self.model, data_source=self.data_source)
 
-    def test(self, params):
+    def test(self):
         """
         Test a trained network.
         """
-        raise NotImplementedError('Should be implemented by the child class')
+        # Set the random seed
+        if self.p.test.seed != -1:
+            np.random.seed(seed=self.p.test.seed)
+            tf.set_random_seed(seed=self.p.test.seed)
+
+        # Load the checkpoint
+        with tf.device(self.p.device):
+            # Create an input and output model
+            self.create_model()
     
+            # Create a trainer
+            self.create_trainer()
+    
+            # Load the checkpoint
+            self.trainer.restore_checkpoint(model=self.model)
+        
     def create_params(self, param_file):
         """
         Create the parameters given the path of the parameter file.

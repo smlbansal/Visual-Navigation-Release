@@ -15,7 +15,7 @@ class SineDataSource(DataSource):
         # Generate the data
         counter = 1
         for _ in range(0, self.p.data_creation.data_points, self.p.data_creation.data_points_per_file):
-            x = np.random.uniform(-10., 10., (self.p.data_creation.data_points_per_file, 1)).astype(np.float32)
+            x = np.random.uniform(-2., 2., (self.p.data_creation.data_points_per_file, 1)).astype(np.float32)
             sinx = np.sin(x)
             
             # Create a data dictionary

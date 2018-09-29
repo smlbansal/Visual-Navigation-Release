@@ -34,6 +34,7 @@ class BaseModel(object):
         model_variables = self.get_trainable_vars()
         for model_variable in model_variables:
             regularization_loss += tf.nn.l2_loss(model_variable)
+        regularization_loss = self.p.loss.regn * regularization_loss
         
         if self.p.loss.loss_type == 'mse':
             prediction_loss = tf.losses.mean_squared_error(nn_output, processed_data['labels'])
@@ -42,7 +43,7 @@ class BaseModel(object):
         else:
             raise NotImplementedError
         
-        total_loss = prediction_loss + self.p.loss.regn * regularization_loss
+        total_loss = prediction_loss + regularization_loss
         
         if return_loss_components:
             return regularization_loss, prediction_loss, total_loss

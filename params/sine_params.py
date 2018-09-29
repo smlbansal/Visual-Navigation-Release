@@ -16,10 +16,10 @@ def create_params():
                      # Architecture parameters
                      arch=DotMap(
                                  # Number of hidden layers
-                                 num_hidden_layers=2,
+                                 num_hidden_layers=3,
                                  
                                  # Number of neurons per hidden layer
-                                 num_neurons_per_layer=512,
+                                 num_neurons_per_layer=128,
                                  
                                  # Activation function for the hidden layer
                                  hidden_layer_activation_func=tf.keras.activations.relu,
@@ -45,12 +45,12 @@ def create_params():
     )
     
     # Loss function parameters
-    p.loss_function = DotMap(
-                                # Type of the loss function
-                                loss_type='mse',
-        
-                                # Weight regularization co-efficient
-                                regn=1e-6
+    p.loss = DotMap(
+                    # Type of the loss function
+                    loss_type='mse',
+
+                    # Weight regularization co-efficient
+                    regn=1e-6
     )
     
     # Trainer parameters
@@ -59,41 +59,52 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=10,
+                        num_epochs=20,
         
                         # Total number of samples in the dataset
-                        num_samples=10000,
+                        num_samples=100000,
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
         
                         # Batch size
-                        batch_size=1000,
+                        batch_size=10000,
                         
                         # The training optimizer
                         optimizer=tf.train.AdamOptimizer,
         
                         # Learning rate
-                        lr=1e-4,
+                        lr=1e-2,
                         
                         # Learning schedule
                         learning_schedule=1,
         
+                        # Learning schedule adjustment parameters
+                        lr_decay_frequency=None,
+                        lr_decay_factor=None,
+        
                         # Checkpoint settings
                         ckpt_save_frequency=4,
-                        ckpt_dir='/tmp'
+                        ckpt_path='/Users/somil/Documents/research/Projects/model_based_navigation/temp/'
+                                  'session_2018-09-28_17-45-36/checkpoints/ckpt-5'
     )
     
     # Data creation parameters
     p.data_creation = DotMap(
                                 # Number of data points
-                                data_points=10000,
+                                data_points=100000,
         
                                 # Number of data points per file
-                                data_points_per_file=1000,
+                                data_points_per_file=10000,
                                 
                                 # Data directory
                                 data_dir='/Users/somil/Documents/research/Projects/model_based_navigation/tmp'
+    )
+    
+    # Test parameters
+    p.test = DotMap(
+                    # Trainer seed
+                    seed=10
     )
 
     return p
