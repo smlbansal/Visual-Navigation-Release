@@ -20,7 +20,7 @@ class Control_Pipeline_v0(Control_Pipeline):
             a known system_dynamics model to plan a dynamically
             feasible trajectory. """
 
-    def __init__(self, system_dynamics, params):
+    def __init__(self, system_dynamics, params, precompute=True):
         self.system_dynamics = system_dynamics
         self.params = params
         self.traj_spline = params._spline(dt=params.dt,
@@ -32,20 +32,31 @@ class Control_Pipeline_v0(Control_Pipeline):
         self.lqr_solver = LQRSolver(T=params.k-1,
                                     dynamics=self.system_dynamics,
                                     cost=self.cost_fn)
+        self.precompute = precompute
+        self.computed = False
 
     def plan(self, start_state, goal_state):
-        p = self.params
-        ts_nk = tf.tile(tf.linspace(0., p.planning_horizon_s,
-                                    p.k)[None], [p.n, 1])
-        self.traj_spline.fit(start_state=start_state, goal_state=goal_state,
-                             factors_n2=None)
-        self.traj_spline.eval_spline(ts_nk, calculate_speeds=False)
-        start_state_n = State.init_state_from_trajectory_time_index(
-                                    self.traj_spline, t=0)
-        lqr_res = self.lqr_solver.lqr(start_state_n, self.traj_spline,
-                                      verbose=False)
-        self.traj_opt = lqr_res['trajectory_opt']
-        return self.traj_opt
+        if self.precompute and self.computed:
+            assert(self.traj_spline.check_start_goal_equivalence(self.start_state,
+                                                                 self.goal_state,
+                                                                 start_state,
+                                                                 goal_state))
+            return self.traj_opt
+        else:
+            self.start_state, self.goal_state = start_state, goal_state
+            p = self.params
+            ts_nk = tf.tile(tf.linspace(0., p.planning_horizon_s,
+                                        p.k)[None], [p.n, 1])
+            self.traj_spline.fit(start_state=start_state, goal_state=goal_state,
+                                 factors_n2=None)
+            self.traj_spline.eval_spline(ts_nk, calculate_speeds=False)
+            start_state_n = State.init_state_from_trajectory_time_index(
+                                        self.traj_spline, t=0)
+            lqr_res = self.lqr_solver.lqr(start_state_n, self.traj_spline,
+                                          verbose=False)
+            self.traj_opt = lqr_res['trajectory_opt']
+            self.computed = True
+            return self.traj_opt
 
     def render(self, axs, start_state, waypt_state, freq=4, obstacle_map=None):
         assert(len(axs) == 2)

@@ -6,7 +6,8 @@ class Planner:
         self.params = params
         self.control_pipeline = params._control_pipeline(
                                     system_dynamics=self.system_dynamics,
-                                    params=params)
+                                    params=params,
+                                    **params.control_pipeline_params)
 
     def optimize(self, start_state, vf=0.):
         """ Optimize the objective over a trajectory

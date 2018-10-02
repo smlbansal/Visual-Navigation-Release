@@ -93,6 +93,50 @@ class Spline3rdOrder(Spline):
                 self._speed_nk1 = speed_nk[:, :, None]
                 self._angular_speed_nk1 = angular_speed_nk[:, :, None]
 
+    @staticmethod
+    def check_start_goal_equivalence(start_state_old, goal_state_old, start_state_new,
+                                     goal_state_new):
+        """ A utility function that checks whether start_state_old,
+        goal_state_old imply the same spline constraints as those implied by
+        start_state_new, goal_state_new. Useful for checking that a
+        precomputed spline on the old start and goal will work on new start
+        and goal."""
+        start_old_pos_nk2 = start_state_old.position_nk2()
+        start_old_heading_nk1 = start_state_old.heading_nk1()
+        start_old_speed_nk1 = start_state_old.speed_nk1()
+
+        start_new_pos_nk2 = start_state_new.position_nk2()
+        start_new_heading_nk1 = start_state_new.heading_nk1()
+        start_new_speed_nk1 = start_state_new.speed_nk1()
+
+        start_pos_match = (tf.norm(start_old_pos_nk2-start_new_pos_nk2).numpy() == 0.0)
+        start_heading_match = (tf.norm(start_old_heading_nk1-start_new_heading_nk1).numpy() == 0.0)
+        start_speed_match = (tf.norm(start_old_speed_nk1-start_new_speed_nk1).numpy() == 0.0)
+
+        start_match = (start_pos_match and start_heading_match and
+                       start_speed_match)
+
+        # Check whether they are the same object
+        if goal_state_old is goal_state_new:
+            return start_match
+        else:
+            goal_old_pos_nk2 = goal_state_old.position_nk2()
+            goal_old_heading_nk1 = goal_state_old.heading_nk1()
+            goal_old_speed_nk1 = goal_state_old.speed_nk1()
+
+            goal_new_pos_nk2 = goal_state_new.position_nk2()
+            goal_new_heading_nk1 = goal_state_new.heading_nk1()
+            goal_new_speed_nk1 = goal_state_new.speed_nk1()
+
+            goal_pos_match = (tf.norm(goal_old_pos_nk2-goal_new_pos_nk2).numpy() == 0.0)
+            goal_heading_match = (tf.norm(goal_old_heading_nk1-goal_new_heading_nk1).numpy() == 0.0)
+            goal_speed_match = (tf.norm(goal_old_speed_nk1-goal_new_speed_nk1).numpy() == 0.0)
+
+            goal_match = (goal_pos_match and goal_heading_match and
+                           goal_speed_match)
+            return start_match and goal_match
+
+
     def render(self, ax, batch_idx=0, freq=4):
         super().render(ax, batch_idx, freq)
         goal_n15 = self.goal_state.position_heading_speed_and_angular_speed_nk5()
