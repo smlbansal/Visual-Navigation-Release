@@ -1,13 +1,13 @@
 import tensorflow as tf
 
 class Dynamics:
-    
+
     def __init__(self, dt, x_dim, u_dim, ctrlBounds=None):
         self._dt = dt
         self._x_dim = x_dim
         self._u_dim = u_dim
         self.ctrlBounds = ctrlBounds
-        
+
         self.isStochastic = False
         self.isNonlinear = True
         self.isContinuous = False
@@ -27,7 +27,7 @@ class Dynamics:
             x_tp1 = self.simulate(x_tp1, u[:,t:t+1])
             x = tf.concat([x, x_tp1], axis=1)
         trajectory = self.assemble_trajectory(x, u, zero_pad_u=True)
-        return trajectory 
+        return trajectory
 
     def affine_factors(self, trajectory_hat):
         A = self.jac_x(trajectory_hat)
@@ -52,4 +52,11 @@ class Dynamics:
     def assemble_trajectory(self, x_nkd, u_nkf):
         """ Assembles a trajectory object from
         states x_nkd and actions u_nkf """
+        raise NotImplementedError
+
+    @staticmethod
+    def init_egocentric_robot_state(dt, n, dtype):
+        """ A utility function to initialize a
+        State object with robot at the origin
+        applying 0 control """
         raise NotImplementedError

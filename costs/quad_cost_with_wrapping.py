@@ -1,12 +1,10 @@
 import tensorflow as tf
-import numpy as np
 from costs.cost import DiscreteCost
+from utils.angle_utils import angle_normalize
 
-def angle_normalize(x):
-    return (((x + np.pi) % (2 * np.pi)) - np.pi)
 
 class QuadraticRegulatorRef(DiscreteCost):
-    """ 
+    """
     Creates a quadratic cost of the form 0.5*[x-x_ref(t) u-u_ref(t)]*C*[x-x_ref(t) u-u_ref(t)]^T + 
     c*[x-x_ref(t) u-u_ref(t)]^T for every time step. However, some dimensions are angles, which are wrapped in 
     the cost.
@@ -28,8 +26,8 @@ class QuadraticRegulatorRef(DiscreteCost):
         self.angle_dims = system._angle_dims
         self.trajectory_ref = trajectory_ref
         n, k, g = trajectory_ref.n, trajectory_ref.k, C.shape[0]
-        self._C_nkgg = tf.broadcast_to(C, (n,k,g,g))
-        self._c_nkg = tf.broadcast_to(c, (n,k,g))
+        self._C_nkgg = tf.broadcast_to(C, (n, k, g, g))
+        self._c_nkg = tf.broadcast_to(c, (n, k, g))
         super().__init__(x_dim=self._x_dim, u_dim=self._u_dim)
 
         self.isTimevarying = False

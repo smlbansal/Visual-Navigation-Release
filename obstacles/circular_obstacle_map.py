@@ -11,24 +11,47 @@ class CircularObstacleMap(ObstacleMap):
         circle centers centers_m2=[[x_1,y_1],...,[x_2,y_2]] and radii radii_m1=[[r1],[r2],...]
         """
         self.map_bounds = map_bounds
-        self.num_obstacles = radii_m1.shape[0]
+        self.num_obstacles = len(radii_m1)
         self.obstacle_centers_m2 = tf.constant(centers_m2, name='circle_centers', dtype=tf.float32)
         self.obstacle_radii_m1 = tf.constant(radii_m1, name='circle_radii', dtype=tf.float32)
-       
-    @staticmethod 
-    def init_random_map(map_bounds, min_n, max_n, min_r, max_r):
+
+    @classmethod
+    def init_random_map(cls, map_bounds, min_n, max_n, min_r, max_r):
         assert(min_r > 0 and max_r > 0)
         num_obstacles = np.random.randint(min_n, max_n+1)
-        return CircularObstacleMap(map_bounds=map_bounds,
-                                   centers_m2=np.random.uniform(map_bounds[0], map_bounds[1], (num_obstacles, 2)),
-                                   radii_m1=np.random.uniform(min_r, max_r, (num_obstacles, 1)))
- 
+        return cls(map_bounds=map_bounds,
+                   centers_m2=np.random.uniform(map_bounds[0], map_bounds[1], (num_obstacles, 2)),
+                   radii_m1=np.random.uniform(min_r, max_r, (num_obstacles, 1)))
+
     def dist_to_nearest_obs(self, pos_nk2):
         with tf.name_scope('dist_to_obs'):
             obstacle_centers_11m2 = self.obstacle_centers_m2[tf.newaxis, tf.newaxis, :, :]
             pos_nk12 = pos_nk2[:, :, tf.newaxis, :]
             distance_to_centers_nkm2 = tf.norm(pos_nk12 - obstacle_centers_11m2, axis=3) - self.obstacle_radii_m1[:, 0]
             return tf.reduce_min(distance_to_centers_nkm2, axis=2)
+
+    def sample_start_and_goal_12(self, rng):
+        """ Samples a random start and goal point on the map
+        of dimension (1,2)"""
+        start_112 = self._sample_point_112(rng)
+        dist_to_obs = tf.squeeze(self.dist_to_nearest_obs(start_112))
+        while dist_to_obs < 0:
+            start_112 = self._sample_point_112(rng)
+            dist_to_obs = tf.squeeze(self.dist_to_nearest_obs(start_112))
+
+        goal_112 = self._sample_point_112(rng)
+        dist_to_obs = tf.squeeze(self.dist_to_nearest_obs(goal_112))
+        while dist_to_obs < 0:
+            goal_112 = self._sample_point_112(rng)
+            dist_to_obs = tf.squeeze(self.dist_to_nearest_obs(goal_112))
+        return start_112[0], goal_112[0]
+
+    def _sample_point_112(self, rng):
+        "Samples an x,y point on the map"""
+        mb = self.map_bounds
+        goal_x = rng.uniform(mb[0][0], mb[1][0])
+        goal_y = rng.uniform(mb[0][1], mb[1][1])
+        return np.array([goal_x, goal_y], dtype=np.float32)[None, None]
 
     def create_occupancy_grid(self, xs_nn, ys_nn):
         """

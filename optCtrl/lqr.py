@@ -65,10 +65,10 @@ class LQRSolver:
         _, J = self.cost.compute_trajectory_cost(trajectory)
         return J
 
-    def lqr(self, x0, trajectory, verbose=True):
+    def lqr(self, start_state, trajectory, verbose=True):
         """
         Perform the iLQR iterations.
-        x0:             Initial state
+        start_state:             Initial state
         trajectory:     The trajectory around which to linearize
         verbose:        Whether to print the status or not
         """
@@ -81,7 +81,7 @@ class LQRSolver:
             J_hist = [J_opt]
 
             k_array, K_array = self.back_propagation(trajectory)
-            trajectory_new = self.apply_control(x0, trajectory, k_array, K_array)
+            trajectory_new = self.apply_control(start_state, trajectory, k_array, K_array)
             # evaluate the cost of this trial
             J_new = self.evaluate_trajectory_cost(trajectory_new)
             J_opt = J_new
@@ -98,12 +98,13 @@ class LQRSolver:
 
             return res_dict
 
-    def apply_control(self, x0_n1d, trajectory, k_array, K_array):
+    def apply_control(self, start_state, trajectory, k_array, K_array):
         """
         apply the derived control to the error system to derive new x and u arrays
         """
         with tf.name_scope('apply_control'):
-            assert(len(x0_n1d.shape) == 3) #[n,1,x_dim]
+            x0_n1d = start_state.position_and_heading_nk3()
+            assert(len(x0_n1d.shape) == 3)  # [n,1,x_dim]
             angle_dims = self.plant_dyn._angle_dims
             n = x0_n1d.shape[0].value
             u_nkf = tf.zeros((n, 0, self.plant_dyn._u_dim), dtype=tf.float32)
@@ -111,17 +112,21 @@ class LQRSolver:
             x_nkd = x0_n1d*1.
             x_tp1_n1d = x0_n1d*1.
             for t in range(self.T):
-                x_ref_n1d, u_ref_n1f = x_ref_nkd[:,t:t+1], u_ref_nkf[:,t:t+1]
+                x_ref_n1d, u_ref_n1f = x_ref_nkd[:, t:t+1], u_ref_nkf[:, t:t+1]
                 error_t = x_tp1_n1d - x_ref_n1d
-                error_t = tf.concat([error_t[:,:, :angle_dims],
-                                        angle_normalize(error_t[:,:, angle_dims:angle_dims+1])], axis=2)
-                fdback = tf.matmul(K_array[t], tf.transpose(error_t, perm=[0,2,1]))
-                u_n1f = u_ref_n1f + tf.transpose(k_array[t] + fdback, perm=[0,2,1])
+                error_t = tf.concat([error_t[:, :, :angle_dims],
+                                     angle_normalize(error_t[:, :, angle_dims:angle_dims+1])], axis=2)
+                fdback = tf.matmul(K_array[t],
+                                   tf.transpose(error_t, perm=[0, 2, 1]))
+                u_n1f = u_ref_n1f + tf.transpose(k_array[t] + fdback,
+                                                 perm=[0, 2, 1])
                 x_tp1_n1d = self.fwdSim(x_tp1_n1d, u_n1f)
                 u_nkf = tf.concat([u_nkf, u_n1f], axis=1)
                 x_nkd = tf.concat([x_nkd, x_tp1_n1d], axis=1)
 
-            trajectory = self.plant_dyn.assemble_trajectory(x_nkd, u_nkf, zero_pad_u=True)
+            trajectory = self.plant_dyn.assemble_trajectory(x_nkd,
+                                                            u_nkf,
+                                                            pad_mode='repeat')
             return trajectory
 
     def forward_propagation(self, x0, u_array):
@@ -176,27 +181,18 @@ class LQRSolver:
                 fdfwd[t] = tf.matmul(-inv_Quu, Qu)
                 fdbck_gain[t] = tf.matmul(-inv_Quu, Qux)
                 fdbck_gain_T = tf.transpose(fdbck_gain[t], perm=[0,2,1])
-                
+
                 # update value function for the previous time step
                 Vxx = Qxx - tf.matmul(tf.matmul(fdbck_gain_T, Quu), fdbck_gain[t])
                 Vx = Qx - tf.matmul(tf.matmul(fdbck_gain_T, Quu), fdfwd[t])
             return fdfwd, fdbck_gain
 
     def build_lqr_system(self, trajectory):
-        f_array = []
-        dfdx_array = []
-        dfdu_array = []
-        dldx_array = []
-        dldu_array = []
-        dldxx_array = []
-        dldux_array = []
-        dlduu_array = []
-
         # First order linearization of the dynamics
         dfdx, dfdu, f = self.plant_dyn.affine_factors(trajectory)
 
         dldxx, dldxu, dlduu, dldx, dldu = self.cost.quad_coeffs(trajectory)
-        dldux = tf.transpose(dldxu, perm=[0,1,3,2])
+        dldux = tf.transpose(dldxu, perm=[0, 1, 3, 2])
 
         lqr_sys = {
             'f': f,
@@ -216,12 +212,6 @@ class LQRSolver:
         to ensure its positive-definite properties
         """
         if self.inv:
-            return tf.matrix_inverse(mat)       
+            return tf.matrix_inverse(mat)
         else:
-            s,u,v = tf.svd(mat)
-            s = tf.nn.relu(s) #truncate negative values
-            #diag_s_inv = np.zeros((v.shape[0], u.shape[1]))
-            #diag_s_inv[0:len(s), 0:len(s)] = np.diag(1. / (s + reg))
-            #return v.dot(diag_s_inv).dot(u.T)
             raise NotImplementedError
-            

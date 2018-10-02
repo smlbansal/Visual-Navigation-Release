@@ -1,25 +1,60 @@
 {
     "seed" : 1,
+    "simulator_seed" : 1,
+    "episode_len" : 200, #in time steps. TODO: Should be specified in seconds
+    "horizon" : 1.5, #seconds
+    "control_horizon" : 1.5, #seconds
     "n" : 5, #batch_size
-    "k" : 20, #num_timesteps
-    "map_bounds"  : [[0.0, 0.0], [4.0, 4.0]], #[[min_x, min_y], [max_x, max_y]]
+    "map_bounds"  : [[-2.0, -2.0], [2.0, 2.0]], #[[min_x, min_y], [max_x, max_y]]
+    "waypoint_bounds" : [[-2.0, -2.0], [2.0, 2.0]],
     "dx" : 0.05, #grid discretization
     "dt" : 0.1,
     "obstacle_map" : {
-                        "name" : "circular",
-                        "centers" : [[2.0, 2.0]],
-                        "radii" : [[0.5]]
+                        "name" : "CircularObstacleMap",
+                        "params" : {
+                                    "centers_m2" : [[2.0, 2.0]],
+                                    "radii_m1" : [[0.5]]
+                                    }
                     },
-    "goal_cost" : 1.0,
-    "power" : 2,
-    "goal" : {
-            "x" : 1.0,
-            "y" : 1.0,
-            "theta" : 0.0
-            },
-    "system" : "dubins_v1",
-    "lqr_coeffs" : {
-                "quad" : [1.0, 1.0, 1.0, 1e-10, 1e-10],
-                "linear" : [0.0, 0.0, 0.0, 0.0, 0.0]
-                }
+    "avoid_obstacle_objective" : {
+                                    "obstacle_margin" : 0.3,
+                                    "power" : 2,
+                                    "obstacle_cost" : 25.0
+                                },
+    "goal_angle_objective" : {
+                                "power" : 1,
+                                "angle_cost" : 25.0
+                            },
+    "goal_distance_objective" : {
+                                "power" : 2,
+                                "goal_cost" : 25.0
+                                }, 
+    "cost" : {
+            "name" : "QuadraticRegulatorRef",
+            "params" : {
+                        "lqr_coeffs" : {
+                            "quad" : [1.0, 1.0, 1.0, 1e-10, 1e-10],
+                            "linear" : [0.0, 0.0, 0.0, 0.0, 0.0]
+                            }
+                        }
+        },
+    "spline" : {
+                "name" : "Spline3rdOrder",
+                "params" : {}
+                },
+    "system_dynamics" : {
+                "name" : "Dubins_v1",
+                "params" : {}
+                },
+    "planner" : {
+                "name" : "SamplingPlanner",
+                "params" : {
+                            "mode" : "random", #dx and num_theta_bins only have effect in uniform mode
+                            "dx" : 0.1,
+                            "num_theta_bins" : 21
+                            }
+                },
+    "control_pipeline" : {
+                            "name" : "Control_Pipeline_v0"
+                        }
 }
