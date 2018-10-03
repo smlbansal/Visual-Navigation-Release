@@ -1,9 +1,10 @@
 import dotmap, commentjson
+import pickle
 import os
 
 def load_params():
-    from params.params_v0 import load_params_v0
-    p = load_params_v0()
+    from params.params_v1 import load_params
+    p = load_params()
     return p
 
 
@@ -24,6 +25,17 @@ def load_params_json(version):
 def mkdir_if_missing(dirname):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
+
+
+def dump_to_pickle_file(filename, data):
+    with open(filename, 'wb') as f:
+        pickle.dump(data, f)
+
+
+def load_from_pickle_file(filename):
+    with open(filename, 'rb') as f:
+        data = pickle.load(f)
+    return data
 
 # Copyright 2016 The TensorFlow Authors All Rights Reserved.
 #

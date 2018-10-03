@@ -2,6 +2,7 @@ import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 import matplotlib.pyplot as plt
 
+
 class Trajectory(object):
     """
     The base class for the trajectory of a ground vehicle.
@@ -87,6 +88,32 @@ class Trajectory(object):
                    angular_speed_nk1=traj.angular_speed_nk1()[batch_idx:batch_idx+1],
                    angular_acceleration_nk1=traj.angular_acceleration_nk1()[batch_idx:batch_idx+1])
 
+    @classmethod
+    def init_from_numpy_repr(cls, dt, n, k, position_nk2, speed_nk1,
+                             acceleration_nk1, heading_nk1, angular_speed_nk1,
+                             angular_acceleration_nk1):
+        """Utility function to initialize a trajectory object from its numpy
+        representation. Useful for loading pickled trajectories"""
+        return cls(dt=dt, n=n, k=k, position_nk2=position_nk2,
+                   speed_nk1=speed_nk1, acceleration_nk1=acceleration_nk1,
+                   heading_nk1=heading_nk1,
+                   angular_speed_nk1=angular_speed_nk1,
+                   angular_acceleration_nk1=angular_acceleration_nk1,
+                   variable=False)
+
+    def to_numpy_repr(self):
+        """Utility function to return a representation of the trajectory using
+        numpy arrays. Useful for pickling trajectories."""
+        numpy_dict = {'dt': self.dt, 'n': self.n, 'k': self.k,
+                      'position_nk2': self.position_nk2().numpy(),
+                      'speed_nk1': self.speed_nk1().numpy(),
+                      'acceleration_nk1': self.acceleration_nk1().numpy(),
+                      'heading_nk1': self.heading_nk1().numpy(),
+                      'angular_speed_nk1': self.angular_speed_nk1().numpy(),
+                      'angular_acceleration_nk1':
+                      self.angular_acceleration_nk1().numpy()}
+        return numpy_dict
+
     @property
     def trainable_variables(self):
         return self.vars
@@ -149,7 +176,7 @@ class Trajectory(object):
         """ Utility function for clipping a trajectory along
         the time axis. Useful for clipping a trajectory within
         a specified horizon."""
-        if self.k == horizon:
+        if self.k <= horizon:
             return
 
         self._position_nk2 = self._position_nk2[:, :horizon]

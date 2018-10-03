@@ -1,6 +1,9 @@
 import tensorflow as tf
 from optCtrl.lqr import LQRSolver
 from trajectory.trajectory import State
+from trajectory.trajectory import Trajectory
+import os
+import utils.utils as utils
 
 
 class Control_Pipeline:
@@ -20,28 +23,118 @@ class Control_Pipeline_v0(Control_Pipeline):
             a known system_dynamics model to plan a dynamically
             feasible trajectory. """
 
-    def __init__(self, system_dynamics, params, precompute=True):
+    def __init__(self, system_dynamics, params, precompute=False,
+                 load_from_pickle_file=True, v0=None):
         self.system_dynamics = system_dynamics
         self.params = params
-        self.traj_spline = params._spline(dt=params.dt,
-                                          n=params.n, k=params.k,
-                                          **params.spline_params)
-        self.cost_fn = params._cost(trajectory_ref=self.traj_spline,
-                                    system=self.system_dynamics,
-                                    **params.cost_params)
+        self.precompute = precompute
+        self.load_from_pickle_file = load_from_pickle_file
+        self.computed = False
+        self.v0 = v0
+        init_pipeline = True
+        if precompute and load_from_pickle_file:
+            filename = self._data_file_name()
+            if os.path.exists(filename):
+                self._load_control_pipeline_data()
+                init_pipeline = False
+                self.cost_fn = None  # Dont need this since LQR is precomputed
+        if init_pipeline:
+            self.traj_spline = params._spline(dt=params.dt,
+                                              n=params.n, k=params.k,
+                                              **params.spline_params)
+            self.cost_fn = params._cost(trajectory_ref=self.traj_spline,
+                                        system=self.system_dynamics,
+                                        **params.cost_params)
         self.lqr_solver = LQRSolver(T=params.k-1,
                                     dynamics=self.system_dynamics,
                                     cost=self.cost_fn)
-        self.precompute = precompute
-        self.computed = False
+
+    def _data_file_name(self):
+        base_dir = './data/control_pipelines/v0'
+        utils.mkdir_if_missing(base_dir)
+        p = self.params
+        waypt_bounds = p.waypoint_bounds
+        filename = p.planner_params['mode']
+        if p.planner_params['mode'] == 'random':
+            filename += '_%d'%(p.seed)
+        filename += '_%.03f_%.03f_%.03f_%.03f'%(waypt_bounds[0][0],
+                                                waypt_bounds[0][1],
+                                                waypt_bounds[1][0],
+                                                waypt_bounds[1][1])
+        filename += '_%.03f_%d'%(p.planner_params['dx'],
+                                 p.planner_params['num_theta_bins'])
+
+        filename += '_velocity_%.04f.pkl'%(self.v0)
+        filename = os.path.join(base_dir, filename)
+        return filename
+
+    def _load_control_pipeline_data(self):
+        filename = self._data_file_name()
+        data = utils.load_from_pickle_file(filename)
+        self.start_state = State.init_from_numpy_repr(**data['start_state'])
+        self.goal_state = State.init_from_numpy_repr(**data['goal_state'])
+
+        self.traj_spline = Trajectory.init_from_numpy_repr(**data['traj_spline'])
+        self.traj_opt = Trajectory.init_from_numpy_repr(**data['lqr_res']['traj_opt'])
+        k_array_opt = [tf.constant(x, dtype=tf.float32) for x in
+                       data['lqr_res']['k_array_opt']]
+        K_array_opt = [tf.constant(x, dtype=tf.float32) for x in
+                       data['lqr_res']['K_array_opt']]
+        J_hist = [tf.constant(x, dtype=tf.float32) for x in
+                  data['lqr_res']['J_hist']]
+        self.lqr_res = {'trajectory_opt': self.traj_opt,
+                        'k_array_opt': k_array_opt,
+                        'K_array_opt': K_array_opt,
+                        'J_hist': J_hist}
+        self.computed = True
+
+    def _save_control_pipeline_data(self, start_state, goal_state, traj_spline,
+                                    lqr_res):
+        filename = self._data_file_name()
+        data = self._prepare_control_pipeline_data_for_saving(start_state,
+                                                              goal_state,
+                                                              traj_spline,
+                                                              lqr_res)
+        utils.dump_to_pickle_file(filename=filename, data=data)
+
+    def _prepare_control_pipeline_data_for_saving(self, start_state,
+                                                  goal_state, traj_spline,
+                                                  lqr_res):
+        start_state_data = start_state.to_numpy_repr()
+        goal_state_data = goal_state.to_numpy_repr()
+        traj_spline_data = traj_spline.to_numpy_repr()
+        traj_opt_data = lqr_res['trajectory_opt'].to_numpy_repr()
+        k_array_opt_data = [x.numpy() for x in lqr_res['k_array_opt']]
+        K_array_opt_data = [x.numpy() for x in lqr_res['K_array_opt']]
+        J_hist_data = [x.numpy() for x in lqr_res['J_hist']]
+        data = {'start_state': start_state_data,
+                'goal_state': goal_state_data,
+                'traj_spline': traj_spline_data,
+                'lqr_res': {'traj_opt': traj_opt_data,
+                            'k_array_opt': k_array_opt_data,
+                            'K_array_opt': K_array_opt_data,
+                            'J_hist': J_hist_data}}
+        return data
 
     def plan(self, start_state, goal_state):
         if self.precompute and self.computed:
-            assert(self.traj_spline.check_start_goal_equivalence(self.start_state,
-                                                                 self.goal_state,
-                                                                 start_state,
-                                                                 goal_state))
-            return self.traj_opt
+            if self.params._spline.check_start_goal_equivalence(self.start_state,
+                                                                self.goal_state,
+                                                                start_state,
+                                                                goal_state):
+                self.traj_plot = self.traj_opt
+                return self.traj_opt
+            else:
+                # apply the precomputed LQR feedback matrices on the current
+                # state
+                k_array = self.lqr_res['k_array_opt']
+                K_array = self.lqr_res['K_array_opt']
+                trajectory_new = self.lqr_solver.apply_control(start_state,
+                                                               self.traj_spline,
+                                                               k_array,
+                                                               K_array)
+                self.traj_plot = trajectory_new
+                return trajectory_new
         else:
             self.start_state, self.goal_state = start_state, goal_state
             p = self.params
@@ -52,10 +145,15 @@ class Control_Pipeline_v0(Control_Pipeline):
             self.traj_spline.eval_spline(ts_nk, calculate_speeds=False)
             start_state_n = State.init_state_from_trajectory_time_index(
                                         self.traj_spline, t=0)
-            lqr_res = self.lqr_solver.lqr(start_state_n, self.traj_spline,
-                                          verbose=False)
-            self.traj_opt = lqr_res['trajectory_opt']
+            self.lqr_res = self.lqr_solver.lqr(start_state_n, self.traj_spline,
+                                               verbose=False)
+            self.traj_opt = self.lqr_res['trajectory_opt']
+            self.traj_plot = self.traj_opt
             self.computed = True
+            if self.precompute and self.load_from_pickle_file:
+                self._save_control_pipeline_data(start_state, goal_state,
+                                                 self.traj_spline,
+                                                 self.lqr_res)
             return self.traj_opt
 
     def render(self, axs, start_state, waypt_state, freq=4, obstacle_map=None):

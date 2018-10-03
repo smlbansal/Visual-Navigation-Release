@@ -33,7 +33,7 @@ class VoxelMap(object):
 
         lower_voxel_indices_nk2_xy = tf.cast(lower_voxel_float_nk2, dtype=tf.int32)
         upper_voxel_indices_nk2_xy = tf.cast(upper_voxel_float_nk2, dtype=tf.int32)
-        
+ 
         # Voxel indices for 4 corner voxels. Note that indices are stacked out of order for voxel_indices11 to make
         # sure that the first element along axis2 represents y-value (since the voxel map's first dimension is y and
         # not x).

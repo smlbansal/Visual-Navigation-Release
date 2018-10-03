@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 from utils import utils
 
-
 def simulate(params):
     num_tests_per_map = 1
     num_maps = 4

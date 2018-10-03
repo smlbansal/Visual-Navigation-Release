@@ -25,12 +25,16 @@ class Planner:
 
         start_state = sys.to_egocentric_coordinates(start_state,
                                                     start_state)
-        trajectory = self.control_pipeline.plan(start_state,
-                                                waypt_state)
+        control_pipeline = self._choose_control_pipeline(start_state)
+        trajectory = control_pipeline.plan(start_state,
+                                           waypt_state)
         trajectory = sys.to_world_coordinates(global_start_state,
                                               trajectory)
         obj_val = self.obj_fn.evaluate_function(trajectory)
         return obj_val, trajectory
+
+    def _choose_control_pipeline(self, start_state):
+        return self.control_pipeline
 
     def render(self, axs, start_state, waypt_state, freq=4, obstacle_map=None):
         self.control_pipeline.render(axs, start_state, waypt_state, freq,

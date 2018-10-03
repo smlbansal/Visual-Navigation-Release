@@ -4,14 +4,13 @@ import numpy as np
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from obstacles.circular_obstacle_map import CircularObstacleMap
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
-from planners.sampling_planner import SamplingPlanner
-from systems.dubins_v1 import Dubins_v1
+from planners.sampling_planner_v1 import SamplingPlanner_v1
 from systems.dubins_v2 import Dubins_v2
 from control_pipelines.control_pipeline import Control_Pipeline_v0
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 
 
-def load_params_v0():
+def load_params():
     p = DotMap()
     p.seed = 1  # for tf and numpy seeding
     p.simulator_seed = 1
@@ -19,9 +18,9 @@ def load_params_v0():
     p.dx = 0.05  # grid discretization
 
     # [[min_x, min_y], [max_x, max_y]]
-    p.map_bounds = [[0.0, 0.0], [4.0, 4.0]]
+    p.map_bounds = [[0.0, 0.0], [8.0, 8.0]]
     # in egocentric coordinates
-    p.waypoint_bounds = [[-1.0, -1.0], [1.0, 1.0]]
+    p.waypoint_bounds = [[-.2, -.2], [.2, .2]]
 
     # Map Origin and size
     origin_x = int(p.map_bounds[0][0]/p.dx)
@@ -34,7 +33,7 @@ def load_params_v0():
     p.dt = .01  # time discretization
 
     # Horizons in seconds
-    p.episode_horizon_s = 1
+    p.episode_horizon_s = 20
     p.planning_horizon_s = .15
     p.control_horizon_s = .15
 
@@ -57,8 +56,8 @@ def load_params_v0():
     p._cost = QuadraticRegulatorRef
     p._spline = Spline3rdOrder
     p._obstacle_map = CircularObstacleMap
-    p._system_dynamics = Dubins_v1
-    p._planner = SamplingPlanner
+    p._system_dynamics = Dubins_v2
+    p._planner = SamplingPlanner_v1
     p._control_pipeline = Control_Pipeline_v0
     p._simulator = CircularObstacleMapSimulator
 
@@ -74,27 +73,34 @@ def load_params_v0():
 
     centers_m2 = [[2.0, 2.0]]
     radii_m1 = [[.5]]
-    p._obstacle_map_params = {'centers_m2': centers_m2,
-                              'radii_m1': radii_m1}
+    p.obstacle_map_params = {'centers_m2': centers_m2,
+                             'radii_m1': radii_m1}
+
+    # Based on Turtlebot parameters
+    p.system_dynamics_params = {'v_bounds': [0.0, .6],
+                                'w_bounds': [-1.1, 1.1]}
 
     # dx and num_theta_bins only have effect in uniform sampling mode
-    dx = .1
+    dx = .01
     num_theta_bins = 21
-    precompute = False
-    p.planner_params = {'mode': 'random',
+    precompute = True
+    velocity_disc = .01  # discretization of velocity for control pipeline
+    p.planner_params = {'mode': 'uniform',
                         'dx': dx,  # discretization of the waypoint grid
                         'num_theta_bins': num_theta_bins,
-                        'precompute': precompute}
+                        'precompute': precompute,
+                        'velocity_disc': velocity_disc}
 
     # Check implied batch size for uniform sampling
-    if p._planner is SamplingPlanner and p.planner_params['mode'] == 'uniform':
+    if p.planner_params['mode'] == 'uniform':
         x0, y0 = p.waypoint_bounds[0]
         xf, yf = p.waypoint_bounds[1]
         nx = int((xf-x0)/dx)
         ny = int((yf-y0)/dx)
         p.n = int(nx*ny*num_theta_bins)
 
-    p.control_pipeline_params = {'precompute': precompute}
+    p.control_pipeline_params = {'precompute': precompute,
+                                 'load_from_pickle_file': True}
     p.simulator_params = {'goal_cutoff_dist': .3,
                           'goal_dist_norm': 'l2'}
 

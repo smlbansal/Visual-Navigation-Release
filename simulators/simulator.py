@@ -99,7 +99,7 @@ class Simulator:
         p = self.params
         if obstacle_params is None:
             return p._obstacle_map(map_bounds=p.map_bounds,
-                                   **p._obstacle_map_params)
+                                   **p.obstacle_map_params)
         else:
             return p._obstacle_map.init_random_map(map_bounds=p.map_bounds,
                                                    min_n=obstacle_params['min_n'],
@@ -109,7 +109,7 @@ class Simulator:
 
     def _init_system_dynamics(self):
         p = self.params
-        return p._system_dynamics(dt=p.dt)
+        return p._system_dynamics(dt=p.dt, **p.system_dynamics_params)
 
     def _init_obj_fn(self):
         p = self.params

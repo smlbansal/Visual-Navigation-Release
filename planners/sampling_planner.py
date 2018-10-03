@@ -12,14 +12,17 @@ class SamplingPlanner(Planner):
                  obj_fn, params, mode='random', precompute=False, **kwargs):
         super().__init__(system_dynamics, obj_fn, params)
         self.mode = mode
-        assert(precompute is False)
-        self.precompute, self.computed = precompute, False
+        self.precompute = precompute
         self.kwargs = kwargs
+
+        if precompute:
+            self.waypt_egocentric_state_n = None
+            self.waypt_egocentric_state_n = self._sample_waypoints()
 
     def optimize(self, start_state, vf=0.):
         p = self.params
         start_state_n = State.broadcast_batch_size_to(start_state, p.n)
-        waypt_state_n = self._sample_waypoints(vf=vf, state_n=start_state_n)
+        waypt_state_n = self._sample_waypoints(vf=vf)
         obj_vals, trajectory = self.eval_objective(start_state_n,
                                                    waypt_state_n)
         min_idx = tf.argmin(obj_vals)
@@ -30,10 +33,10 @@ class SamplingPlanner(Planner):
         min_cost = obj_vals[min_idx]
         return min_waypt, min_traj, min_cost
 
-    def _sample_waypoints(self, state_n, vf=0.):
+    def _sample_waypoints(self, vf=0.):
         """ Samples waypoints. Waypoint_bounds is assumed to be specified in
         egocentric coordinates."""
-        if self.precompute and self.computed:
+        if self.precompute and self.waypt_egocentric_state_n is not None:
             return self.waypt_egocentric_state_n
         else:
             waypoint_bounds = self.params.waypoint_bounds
@@ -62,9 +65,8 @@ class SamplingPlanner(Planner):
 
             vf = tf.ones((n, 1), dtype=tf.float32)*vf
             waypt_pos_n2 = tf.concat([wx, wy], axis=1)
-            self.waypt_egocentric_state_n = State(dt=self.params.dt, n=n, k=1,
+            waypt_egocentric_state_n = State(dt=self.params.dt, n=n, k=1,
                                              position_nk2=waypt_pos_n2[:, None],
                                              speed_nk1=vf[:, None],
                                              heading_nk1=wt[:, None], variable=True)
-            self.computed = True
-            return self.waypt_egocentric_state_n
+            return waypt_egocentric_state_n
