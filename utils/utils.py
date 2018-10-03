@@ -1,10 +1,13 @@
-import dotmap, commentjson
+import dotmap
 import pickle
 import os
+import importlib
 
-def load_params():
-    from params.params_v1 import load_params
-    p = load_params()
+
+def load_params(version):
+    module_name = 'params.params_{}'.format(version)
+    params = importlib.import_module(module_name)
+    p = params.load_params()
     return p
 
 
@@ -13,8 +16,9 @@ def load_params_json(version):
     ./params/params_version.json
     into a dotmap object
     """
+    import commentjson
     base_dir = './params'
-    filename = '%s/params_%s.json'%(base_dir, version)
+    filename = '{}/params_{}.json'.format(base_dir, version)
     assert(os.path.exists(filename))
     with open(filename) as f:
         params = commentjson.load(f)
@@ -51,6 +55,7 @@ def load_from_pickle_file(filename):
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+
 
 def subplot2(plt, Y_X, sz_y_sz_x=(10, 10), space_y_x=(0.1, 0.1), T=False):
     Y, X = Y_X

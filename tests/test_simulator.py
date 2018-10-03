@@ -4,20 +4,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 from utils import utils
+import argparse
+
 
 def simulate(params):
-    num_tests_per_map = 1
-    num_maps = 4
-    num_plots = num_tests_per_map * num_maps
-
-    p = utils.load_params()
+    p = utils.load_params(params)
     tf.set_random_seed(p.seed)
     np.random.seed(p.seed)
     obstacle_params = {'min_n': 2, 'max_n': 3, 'min_r': .15, 'max_r': .5}
     sim = p._simulator(params=p, **p.simulator_params)
 
+    num_tests_per_map = p.control_validation_params.num_tests_per_map
+    num_maps = p.control_validation_params.num_maps
+    num_plots = num_tests_per_map * num_maps
+    p.control_validation_params.num_maps
     sqrt_num_plots = int(np.ceil(np.sqrt(num_plots)))
-    fig, _, axs = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots), (8, 8), (.4, .4))
+    fig, _, axs = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
+                                 (8, 8), (.4, .4))
     axs = axs[::-1]
     for i in range(num_maps):
             sim.reset(obstacle_params=obstacle_params)
@@ -33,8 +36,11 @@ def simulate(params):
 
 def main():
     plt.style.use('ggplot')
-    simulate('v0')
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--params', help='parameter version number', default='v1')
+    args = parser.parse_args()
+    simulate(params=args.params)
 
 
 if __name__ == '__main__':
-    main()
+        main()

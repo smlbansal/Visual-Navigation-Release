@@ -24,13 +24,15 @@ class Control_Pipeline_v0(Control_Pipeline):
             feasible trajectory. """
 
     def __init__(self, system_dynamics, params, precompute=False,
-                 load_from_pickle_file=True, v0=None):
+                 load_from_pickle_file=True, bin_velocity=True, v0=None):
         self.system_dynamics = system_dynamics
         self.params = params
         self.precompute = precompute
         self.load_from_pickle_file = load_from_pickle_file
-        self.computed = False
+        self.bin_velocity = bin_velocity
         self.v0 = v0
+
+        self.computed = False
         init_pipeline = True
         if precompute and load_from_pickle_file:
             filename = self._data_file_name()
@@ -50,7 +52,8 @@ class Control_Pipeline_v0(Control_Pipeline):
                                     cost=self.cost_fn)
 
     def _data_file_name(self):
-        base_dir = './data/control_pipelines/v0'
+        base_dir = './data/control_pipelines/v0/k_{}_dt_{}'.format(self.params.k,
+                                                                   self.params.dt)
         utils.mkdir_if_missing(base_dir)
         p = self.params
         waypt_bounds = p.waypoint_bounds
@@ -118,10 +121,10 @@ class Control_Pipeline_v0(Control_Pipeline):
 
     def plan(self, start_state, goal_state):
         if self.precompute and self.computed:
-            if self.params._spline.check_start_goal_equivalence(self.start_state,
-                                                                self.goal_state,
-                                                                start_state,
-                                                                goal_state):
+            if self.bin_velocity or self.params._spline.check_start_goal_equivalence(self.start_state,
+                                                                                     self.goal_state,
+                                                                                     start_state,
+                                                                                     goal_state):
                 self.traj_plot = self.traj_opt
                 return self.traj_opt
             else:

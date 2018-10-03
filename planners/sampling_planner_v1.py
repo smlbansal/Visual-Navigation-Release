@@ -10,10 +10,11 @@ class SamplingPlanner_v1(SamplingPlanner):
 
     def __init__(self, system_dynamics,
                  obj_fn, params, mode='random', precompute=True,
-                 velocity_disc=.1, **kwargs):
+                 velocity_disc=.1, bin_velocity=True, **kwargs):
         self.system_dynamics = system_dynamics
         self.obj_fn = obj_fn
         self.params = params
+        self.bin_velocity = bin_velocity
 
         self.mode = mode
         self.kwargs = kwargs

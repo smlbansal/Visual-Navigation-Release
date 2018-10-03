@@ -64,7 +64,6 @@ class Simulator:
             collision_idx = collision_idxs[0]
 
         # Check within goal radius
-
         dist_to_goal_1k = self._dist_to_goal(pos_1k2,
                                              self.goal_state.position_nk2())
         successes = tf.where(tf.less(dist_to_goal_1k,

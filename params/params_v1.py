@@ -20,7 +20,7 @@ def load_params():
     # [[min_x, min_y], [max_x, max_y]]
     p.map_bounds = [[0.0, 0.0], [8.0, 8.0]]
     # in egocentric coordinates
-    p.waypoint_bounds = [[-.2, -.2], [.2, .2]]
+    p.waypoint_bounds = [[-1., 0.0], [1., 1.]]
 
     # Map Origin and size
     origin_x = int(p.map_bounds[0][0]/p.dx)
@@ -34,8 +34,8 @@ def load_params():
 
     # Horizons in seconds
     p.episode_horizon_s = 20
-    p.planning_horizon_s = .15
-    p.control_horizon_s = .15
+    p.planning_horizon_s = 1.5  # .15
+    p.control_horizon_s = 1.5  # .15
 
     # Horizons in timesteps
     p.episode_horizon = int(np.ceil(p.episode_horizon_s/p.dt))
@@ -81,7 +81,7 @@ def load_params():
                                 'w_bounds': [-1.1, 1.1]}
 
     # dx and num_theta_bins only have effect in uniform sampling mode
-    dx = .01
+    dx = .1
     num_theta_bins = 21
     precompute = True
     velocity_disc = .01  # discretization of velocity for control pipeline
@@ -100,8 +100,11 @@ def load_params():
         p.n = int(nx*ny*num_theta_bins)
 
     p.control_pipeline_params = {'precompute': precompute,
-                                 'load_from_pickle_file': True}
+                                 'load_from_pickle_file': True,
+                                 'bin_velocity': True}
     p.simulator_params = {'goal_cutoff_dist': .3,
                           'goal_dist_norm': 'l2'}
 
+    p.control_validation_params = DotMap(num_tests_per_map=1,
+                                         num_maps=4)
     return p
