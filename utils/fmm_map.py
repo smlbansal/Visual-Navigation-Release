@@ -92,12 +92,12 @@ class FmmMap(object):
         return goal_array_mn
 
     @classmethod
-    def create_fmm_map_based_on_goal_position(cls, goal_position_12, map_size_2, dx=1,
+    def create_fmm_map_based_on_goal_position(cls, goal_positions_n2, map_size_2, dx=1,
                                               map_origin_2=tf.zeros([2], dtype=tf.float32), mask_grid_mn=None):
         """
         Create a fmm map based on a given goal position.
         """
-        goal_array_mn = FmmMap._create_fmm_map_goal_array_mn(goal_position_12,
+        goal_array_mn = FmmMap._create_fmm_map_goal_array_mn(goal_positions_n2,
                                                             map_size_2, dx,
                                                             map_origin_2,
                                                             mask_grid_mn)

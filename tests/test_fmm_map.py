@@ -8,9 +8,9 @@ def test_fmm_map():
     scale = 0.5
     grid_size = np.array([10, 10])
 
-    goal_position_12 = np.array([[2.5, 2.5]])
+    goal_position_n2 = np.array([[2.5, 2.5]])
 
-    fmm_map = FmmMap.create_fmm_map_based_on_goal_position(goal_position_12=goal_position_12,
+    fmm_map = FmmMap.create_fmm_map_based_on_goal_position(goal_positions_n2=goal_position_n2,
                                                            map_size_2=grid_size,
                                                            dx=scale
                                                            )
