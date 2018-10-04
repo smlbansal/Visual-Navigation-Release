@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe
 import matplotlib.pyplot as plt
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from trajectory.trajectory import State
