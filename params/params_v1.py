@@ -67,7 +67,7 @@ def load_params():
     C = tf.diag(lqr_quad_coeffs, name='lqr_coeffs_quad')
     c = tf.constant(lqr_linear_coeffs, name='lqr_coeffs_linear',
                     dtype=tf.float32)
-    p.cost_params = {'C': C, 'c': c}
+    p.cost_params = {'C_gg': C, 'c_g': c}
 
     p.spline_params = {}
 

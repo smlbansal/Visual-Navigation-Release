@@ -44,7 +44,7 @@ def create_params(cs, rs):
     c = tf.constant(p.lqr_coeffs.linear,
                     name='lqr_coeffs_linear',
                     dtype=tf.float32)
-    p.cost_params = {'C': C, 'c': c}
+    p.cost_params = {'C_gg': C, 'c_g': c}
     p.obstacle_params = {'centers_m2': cs, 'radii_m1': rs}
     p.plant_params = {'dt': p.dt}
     p.spline_params = {}
