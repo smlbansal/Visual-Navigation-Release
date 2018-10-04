@@ -100,16 +100,16 @@ class LQRSolver:
 
     def apply_control(self, start_state, trajectory, k_array, K_array):
         """
-        apply the derived control to the error system to derive new x and u arrays
+        apply the derived control to the error system to derive a new
+        trajectory
         """
         with tf.name_scope('apply_control'):
-            x0_n1d = start_state.position_and_heading_nk3()
+            x0_n1d, _ = self.plant_dyn.parse_trajectory(start_state)
             assert(len(x0_n1d.shape) == 3)  # [n,1,x_dim]
             angle_dims = self.plant_dyn._angle_dims
-            n = x0_n1d.shape[0].value
-            u_nkf = tf.zeros((n, 0, self.plant_dyn._u_dim), dtype=tf.float32)
+            actions = []
+            states = [x0_n1d*1.]
             x_ref_nkd, u_ref_nkf = self.plant_dyn.parse_trajectory(trajectory)
-            x_nkd = x0_n1d*1.
             x_tp1_n1d = x0_n1d*1.
             for t in range(self.T):
                 x_ref_n1d, u_ref_n1f = x_ref_nkd[:, t:t+1], u_ref_nkf[:, t:t+1]
@@ -121,9 +121,10 @@ class LQRSolver:
                 u_n1f = u_ref_n1f + tf.transpose(k_array[t] + fdback,
                                                  perm=[0, 2, 1])
                 x_tp1_n1d = self.fwdSim(x_tp1_n1d, u_n1f)
-                u_nkf = tf.concat([u_nkf, u_n1f], axis=1)
-                x_nkd = tf.concat([x_nkd, x_tp1_n1d], axis=1)
-
+                actions.append(u_n1f)
+                states.append(x_tp1_n1d)
+            u_nkf = tf.concat(actions, axis=1)
+            x_nkd = tf.concat(states, axis=1)
             trajectory = self.plant_dyn.assemble_trajectory(x_nkd,
                                                             u_nkf,
                                                             pad_mode='repeat')
@@ -140,9 +141,10 @@ class LQRSolver:
 
     def back_propagation(self, trajectory):
         """
-        Back propagation along the given state and control trajectories to solve the Riccati equations for the error 
+        Back propagation along the given state and control trajectories to
+        solve the Riccati equations for the error
         system (delta_x, delta_u, t).
-        Need to approximate the dynamics/costs along the given trajectory. 
+        Need to approximate the dynamics/costs along the given trajectory.
         Dynamics needs a time-varying first-order approximation.
         Costs need time-varying second-order approximation.
         """
@@ -155,24 +157,25 @@ class LQRSolver:
             fdfwd = [None] * self.T
             fdbck_gain = [None] * self.T
 
-            # initialize with the terminal cost parameters to prepare the backpropagation
-            Vxx = lqr_sys['dldxx'][:,-1]
-            Vx = lqr_sys['dldx'][:,-1]
-            Vx = Vx[:,:,None]
+            # initialize with the terminal cost parameters
+            # to prepare the backpropagation
+            Vxx = lqr_sys['dldxx'][:, -1]
+            Vx = lqr_sys['dldx'][:, -1]
+            Vx = Vx[:, :, None]
             for t in reversed(range(self.T)):
-                error_t = lqr_sys['f'][:,t]-x_nkd[:,t+1]
+                error_t = lqr_sys['f'][:, t]-x_nkd[:, t+1]
                 error_t = tf.concat([error_t[:, :angle_dims],
                                     angle_normalize(error_t[:, angle_dims:angle_dims+1])], axis=1)
-                error_t = error_t[:,:,None] 
-                dfdx, dfdu = lqr_sys['dfdx'][:,t], lqr_sys['dfdu'][:,t]
-                dfdx_T, dfdu_T = tf.transpose(dfdx, perm=[0,2,1]), tf.transpose(dfdu, perm=[0,2,1]) #transpose for matrix mult
-                dfdx_T_dot_Vxx ,dfdu_T_dot_Vxx =  tf.matmul(dfdx_T, Vxx), tf.matmul(dfdu_T, Vxx)
-               
-                Qx = lqr_sys['dldx'][:,t][:,:,None] + tf.matmul(dfdx_T, Vx)+ tf.matmul(dfdx_T_dot_Vxx, error_t) 
-                Qu = lqr_sys['dldu'][:,t][:,:,None] + tf.matmul(dfdu_T, Vx) + tf.matmul(dfdu_T_dot_Vxx, error_t)
-                Qxx = lqr_sys['dldxx'][:,t] + tf.matmul(dfdx_T_dot_Vxx, dfdx) 
-                Qux = lqr_sys['dldux'][:,t] + tf.matmul(dfdu_T_dot_Vxx, dfdx) 
-                Quu = lqr_sys['dlduu'][:,t] + tf.matmul(dfdu_T_dot_Vxx, dfdu)
+                error_t = error_t[:, :, None]
+                dfdx, dfdu = lqr_sys['dfdx'][:, t], lqr_sys['dfdu'][:, t]
+                dfdx_T, dfdu_T = tf.transpose(dfdx, perm=[0, 2, 1]), tf.transpose(dfdu, perm=[0, 2, 1]) #transpose for matrix mult
+                dfdx_T_dot_Vxx, dfdu_T_dot_Vxx = tf.matmul(dfdx_T, Vxx), tf.matmul(dfdu_T, Vxx)
+
+                Qx = lqr_sys['dldx'][:, t][:, :, None] + tf.matmul(dfdx_T, Vx)+ tf.matmul(dfdx_T_dot_Vxx, error_t)
+                Qu = lqr_sys['dldu'][:, t][:, :, None] + tf.matmul(dfdu_T, Vx) + tf.matmul(dfdu_T_dot_Vxx, error_t)
+                Qxx = lqr_sys['dldxx'][:, t] + tf.matmul(dfdx_T_dot_Vxx, dfdx)
+                Qux = lqr_sys['dldux'][:, t] + tf.matmul(dfdu_T_dot_Vxx, dfdx)
+                Quu = lqr_sys['dlduu'][:, t] + tf.matmul(dfdu_T_dot_Vxx, dfdu)
 
                 # use regularized inverse for numerical stability
                 inv_Quu = self.regularized_pseudo_inverse_(Quu, reg=self.reg)
@@ -180,7 +183,7 @@ class LQRSolver:
                 # get k and K
                 fdfwd[t] = tf.matmul(-inv_Quu, Qu)
                 fdbck_gain[t] = tf.matmul(-inv_Quu, Qux)
-                fdbck_gain_T = tf.transpose(fdbck_gain[t], perm=[0,2,1])
+                fdbck_gain_T = tf.transpose(fdbck_gain[t], perm=[0, 2, 1])
 
                 # update value function for the previous time step
                 Vxx = Qxx - tf.matmul(tf.matmul(fdbck_gain_T, Quu), fdbck_gain[t])

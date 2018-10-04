@@ -6,7 +6,6 @@ from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimula
 from utils import utils
 import argparse
 
-
 def simulate(params):
     p = utils.load_params(params)
     tf.set_random_seed(p.seed)
