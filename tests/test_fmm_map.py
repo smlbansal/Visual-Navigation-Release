@@ -7,18 +7,18 @@ def test_fmm_map():
     # Create a grid and a function within that grid
     scale = 0.5
     grid_size = np.array([10, 10])
-    
-    goal_position_n2 = np.array([[2.5, 2.5]])
-    
-    fmm_map = FmmMap.create_fmm_map_based_on_goal_position(goal_positions_n2=goal_position_n2,
+
+    goal_position_12 = np.array([[2.5, 2.5]])
+
+    fmm_map = FmmMap.create_fmm_map_based_on_goal_position(goal_position_12=goal_position_12,
                                                            map_size_2=grid_size,
                                                            dx=scale
                                                            )
-  
+
     # Let's have a bunch of points to test the fmm distance and angle map
     test_positions = tf.constant([[[2.0, 3.0], [2.5, 3.0], [3.0, 3.0], [3.0, 2.0], [2.5, 2.0], [2.0, 2.0]]],
                                  dtype=tf.float32)
-  
+
     # Predicted distance and angles
     distances = fmm_map.fmm_distance_map.compute_voxel_function(test_positions, invalid_value=-100.)
     angles = fmm_map.fmm_angle_map.compute_voxel_function(test_positions, invalid_value=-100.)

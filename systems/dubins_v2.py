@@ -18,17 +18,13 @@ class Dubins_v2(Dynamics):
         self.w_bounds = w_bounds
         self._angle_dims = 2
 
-    def simulate(self, x_nk3, u_nk2):
+    def simulate(self, x_nk3, u_nk2, t=None):
         with tf.name_scope('simulate'):
-            x_nk, y_nk, t_nk = x_nk3[:, :, 0], x_nk3[:, :, 1], x_nk3[:, :, 2]
-            vtilde_nk, wtilde_nk = u_nk2[:, :, 0], u_nk2[:, :, 1]
-            v_nk, w_nk = self.s1(vtilde_nk), self.s2(wtilde_nk)
-
-            x_tp1_nk = x_nk + v_nk * tf.cos(t_nk) * self._dt
-            y_tp1_nk = y_nk + v_nk * tf.sin(t_nk) * self._dt
-            t_tp1_nk = t_nk + w_nk * self._dt
-            x_tp1_nk3 = tf.stack([x_tp1_nk, y_tp1_nk, t_tp1_nk], axis=2)
-            return x_tp1_nk3
+            v_nk = self.s1(u_nk2[:, :, 0])
+            delta_x_nk3 = tf.stack([v_nk*tf.cos(x_nk3[:, :, 2]),
+                                    v_nk*tf.sin(x_nk3[:, :, 2]),
+                                    self.s2(u_nk2[:, :, 1])], axis=2)
+            return x_nk3 + self._dt*delta_x_nk3
 
     def jac_x(self, trajectory):
         x_nk3, u_nk2 = self.parse_trajectory(trajectory)

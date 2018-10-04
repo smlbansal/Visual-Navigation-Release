@@ -1,10 +1,8 @@
 import numpy as np
 import tensorflow as tf
 tf.enable_eager_execution()
-import tensorflow.contrib.eager as tfe
 import matplotlib.pyplot as plt
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
-from optCtrl.lqr import LQRSolver
 from systems.dubins_v1 import Dubins_v1
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from utils.fmm_map import FmmMap
@@ -22,11 +20,11 @@ from dotmap import DotMap
 def create_params(cs, rs):
     p = DotMap()
     p.seed = 1
-    p.horizon = 1.5 #seconds
+    p.planning_horizon_s = 1.5  # seconds
     p.n = 3
     p.map_bounds = [[-2.0, -2.0], [2.0, 2.0]]
     p.dx, p.dt = .05, .1
-    p.k = int(np.ceil(p.horizon/p.dt))
+    p.k = int(np.ceil(p.planning_horizon_s/p.dt))
 
     p.lqr_coeffs = DotMap({'quad': [1.0, 1.0, 1.0, 1e-10, 1e-10],
                            'linear': [0.0, 0.0, 0.0, 0.0, 0.0]})
@@ -64,19 +62,18 @@ def test_control_pipeline(visualize=False):
     cs = np.array([[-1.0, -1.5]])
     rs = np.array([[.5]])
 
-    p = create_params(cs,rs)
+    p = create_params(cs, rs)
     np.random.seed(seed=p.seed)
     tf.set_random_seed(seed=p.seed)
-    n, k = p.n, p.k
+    n = p.n
     dt = p.dx
     v0, vf = 0., 0.
 
     goal_pos_12 = np.array([0., 0.])[None]
     goal_pos_n2 = np.repeat(goal_pos_12, n, axis=0)
 
-    
     obstacle_map = p._obstacle_map(map_bounds=p.map_bounds,
-                                    **p.obstacle_params)
+                                   **p.obstacle_params)
     mb = p.map_bounds
     Nx, Ny = int((mb[1][0] - mb[0][0])/p.dx), int((mb[1][1] - mb[0][1])/p.dx)
     xx, yy = np.meshgrid(np.linspace(mb[0][0], mb[1][0], Nx),
@@ -86,14 +83,14 @@ def test_control_pipeline(visualize=False):
                               tf.constant(xx, dtype=tf.float32),
                               tf.constant(yy, dtype=tf.float32))
     fmm_map = FmmMap.create_fmm_map_based_on_goal_position(
-                                goal_positions_n2=goal_pos_n2,
+                                goal_position_12=goal_pos_n2,
                                 map_size_2=np.array([Nx, Ny]),
                                 dx=p.dx,
                                 map_origin_2=np.array([-int(Nx/2), -int(Ny/2)]),  # lower left
                                 mask_grid_mn=obstacle_occupancy_grid)
 
     plant = p._plant(**p.plant_params)
-    
+
     obj_fn = ObjectiveFunction()
 
     obj_fn.add_objective(ObstacleAvoidance(
@@ -114,14 +111,17 @@ def test_control_pipeline(visualize=False):
     start_state = State(dt, n, 1, position_nk2=start_pos_nk2,
                         speed_nk1=start_speed_nk1, variable=False)
 
-    waypt_pos_nk2 = np.array([[-1, -.5], [-.5, -1.], [-.1, 0.]], dtype=np.float32)[:, None]
+    waypt_pos_nk2 = np.array([[-1, -.5], [-.5, -1.], [-.1, 0.]],
+                             dtype=np.float32)[:, None]
     waypt_speed_nk1 = np.array([[vf], [vf], [0.]], dtype=np.float32)[:, None]
     waypt_state = State(dt, n, 1, position_nk2=waypt_pos_nk2,
                         speed_nk1=waypt_speed_nk1, variable=True)
- 
+
     control_pipeline = p._control_pipeline(system_dynamics=plant,
-                                           params=p, **p.control_pipeline_params)
-    trajectory_lqr = control_pipeline.plan(start_state=start_state, goal_state=waypt_state)
+                                           params=p,
+                                           **p.control_pipeline_params)
+    trajectory_lqr = control_pipeline.plan(start_state=start_state,
+                                           goal_state=waypt_state)
 
     # Objective Value
     obj_val = obj_fn.evaluate_function(trajectory_lqr)
@@ -149,37 +149,40 @@ def test_control_pipeline(visualize=False):
         ax = axes[2]
         obstacle_map.render(ax)
         traj_spline.render(ax, batch_idx=0)
-        ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'%
-                     (wpt_13[0], wpt_13[1], wpt_13[2]))
+        ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'.format(wpt_13[0],
+                                                                 wpt_13[1],
+                                                                 wpt_13[2]))
 
         ax = axes[3]
         obstacle_map.render(ax)
         trajectory_lqr.render(ax, batch_idx=0)
-        ax.set_title('LQR Traj, Cost: %.05f'%(obj_val[0]))
+        ax.set_title('LQR Traj, Cost: %.05f'.format(obj_val[0]))
 
         wpt_13 = waypt_n5[1, :3]
         ax = axes[4]
         obstacle_map.render(ax)
         traj_spline.render(ax, batch_idx=1)
-        ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'%
-                    (wpt_13[0], wpt_13[1], wpt_13[2]))
+        ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'.format(wpt_13[0],
+                                                                 wpt_13[1],
+                                                                 wpt_13[2]))
 
         ax = axes[5]
         obstacle_map.render(ax)
         trajectory_lqr.render(ax, batch_idx=1)
-        ax.set_title('LQR Traj, Cost: %.05f'%(obj_val[1]))
+        ax.set_title('LQR Traj, Cost: %.05f'.format(obj_val[1]))
 
         wpt_13 = waypt_n5[2, :3]
         ax = axes[6]
         obstacle_map.render(ax)
         traj_spline.render(ax, batch_idx=2)
-        ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'%
-                     (wpt_13[0], wpt_13[1], wpt_13[2]))
+        ax.set_title('Spline, Wpt: [%.03f, %.03f, %.03f]'.format(wpt_13[0],
+                                                                 wpt_13[1],
+                                                                 wpt_13[2]))
 
         ax = axes[7]
         obstacle_map.render(ax)
         trajectory_lqr.render(ax, batch_idx=2)
-        ax.set_title('LQR Traj, Cost: %.05f'%(obj_val[2]))
+        ax.set_title('LQR Traj, Cost: %.05f'.format(obj_val[2]))
         plt.show()
     else:
         print('Run with visualize=True to visualize the control pipeline')

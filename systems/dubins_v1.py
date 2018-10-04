@@ -14,33 +14,24 @@ class Dubins_v1(Dynamics):
         super().__init__(dt, x_dim=3, u_dim=2)
         self._angle_dims = 2
 
-    def simulate(self, x_nk3, u_nk2):
+    def simulate(self, x_nk3, u_nk2, t=None):
         with tf.name_scope('simulate'):
-            x_nk, y_nk, t_nk = x_nk3[:, :, 0], x_nk3[:, :, 1], x_nk3[:, :, 2]
-            v_nk, w_nk = u_nk2[:, :, 0], u_nk2[:, :, 1]
-
-            x_tp1_nk = x_nk + v_nk * tf.cos(t_nk) * self._dt
-            y_tp1_nk = y_nk + v_nk * tf.sin(t_nk) * self._dt
-            t_tp1_nk = t_nk + w_nk * self._dt
-            x_tp1_nk3 = tf.stack([x_tp1_nk, y_tp1_nk, t_tp1_nk], axis=2)
-            return x_tp1_nk3
+            delta_x_nk3 = tf.stack([u_nk2[:, :, 0]*tf.cos(x_nk3[:, :, 2]),
+                                    u_nk2[:, :, 0]*tf.sin(x_nk3[:, :, 2]),
+                                    u_nk2[:, :, 1]], axis=2)
+            return x_nk3 + self._dt*delta_x_nk3
 
     def jac_x(self, trajectory):
         x_nk3, u_nk2 = self.parse_trajectory(trajectory)
         with tf.name_scope('jac_x'):
-            v_nk, t_nk = u_nk2[:, :, 0], x_nk3[:, :, 2]
-            ones_nk = tf.ones(shape=v_nk.shape, dtype=tf.float32)
-            zeros_nk = tf.zeros(shape=v_nk.shape, dtype=tf.float32)
-            a13_nk = -v_nk*tf.sin(t_nk)*self._dt
-            a23_nk = v_nk*tf.cos(t_nk)*self._dt
-
-            # Columns
-            a1_nk3 = tf.stack([ones_nk, zeros_nk, zeros_nk], axis=2)
-            a2_nk3 = tf.stack([zeros_nk, ones_nk, zeros_nk], axis=2)
-            a3_nk3 = tf.stack([a13_nk, a23_nk, ones_nk], axis=2)
-
-            A_nk33 = tf.stack([a1_nk3, a2_nk3, a3_nk3], axis=3)
-            return A_nk33
+            # Rightmost Column
+            update_nk1 = tf.stack([-u_nk2[:, :, 0]*tf.sin(x_nk3[:, :, 2]),
+                                   u_nk2[:, :, 0]*tf.cos(x_nk3[:, :, 2]),
+                                   tf.zeros(shape=x_nk3.shape[:2])], axis=2)
+            update_nk3 = tf.stack([tf.zeros_like(x_nk3),
+                                   tf.zeros_like(x_nk3),
+                                   update_nk1], axis=3)
+            return tf.eye(3, batch_shape=x_nk3.shape[:2]) + self._dt*update_nk3
 
     def jac_u(self, trajectory):
         x_nk3, u_nk2 = self.parse_trajectory(trajectory)

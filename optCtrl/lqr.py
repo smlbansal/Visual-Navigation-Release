@@ -17,7 +17,13 @@ from utils.angle_utils import angle_normalize
 
 class LQRSolver:
     """
-    Discrete time finite horizon LQR solver
+    Discrete time finite horizon LQR solver. Dimensions used throughout this
+    class are:
+            n- batch size
+            d- x_dim
+            f- u_dim
+            T- self.T
+
     """
     def __init__(self, T, dynamics, cost):
 
@@ -30,17 +36,6 @@ class LQRSolver:
         self.T = T
         self.plant_dyn = dynamics
         self.cost = cost
-
-        """
-        Gradient of dynamics and costs with respect to state/control
-        """
-        self.plant_dyn_dx = None  # Df/Dx
-        self.plant_dyn_du = None  # Df/Du
-        self.cost_dx = None  # Dl/Dx
-        self.cost_du = None  # Dl/Du
-        self.cost_dxx = None  # D2l/Dx2
-        self.cost_duu = None  # D2l/Du2
-        self.cost_dux = None  # D2l/DuDx
 
         # Forward simulation function for dynamics
         if dynamics.isStochastic:
@@ -77,31 +72,37 @@ class LQRSolver:
             self.reg = 1
 
             # initialize current trajectory cost
-            J_opt = self.evaluate_trajectory_cost(trajectory)
-            J_hist = [J_opt]
+            J_opt_n = self.evaluate_trajectory_cost(trajectory)
+            J_hist = [J_opt_n]
 
-            k_array, K_array = self.back_propagation(trajectory)
-            trajectory_new = self.apply_control(start_state, trajectory, k_array, K_array)
+            # k_array, and K_array are python lists length self.T
+            # each element in k_array and K_array are tensors size
+            # (n, u_dim, 1) and (n, u_dim, x_dim) respectively
+            k_array_Tnf1, K_array_Tnfd = self.back_propagation(trajectory)
+            trajectory_new = self.apply_control(start_state, trajectory,
+                                                k_array_Tnf1, K_array_Tnfd)
+
             # evaluate the cost of this trial
-            J_new = self.evaluate_trajectory_cost(trajectory_new)
-            J_opt = J_new
-
-            J_hist.append(J_opt)
+            J_new_n = self.evaluate_trajectory_cost(trajectory_new)
+            J_hist.append(J_new_n)
 
             # prepare result dictionary
             res_dict = {
                 'J_hist': J_hist,
                 'trajectory_opt': trajectory_new,
-                'k_array_opt': k_array,
-                'K_array_opt': K_array
+                'k_array_opt': k_array_Tnf1,
+                'K_array_opt': K_array_Tnfd
             }
 
             return res_dict
 
-    def apply_control(self, start_state, trajectory, k_array, K_array):
+    def apply_control(self, start_state, trajectory,
+                      k_array_Tnf1, K_array_Tnfd):
         """
         apply the derived control to the error system to derive a new
-        trajectory
+        trajectory. Here k_array_Tnf1 and K_aaray_Tnfd are python lists of
+        length self.T. Each element of k_array_Tnf1 and K_array_Tnfd is a
+        tensor of dimension (n, f, 1) and (n, f, d) respectively.
         """
         with tf.name_scope('apply_control'):
             x0_n1d, _ = self.plant_dyn.parse_trajectory(start_state)
@@ -116,9 +117,9 @@ class LQRSolver:
                 error_t = x_tp1_n1d - x_ref_n1d
                 error_t = tf.concat([error_t[:, :, :angle_dims],
                                      angle_normalize(error_t[:, :, angle_dims:angle_dims+1])], axis=2)
-                fdback = tf.matmul(K_array[t],
+                fdback = tf.matmul(K_array_Tnfd[t],
                                    tf.transpose(error_t, perm=[0, 2, 1]))
-                u_n1f = u_ref_n1f + tf.transpose(k_array[t] + fdback,
+                u_n1f = u_ref_n1f + tf.transpose(k_array_Tnf1[t] + fdback,
                                                  perm=[0, 2, 1])
                 x_tp1_n1d = self.fwdSim(x_tp1_n1d, u_n1f)
                 actions.append(u_n1f)
@@ -130,82 +131,87 @@ class LQRSolver:
                                                             pad_mode='repeat')
             return trajectory
 
-    def forward_propagation(self, x0, u_array):
-        """
-        Apply the forward dynamics to have a trajectory starting from x0 by applying u
-        u_array is an array of control signal to apply
-        """
-        trajX_array, trajU_array, tau = self.plant_dyn.apply_controlSeq(x0, controlSeq=u_array.T,
-                                                                        dynamics_sim=self.fwdSim)
-        return trajX_array[:, :, 0].T
-
     def back_propagation(self, trajectory):
         """
-        Back propagation along the given state and control trajectories to
-        solve the Riccati equations for the error
+        Back propagation along the given trajectory (state and control),
+        solving the Riccati equations for the error
         system (delta_x, delta_u, t).
         Need to approximate the dynamics/costs along the given trajectory.
         Dynamics needs a time-varying first-order approximation.
-        Costs need time-varying second-order approximation.
-        """
+        Costs need time-varying second-order approximation. """
         with tf.name_scope('back_prop'):
             angle_dims = self.plant_dyn._angle_dims
             lqr_sys = self.build_lqr_system(trajectory)
             x_nkd, u_nkf = self.plant_dyn.parse_trajectory(trajectory)
 
-            # k and K
-            fdfwd = [None] * self.T
-            fdbck_gain = [None] * self.T
+            # k (feedforward) and K (feedback) are lists of length self.T
+            # where each element is a tensor of dimension (n, f, 1)
+            # and (n, f, d) respectively.
+            fdfwd_Tnf1 = [None] * self.T
+            fdbck_gain_Tnfd = [None] * self.T
 
             # initialize with the terminal cost parameters
             # to prepare the backpropagation
-            Vxx = lqr_sys['dldxx'][:, -1]
-            Vx = lqr_sys['dldx'][:, -1]
-            Vx = Vx[:, :, None]
-            for t in reversed(range(self.T)):
-                error_t = lqr_sys['f'][:, t]-x_nkd[:, t+1]
-                error_t = tf.concat([error_t[:, :angle_dims],
-                                    angle_normalize(error_t[:, angle_dims:angle_dims+1])], axis=1)
-                error_t = error_t[:, :, None]
-                dfdx, dfdu = lqr_sys['dfdx'][:, t], lqr_sys['dfdu'][:, t]
-                dfdx_T, dfdu_T = tf.transpose(dfdx, perm=[0, 2, 1]), tf.transpose(dfdu, perm=[0, 2, 1]) #transpose for matrix mult
-                dfdx_T_dot_Vxx, dfdu_T_dot_Vxx = tf.matmul(dfdx_T, Vxx), tf.matmul(dfdu_T, Vxx)
+            Vxx_ndd = lqr_sys['dldxx_nkdd'][:, -1]
+            Vx_nd1 = lqr_sys['dldx_nkd'][:, -1, :, None]
 
-                Qx = lqr_sys['dldx'][:, t][:, :, None] + tf.matmul(dfdx_T, Vx)+ tf.matmul(dfdx_T_dot_Vxx, error_t)
-                Qu = lqr_sys['dldu'][:, t][:, :, None] + tf.matmul(dfdu_T, Vx) + tf.matmul(dfdu_T_dot_Vxx, error_t)
-                Qxx = lqr_sys['dldxx'][:, t] + tf.matmul(dfdx_T_dot_Vxx, dfdx)
-                Qux = lqr_sys['dldux'][:, t] + tf.matmul(dfdu_T_dot_Vxx, dfdx)
-                Quu = lqr_sys['dlduu'][:, t] + tf.matmul(dfdu_T_dot_Vxx, dfdu)
+            for t in reversed(range(self.T)):
+                error_t_nd = lqr_sys['f_nkd'][:, t]-x_nkd[:, t+1]
+                error_t_nd = tf.concat([error_t_nd[:, :angle_dims],
+                                        angle_normalize(error_t_nd[:, angle_dims:angle_dims+1])], axis=1)
+                error_t_nd1 = error_t_nd[:, :, None]
+
+                dfdx_ndd = lqr_sys['dfdx_nkdd'][:, t]
+                dfdu_ndf = lqr_sys['dfdu_nkdf'][:, t]
+                dfdx_T_ndd = tf.transpose(dfdx_ndd, perm=[0, 2, 1])
+                dfdu_T_ndf = tf.transpose(dfdu_ndf, perm=[0, 2, 1])
+
+                dfdx_T_dot_Vxx_ndd = tf.matmul(dfdx_T_ndd, Vxx_ndd)
+                dfdu_T_dot_Vxx_nfd = tf.matmul(dfdu_T_ndf, Vxx_ndd)
+
+                Qx_nd1 = (lqr_sys['dldx_nkd'][:, t][:, :, None] + tf.matmul(dfdx_T_ndd, Vx_nd1)
+                          + tf.matmul(dfdx_T_dot_Vxx_ndd, error_t_nd1))
+                Qu_nf1 = (lqr_sys['dldu_nkf'][:, t][:, :, None] + tf.matmul(dfdu_T_ndf, Vx_nd1)
+                          + tf.matmul(dfdu_T_dot_Vxx_nfd, error_t_nd1))
+                Qxx_ndd = lqr_sys['dldxx_nkdd'][:, t] + tf.matmul(dfdx_T_dot_Vxx_ndd, dfdx_ndd)
+                Qux_nfd = lqr_sys['dldux_nkfd'][:, t] + tf.matmul(dfdu_T_dot_Vxx_nfd, dfdx_ndd)
+                Quu_nff = lqr_sys['dlduu_nkff'][:, t] + tf.matmul(dfdu_T_dot_Vxx_nfd, dfdu_ndf)
 
                 # use regularized inverse for numerical stability
-                inv_Quu = self.regularized_pseudo_inverse_(Quu, reg=self.reg)
+                inv_Quu_nff = self.regularized_pseudo_inverse_(Quu_nff, reg=self.reg)
 
                 # get k and K
-                fdfwd[t] = tf.matmul(-inv_Quu, Qu)
-                fdbck_gain[t] = tf.matmul(-inv_Quu, Qux)
-                fdbck_gain_T = tf.transpose(fdbck_gain[t], perm=[0, 2, 1])
+                fdfwd_Tnf1[t] = tf.matmul(-inv_Quu_nff, Qu_nf1)
+                fdbck_gain_Tnfd[t] = tf.matmul(-inv_Quu_nff, Qux_nfd)
+                fdbck_gain_nfd = tf.transpose(fdbck_gain_Tnfd[t], perm=[0, 2, 1])
 
                 # update value function for the previous time step
-                Vxx = Qxx - tf.matmul(tf.matmul(fdbck_gain_T, Quu), fdbck_gain[t])
-                Vx = Qx - tf.matmul(tf.matmul(fdbck_gain_T, Quu), fdfwd[t])
-            return fdfwd, fdbck_gain
+                Vxx_ndd = Qxx_ndd - tf.matmul(tf.matmul(fdbck_gain_nfd, Quu_nff),
+                                          fdbck_gain_Tnfd[t])
+                Vx_nd1 = Qx_nd1 - tf.matmul(tf.matmul(fdbck_gain_nfd, Quu_nff), fdfwd_Tnf1[t])
+            return fdfwd_Tnf1, fdbck_gain_Tnfd
 
     def build_lqr_system(self, trajectory):
-        # First order linearization of the dynamics
-        dfdx, dfdu, f = self.plant_dyn.affine_factors(trajectory)
+        """Given a trajectory returns the first order
+        approximation of dynamics(f) and second order
+        approximation of cost/loss(l) needed for LQR"""
 
-        dldxx, dldxu, dlduu, dldx, dldu = self.cost.quad_coeffs(trajectory)
-        dldux = tf.transpose(dldxu, perm=[0, 1, 3, 2])
+        # First order approximation of the dynamics (f)
+        dfdx_nkdd, dfdu_nkdf, f_nkd = self.plant_dyn.affine_factors(trajectory)
+
+        # Second order approximation of cost/loss (l)
+        dldxx_nkdd, dldxu_nkdf, dlduu_nkff, dldx_nkd, dldu_nkf = self.cost.quad_coeffs(trajectory)
+        dldux_nkfd = tf.transpose(dldxu_nkdf, perm=[0, 1, 3, 2])
 
         lqr_sys = {
-            'f': f,
-            'dfdx': dfdx,
-            'dfdu': dfdu,
-            'dldx': dldx,
-            'dldu': dldu,
-            'dldxx': dldxx,
-            'dlduu': dlduu,
-            'dldux': dldux
+            'f_nkd': f_nkd,
+            'dfdx_nkdd': dfdx_nkdd,
+            'dfdu_nkdf': dfdu_nkdf,
+            'dldx_nkd': dldx_nkd,
+            'dldu_nkf': dldu_nkf,
+            'dldxx_nkdd': dldxx_nkdd,
+            'dlduu_nkff': dlduu_nkff,
+            'dldux_nkfd': dldux_nkfd
         }
         return lqr_sys
 

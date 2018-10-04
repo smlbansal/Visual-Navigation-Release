@@ -61,4 +61,4 @@ def test_spline_3rd_order(visualize=False):
 
 
 if __name__ == '__main__':
-    test_spline_3rd_order(visualize=True)
+    test_spline_3rd_order(visualize=False)
