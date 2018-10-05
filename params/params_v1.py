@@ -106,5 +106,5 @@ def load_params():
                           'goal_dist_norm': 'l2'}
 
     p.control_validation_params = DotMap(num_tests_per_map=1,
-                                         num_maps=4)
+                                         num_maps=50)
     return p

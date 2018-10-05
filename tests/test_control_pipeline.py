@@ -126,9 +126,12 @@ def test_control_pipeline(visualize=False):
     # Objective Value
     obj_val = obj_fn.evaluate_function(trajectory_lqr)
     obj1, obj2, obj3 = obj_val.numpy()
-    assert(np.abs(obj2-8333452.5) < 1e-4)
-    assert(np.abs(obj1-36033.918) < 1e-4)
-    assert(np.abs(obj3-0.8815087) < 1e-4)
+    val = 8333452.5
+    assert(np.abs(obj2-val)/val < 1e-4)
+    val = 36033.918
+    assert(np.abs(obj1-val)/val < 1e-4)
+    val = 0.8815087
+    assert(np.abs(obj3-val)/val < 1e-4)
 
     if visualize:
         traj_spline = control_pipeline.traj_spline

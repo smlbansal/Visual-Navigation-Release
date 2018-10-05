@@ -6,6 +6,7 @@ from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimula
 from utils import utils
 import argparse
 
+@profile
 def simulate(params):
     p = utils.load_params(params)
     tf.set_random_seed(p.seed)
@@ -21,16 +22,19 @@ def simulate(params):
     fig, _, axs = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
                                  (8, 8), (.4, .4))
     axs = axs[::-1]
+    k = 0
     for i in range(num_maps):
             sim.reset(obstacle_params=obstacle_params)
             for j in range(num_tests_per_map):
+                print(k)
+                k += 1
                 if j != 0:
                     sim.reset()
                 sim.simulate()
                 ax = axs.pop()
                 sim.render(ax, freq=4)
     fig.suptitle('Circular Obstacle Map Simulator')
-    plt.show()
+    plt.savefig('./test.png', bbox_inches='tight')    
 
 
 def main():

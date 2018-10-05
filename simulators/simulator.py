@@ -141,7 +141,7 @@ class Simulator:
                                     tf.constant(xx, dtype=tf.float32),
                                     tf.constant(yy, dtype=tf.float32))
         return FmmMap.create_fmm_map_based_on_goal_position(
-                                    goal_position_12=self.goal_state.position_nk2()[0],
+                                    goal_positions_n2=self.goal_state.position_nk2()[0],
                                     map_size_2=np.array(p.map_size_2),
                                     dx=p.dx,
                                     map_origin_2=p.map_origin_2,
