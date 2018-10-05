@@ -199,12 +199,12 @@ class State(Trajectory):
 
     def __init__(self, dt, n, k, position_nk2=None, speed_nk1=None, acceleration_nk1=None, heading_nk1=None,
                  angular_speed_nk1=None, angular_acceleration_nk1=None,
-                 dtype=tf.float32, variable=True, direct_init=False):
+                 dtype=tf.float32, variable=True):
         assert(k == 1)
         super().__init__(dt, n, k, position_nk2, speed_nk1, acceleration_nk1,
                          heading_nk1, angular_speed_nk1,
                          angular_acceleration_nk1, dtype=tf.float32,
-                         variable=variable, direct_init=direct_init)
+                         variable=variable)
 
     def assign_from_broadcasted_batch(self, state, n):
         """ Assigns a states variables by broadcasting a given state to
