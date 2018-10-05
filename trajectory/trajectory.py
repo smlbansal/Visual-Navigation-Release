@@ -11,7 +11,7 @@ class Trajectory(object):
 
     def __init__(self, dt, n, k, position_nk2=None, speed_nk1=None, acceleration_nk1=None, heading_nk1=None,
                  angular_speed_nk1=None, angular_acceleration_nk1=None,
-                 dtype=tf.float32, variable=True, direct_init=False):
+                 dtype=tf.float32, variable=True):
 
         # Check dimensions now to make your life easier later
         if position_nk2 is not None:
@@ -28,53 +28,44 @@ class Trajectory(object):
         self.n = n
 
         self.vars = []
-        # When these are already all tensorflow object use direct-init
-        if direct_init:
-            self._position_nk2 = position_nk2
-            self._speed_nk1 = speed_nk1
-            self._acceleration_nk1 = acceleration_nk1
-            self._heading_nk1 = heading_nk1
-            self._angular_speed_nk1 = angular_speed_nk1
-            self._angular_acceleration_nk1 = angular_acceleration_nk1
+        if variable:
+            # Translational trajectories
+            self._position_nk2 = tfe.Variable(tf.zeros([n, k, 2], dtype=dtype) if position_nk2 is None
+                                              else position_nk2)
+            self._speed_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if speed_nk1 is None
+                                           else tf.constant(speed_nk1, dtype=dtype))
+            self._acceleration_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if acceleration_nk1 is None
+                                                  else tf.constant(acceleration_nk1, dtype=dtype))
+
+            # Rotational trajectories
+            self._heading_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if heading_nk1 is None
+                                             else tf.constant(heading_nk1, dtype=dtype))
+            self._angular_speed_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if angular_speed_nk1 is None
+                                                   else tf.constant(angular_speed_nk1, dtype=dtype))
+            self._angular_acceleration_nk1 = tfe.Variable(
+                tf.zeros([n, k, 1], dtype=dtype) if angular_acceleration_nk1 is None
+                else tf.constant(angular_acceleration_nk1, dtype=dtype))
+
+            self.vars = [self._position_nk2, self._speed_nk1,
+                         self._acceleration_nk1, self._heading_nk1,
+                         self._angular_speed_nk1, self._angular_speed_nk1]
         else:
-            if variable:
-                # Translational trajectories
-                self._position_nk2 = tfe.Variable(tf.zeros([n, k, 2], dtype=dtype) if position_nk2 is None
-                                                  else position_nk2)
-                self._speed_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if speed_nk1 is None
-                                               else tf.constant(speed_nk1, dtype=dtype))
-                self._acceleration_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if acceleration_nk1 is None
-                                                      else tf.constant(acceleration_nk1, dtype=dtype))
+            # Translational trajectories
+            self._position_nk2 = tf.zeros([n, k, 2], dtype=dtype) if position_nk2 is None \
+                                              else tf.constant(position_nk2, dtype=dtype)
+            self._speed_nk1 = tf.zeros([n, k, 1], dtype=dtype) if speed_nk1 is None \
+                                              else tf.constant(speed_nk1, dtype=dtype)
+            self._acceleration_nk1 = tf.zeros([n, k, 1], dtype=dtype) if acceleration_nk1 is None \
+                                                  else tf.constant(acceleration_nk1, dtype=dtype)
 
-                # Rotational trajectories
-                self._heading_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if heading_nk1 is None
-                                                 else tf.constant(heading_nk1, dtype=dtype))
-                self._angular_speed_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if angular_speed_nk1 is None
-                                                       else tf.constant(angular_speed_nk1, dtype=dtype))
-                self._angular_acceleration_nk1 = tfe.Variable(
-                    tf.zeros([n, k, 1], dtype=dtype) if angular_acceleration_nk1 is None
-                    else tf.constant(angular_acceleration_nk1, dtype=dtype))
+            # Rotational trajectories
+            self._heading_nk1 = tf.zeros([n, k, 1], dtype=dtype) if heading_nk1 is None \
+                                         else tf.constant(heading_nk1, dtype=dtype)
+            self._angular_speed_nk1 = tf.zeros([n, k, 1], dtype=dtype) if angular_speed_nk1 is None \
+                                                   else tf.constant(angular_speed_nk1, dtype=dtype)
+            self._angular_acceleration_nk1 = tf.zeros([n, k, 1], dtype=dtype) if angular_acceleration_nk1 is None \
+                else tf.constant(angular_acceleration_nk1, dtype=dtype)
 
-                self.vars = [self._position_nk2, self._speed_nk1,
-                             self._acceleration_nk1, self._heading_nk1,
-                             self._angular_speed_nk1, self._angular_speed_nk1]
-            else:
-                # Translational trajectories
-                self._position_nk2 = tf.zeros([n, k, 2], dtype=dtype) if position_nk2 is None \
-                                                  else tf.constant(position_nk2, dtype=dtype)
-                self._speed_nk1 = tf.zeros([n, k, 1], dtype=dtype) if speed_nk1 is None \
-                                               else tf.constant(speed_nk1, dtype=dtype)
-                self._acceleration_nk1 = tf.zeros([n, k, 1], dtype=dtype) if acceleration_nk1 is None \
-                                                      else tf.constant(acceleration_nk1, dtype=dtype)
-
-                # Rotational trajectories
-                self._heading_nk1 = tf.zeros([n, k, 1], dtype=dtype) if heading_nk1 is None \
-                                                 else tf.constant(heading_nk1, dtype=dtype)
-                self._angular_speed_nk1 = tf.zeros([n, k, 1], dtype=dtype) if angular_speed_nk1 is None \
-                                                       else tf.constant(angular_speed_nk1, dtype=dtype)
-                self._angular_acceleration_nk1 = tf.zeros([n, k, 1], dtype=dtype) if angular_acceleration_nk1 is None \
-                    else tf.constant(angular_acceleration_nk1, dtype=dtype)
-    
     @classmethod
     def init_from_numpy_repr(cls, dt, n, k, position_nk2, speed_nk1,
                              acceleration_nk1, heading_nk1, angular_speed_nk1,
@@ -95,8 +86,9 @@ class Trajectory(object):
                                             heading_nk1=trajectory.heading_nk1()[batch_idx:batch_idx+1],
                                             angular_speed_nk1=trajectory.angular_speed_nk1()[batch_idx:batch_idx+1],
                                             angular_acceleration_nk1=trajectory.angular_acceleration_nk1()[batch_idx:batch_idx+1])
-        
-    def assign_trajectory_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1, heading_nk1, angular_speed_nk1, angular_acceleration_nk1):
+
+    def assign_trajectory_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1,
+                                       heading_nk1, angular_speed_nk1, angular_acceleration_nk1):
         tf.assign(self.position_nk2(), position_nk2)
         tf.assign(self.speed_nk1(), speed_nk1)
         tf.assign(self.acceleration_nk1(), acceleration_nk1)
@@ -123,7 +115,7 @@ class Trajectory(object):
 
     @property
     def shape(self):
-        return '(%d, %d)'%(self.n, self.k)
+        return '(%d, %d)'.format(self.n, self.k)
 
     def position_nk2(self):
         return self._position_nk2
@@ -216,14 +208,15 @@ class State(Trajectory):
 
     def assign_from_broadcasted_batch(self, state, n):
         """ Assigns a states variables by broadcasting a given state to
-        batch size n """ 
+        batch size n """
         k = state.k
         self.assign_state_from_tensors(position_nk2=tf.broadcast_to(state.position_nk2(), (n, k, 2)),
-                                     speed_nk1=tf.broadcast_to(state.speed_nk1(), (n, k, 1)),
-                                     acceleration_nk1=tf.broadcast_to(state.acceleration_nk1(), (n, k, 1)),
-                                     heading_nk1=tf.broadcast_to(state.heading_nk1(), (n, k, 1)),
-                                     angular_speed_nk1=tf.broadcast_to(state.angular_speed_nk1(), (n, k, 1)),
-                                     angular_acceleration_nk1=tf.broadcast_to(state.angular_acceleration_nk1(), (n, k, 1)))
+                                       speed_nk1=tf.broadcast_to(state.speed_nk1(), (n, k, 1)),
+                                       acceleration_nk1=tf.broadcast_to(state.acceleration_nk1(), (n, k, 1)),
+                                       heading_nk1=tf.broadcast_to(state.heading_nk1(), (n, k, 1)),
+                                       angular_speed_nk1=tf.broadcast_to(state.angular_speed_nk1(), (n, k, 1)),
+                                       angular_acceleration_nk1=tf.broadcast_to(state.angular_acceleration_nk1(), (n, k, 1)))
+
     @classmethod
     def init_state_from_trajectory_time_index(cls, trajectory, t):
         """ A utility method to initialize a state object
@@ -255,9 +248,12 @@ class State(Trajectory):
     def assign_from_state_batch_idx(self, state, batch_idx):
         super().assign_from_trajectory_batch_idx(state, batch_idx)
 
-    def assign_state_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1, heading_nk1, angular_speed_nk1, angular_acceleration_nk1):
-        super().assign_trajectory_from_tensors(position_nk2, speed_nk1, acceleration_nk1, heading_nk1, angular_speed_nk1, angular_acceleration_nk1)
-        
+    def assign_state_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1,
+                                  heading_nk1, angular_speed_nk1, angular_acceleration_nk1):
+        super().assign_trajectory_from_tensors(position_nk2, speed_nk1,
+                                               acceleration_nk1, heading_nk1,
+                                               angular_speed_nk1, angular_acceleration_nk1)
+
     def render(self, ax, batch_idx=0, marker='bo'):
         pos_n12 = self.position_nk2()
         pos_2 = pos_n12[batch_idx, 0]

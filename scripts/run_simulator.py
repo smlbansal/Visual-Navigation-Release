@@ -2,11 +2,10 @@ import tensorflow as tf
 tf.enable_eager_execution()
 import numpy as np
 import matplotlib.pyplot as plt
-from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 from utils import utils
 import argparse
 
-@profile
+
 def simulate(params):
     p = utils.load_params(params)
     tf.set_random_seed(p.seed)
@@ -33,7 +32,7 @@ def simulate(params):
                 ax = axs.pop()
                 sim.render(ax, freq=4)
     fig.suptitle('Circular Obstacle Map Simulator')
-    plt.savefig('./tmp/circular_obstacle_map.png', bbox_inches='tight')    
+    plt.savefig('./tmp/circular_obstacle_map.png', bbox_inches='tight')
 
 
 def main():

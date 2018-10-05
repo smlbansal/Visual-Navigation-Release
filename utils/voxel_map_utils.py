@@ -22,7 +22,7 @@ class VoxelMap(object):
 
     def compute_voxel_function(self, position_nk2, invalid_value=100.):
         """
-        Compute the voxel function at the specified positions. 
+        Compute the voxel function at the specified positions.
         """
         # Compute the position in the voxel space.
         voxel_space_position_nk2 = self.grid_world_to_voxel_world(position_nk2) - self.map_origin_2
@@ -32,21 +32,20 @@ class VoxelMap(object):
         lower_voxel_indices_nk2_xy = tf.mod(tf.cast(tf.floor(voxel_space_position_nk2), tf.int32), self.map_size_int32_2)
         upper_voxel_indices_nk2_xy = tf.mod(lower_voxel_indices_nk2_xy + 1, self.map_size_int32_2)
 
-
         lower_voxel_float_nk2 = tf.cast(lower_voxel_indices_nk2_xy, dtype=tf.float32)
         upper_voxel_float_nk2 = tf.cast(upper_voxel_indices_nk2_xy, dtype=tf.float32)
- 
+
         # Voxel indices for 4 corner voxels. Note that indices are stacked out of order for voxel_indices11 to make
         # sure that the first element along axis2 represents y-value (since the voxel map's first dimension is y and
         # not x).
         voxel_indices_nk4 = tf.concat([lower_voxel_indices_nk2_xy, upper_voxel_indices_nk2_xy], axis=2)
-        
+
         # Voxel function values at corner points
         data11_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [1, 0], axis=2))
         data21_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [1, 2], axis=2))
         data12_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [3, 0], axis=2))
         data22_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [3, 2], axis=2))
-      
+
         # Define gammas for x interpolation
         gamma1 = upper_voxel_float_nk2[:, :, 0] - voxel_space_position_nk2[:, :, 0]
         gamma2 = voxel_space_position_nk2[:, :, 0] - lower_voxel_float_nk2[:, :, 0]

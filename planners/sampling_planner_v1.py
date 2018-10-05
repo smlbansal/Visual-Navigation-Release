@@ -1,5 +1,4 @@
 import numpy as np
-import numpy as np
 from trajectory.trajectory import Trajectory, State
 from planners.sampling_planner import SamplingPlanner
 

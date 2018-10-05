@@ -1,3 +1,6 @@
+from trajectory.trajectory import Trajectory, State
+
+
 class Planner:
 
     def __init__(self, system_dynamics, obj_fn, params):

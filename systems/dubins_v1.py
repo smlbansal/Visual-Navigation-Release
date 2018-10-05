@@ -109,12 +109,12 @@ class Dubins_v1(Dynamics):
         heading_nk1 = angle_normalize(heading_nk1 - ref_heading_1k1)
 
         traj_egocentric.assign_trajectory_from_tensors(position_nk2=position_nk2,
-                   speed_nk1=traj_world.speed_nk1(),
-                   acceleration_nk1=traj_world.acceleration_nk1(),
-                   heading_nk1=heading_nk1,
-                   angular_speed_nk1=traj_world.angular_speed_nk1(),
-                   angular_acceleration_nk1=traj_world.angular_acceleration_nk1())
-        
+                                                       speed_nk1=traj_world.speed_nk1(),
+                                                       acceleration_nk1=traj_world.acceleration_nk1(),
+                                                       heading_nk1=heading_nk1,
+                                                       angular_speed_nk1=traj_world.angular_speed_nk1(),
+                                                       angular_acceleration_nk1=traj_world.angular_acceleration_nk1())
+
     @staticmethod
     def to_world_coordinates(ref_state, traj_egocentric, traj_world):
         """ Converts traj_egocentric to the world coordinate frame assuming
@@ -130,8 +130,8 @@ class Dubins_v1(Dynamics):
         heading_nk1 = angle_normalize(heading_nk1 + ref_heading_1k1)
 
         traj_world.assign_trajectory_from_tensors(position_nk2=position_nk2,
-                   speed_nk1=traj_egocentric.speed_nk1(),
-                   acceleration_nk1=traj_egocentric.acceleration_nk1(),
-                   heading_nk1=heading_nk1,
-                   angular_speed_nk1=traj_egocentric.angular_speed_nk1(),
-                   angular_acceleration_nk1=traj_egocentric.angular_acceleration_nk1())
+                                                  speed_nk1=traj_egocentric.speed_nk1(),
+                                                  acceleration_nk1=traj_egocentric.acceleration_nk1(),
+                                                  heading_nk1=heading_nk1,
+                                                  angular_speed_nk1=traj_egocentric.angular_speed_nk1(),
+                                                  angular_acceleration_nk1=traj_egocentric.angular_acceleration_nk1())
