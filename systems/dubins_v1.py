@@ -25,30 +25,28 @@ class Dubins_v1(Dynamics):
         x_nk3, u_nk2 = self.parse_trajectory(trajectory)
         with tf.name_scope('jac_x'):
             # Rightmost Column
-            update_nk1 = tf.stack([-u_nk2[:, :, 0]*tf.sin(x_nk3[:, :, 2]),
+            update_nk3 = tf.stack([-u_nk2[:, :, 0]*tf.sin(x_nk3[:, :, 2]),
                                    u_nk2[:, :, 0]*tf.cos(x_nk3[:, :, 2]),
                                    tf.zeros(shape=x_nk3.shape[:2])], axis=2)
-            update_nk3 = tf.stack([tf.zeros_like(x_nk3),
+            update_nk33 = tf.stack([tf.zeros_like(x_nk3),
                                    tf.zeros_like(x_nk3),
-                                   update_nk1], axis=3)
-            return tf.eye(3, batch_shape=x_nk3.shape[:2]) + self._dt*update_nk3
+                                   update_nk3], axis=3)
+            return tf.eye(3, batch_shape=x_nk3.shape[:2]) + self._dt*update_nk33
 
     def jac_u(self, trajectory):
         x_nk3, u_nk2 = self.parse_trajectory(trajectory)
         with tf.name_scope('jac_u'):
-            t_nk = x_nk3[:, :, 2]
-
-            zeros_nk = tf.zeros(shape=t_nk.shape, dtype=tf.float32)
-            ones_nk = tf.ones(shape=t_nk.shape, dtype=tf.float32)
-            b11_nk = tf.cos(t_nk)*self._dt
-            b21_nk = tf.sin(t_nk)*self._dt
+            zeros_nk = tf.zeros(shape=x_nk3.shape[:2], dtype=tf.float32)
+            ones_nk = tf.ones(shape=x_nk3.shape[:2], dtype=tf.float32)
 
             # Columns
-            b1_nk2 = tf.stack([b11_nk, b21_nk, zeros_nk], axis=2)
-            b2_nk2 = tf.stack([zeros_nk, zeros_nk, ones_nk*self._dt], axis=2)
+            b1_nk3 = tf.stack([tf.cos(x_nk3[:, :, 2]),
+                               tf.sin(x_nk3[:, :, 2]),
+                               zeros_nk], axis=2)
+            b2_nk3 = tf.stack([zeros_nk, zeros_nk, ones_nk], axis=2)
 
-            B_nk23 = tf.stack([b1_nk2, b2_nk2], axis=3)
-            return B_nk23
+            B_nk32 = tf.stack([b1_nk3, b2_nk3], axis=3)
+            return B_nk32*self._dt
 
     def parse_trajectory(self, trajectory):
         """ A utility function for parsing a trajectory object.

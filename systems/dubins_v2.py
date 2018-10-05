@@ -29,41 +29,32 @@ class Dubins_v2(Dynamics):
     def jac_x(self, trajectory):
         x_nk3, u_nk2 = self.parse_trajectory(trajectory)
         with tf.name_scope('jac_x'):
-            vtilde_nk, t_nk = u_nk2[:, :, 0], x_nk3[:, :, 2]
-            v_nk = self.s1(vtilde_nk)
-            ones_nk = tf.ones(shape=v_nk.shape, dtype=tf.float32)
-            zeros_nk = tf.zeros(shape=v_nk.shape, dtype=tf.float32)
-            a13_nk = -v_nk*tf.sin(t_nk)*self._dt
-            a23_nk = v_nk*tf.cos(t_nk)*self._dt
-
-            # Columns
-            a1_nk3 = tf.stack([ones_nk, zeros_nk, zeros_nk], axis=2)
-            a2_nk3 = tf.stack([zeros_nk, ones_nk, zeros_nk], axis=2)
-            a3_nk3 = tf.stack([a13_nk, a23_nk, ones_nk], axis=2)
-
-            A_nk33 = tf.stack([a1_nk3, a2_nk3, a3_nk3], axis=3)
-            return A_nk33
+            v_nk = self.s1(u_nk2[:, :, 0])
+            # Rightmost Column
+            update_nk3 = tf.stack([-v_nk*tf.sin(x_nk3[:, :, 2]),
+                                   v_nk*tf.cos(x_nk3[:, :, 2]),
+                                   tf.zeros(shape=x_nk3.shape[:2])], axis=2)
+            update_nk33 = tf.stack([tf.zeros_like(x_nk3),
+                                   tf.zeros_like(x_nk3),
+                                   update_nk3], axis=3)
+            return tf.eye(3, batch_shape=x_nk3.shape[:2]) + self._dt*update_nk33
 
     def jac_u(self, trajectory):
         x_nk3, u_nk2 = self.parse_trajectory(trajectory)
         with tf.name_scope('jac_u'):
-            t_nk = x_nk3[:, :, 2]
-            vtilde_nk = u_nk2[:, :, 0]
-            wtilde_nk = u_nk2[:, :, 1]
-            vtilde_prime_nk = self.s1_prime(vtilde_nk)
-            wtilde_prime_nk = self.s2_prime(wtilde_nk)
-
-            zeros_nk = tf.zeros(shape=t_nk.shape, dtype=tf.float32)
-            b11_nk = vtilde_prime_nk*tf.cos(t_nk)*self._dt
-            b21_nk = vtilde_prime_nk*tf.sin(t_nk)*self._dt
-            b32_nk = wtilde_prime_nk*self._dt
+            vtilde_prime_nk = self.s1_prime(u_nk2[:, :, 0])
+            zeros_nk = tf.zeros(shape=x_nk3.shape[:2], dtype=tf.float32)
 
             # Columns
-            b1_nk2 = tf.stack([b11_nk, b21_nk, zeros_nk], axis=2)
-            b2_nk2 = tf.stack([zeros_nk, zeros_nk, b32_nk], axis=2)
+            b1_nk3 = tf.stack([vtilde_prime_nk*tf.cos(x_nk3[:, :, 2]),
+                               vtilde_prime_nk*tf.sin(x_nk3[:, :, 2]),
+                               zeros_nk], axis=2)
+            b2_nk3 = tf.stack([zeros_nk,
+                               zeros_nk,
+                               self.s2_prime(u_nk2[:, :, 1])], axis=2)
 
-            B_nk23 = tf.stack([b1_nk2, b2_nk2], axis=3)
-            return B_nk23
+            B_nk32 = tf.stack([b1_nk3, b2_nk3], axis=3)
+            return B_nk32*self._dt
 
     def s1(self, vtilde_nk):
         """ Saturation function for linear velocity"""
