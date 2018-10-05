@@ -17,7 +17,6 @@ def simulate(params):
     num_tests_per_map = p.control_validation_params.num_tests_per_map
     num_maps = p.control_validation_params.num_maps
     num_plots = num_tests_per_map * num_maps
-    p.control_validation_params.num_maps
     sqrt_num_plots = int(np.ceil(np.sqrt(num_plots)))
     fig, _, axs = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
                                  (8, 8), (.4, .4))
@@ -34,7 +33,7 @@ def simulate(params):
                 ax = axs.pop()
                 sim.render(ax, freq=4)
     fig.suptitle('Circular Obstacle Map Simulator')
-    plt.savefig('./test.png', bbox_inches='tight')    
+    plt.savefig('./tmp/circular_obstacle_map.png', bbox_inches='tight')    
 
 
 def main():

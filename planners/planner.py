@@ -8,6 +8,8 @@ class Planner:
                                     system_dynamics=self.system_dynamics,
                                     params=params,
                                     **params.control_pipeline_params)
+        self.start_state_egocentric = State(dt=params.dt, n=params.n, k=1, variable=True)
+        self.trajectory_world = Trajectory(dt=params.dt, n=params.n, k=params.k, variable=True)
 
     def optimize(self, start_state, vf=0.):
         """ Optimize the objective over a trajectory
@@ -21,17 +23,14 @@ class Planner:
         generated through the control pipeline from start_state (world frame)
         to waypt_state (egocentric frame)"""
         sys = self.system_dynamics
-        global_start_state = start_state
 
-        start_state = sys.to_egocentric_coordinates(start_state,
-                                                    start_state)
-        control_pipeline = self._choose_control_pipeline(start_state)
+        sys.to_egocentric_coordinates(start_state, start_state, self.start_state_egocentric)
+        control_pipeline = self._choose_control_pipeline(self.start_state_egocentric)
         trajectory = control_pipeline.plan(start_state,
                                            waypt_state)
-        trajectory = sys.to_world_coordinates(global_start_state,
-                                              trajectory)
-        obj_val = self.obj_fn.evaluate_function(trajectory)
-        return obj_val, trajectory
+        sys.to_world_coordinates(start_state, trajectory, self.trajectory_world)
+        obj_val = self.obj_fn.evaluate_function(self.trajectory_world)
+        return obj_val, self.trajectory_world
 
     def _choose_control_pipeline(self, start_state):
         return self.control_pipeline

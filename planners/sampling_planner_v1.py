@@ -28,6 +28,12 @@ class SamplingPlanner_v1(SamplingPlanner):
                                             system_dynamics.v_bounds[1],
                                             int(np.ceil(delta_v/velocity_disc)))
         self.control_pipelines = self.precompute_control_pipelines()
+        self.start_state_egocentric = State(dt=params.dt, n=params.n, k=1, variable=True)
+        self.trajectory_world = Trajectory(dt=params.dt, n=params.n, k=params.k, variable=True)
+
+        self.start_state_n = State(dt=params.dt, n=params.n, k=1, variable=True)
+        self.opt_waypt = State(dt=params.dt, n=1, k=1, variable=True)
+        self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.k, variable=True)
 
     def precompute_control_pipelines(self):
         p = self.params

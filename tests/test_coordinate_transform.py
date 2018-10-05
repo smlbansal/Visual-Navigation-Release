@@ -28,8 +28,9 @@ def test_coordinate_transform():
     pos_nk2 = np.ones((n, k, 2), dtype=np.float32) * np.random.rand()
     traj_global = Trajectory(dt=dt, n=n, k=k,
                              position_nk2=pos_nk2)
-    traj_egocentric = dubins_car.to_egocentric_coordinates(ref_state,
-                                                           traj_global)
+    traj_egocentric = Trajectory(dt=dt, n=n, k=k, variable=True)
+
+    dubins_car.to_egocentric_coordinates(ref_state, traj_global, traj_egocentric)
 
     # Test 0 transform
     assert((pos_nk2 == traj_egocentric.position_nk2().numpy()).all())

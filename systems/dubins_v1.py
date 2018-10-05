@@ -98,54 +98,42 @@ class Dubins_v1(Dynamics):
                      angular_speed_nk1=angular_speed_nk1, variable=False)
 
     @staticmethod
-    def to_egocentric_coordinates(ref_state, traj):
-        """ Converts traj to an egocentric reference frame assuming
-        ref_state is the origin."""
+    def to_egocentric_coordinates(ref_state, traj_world, traj_egocentric):
+        """ Converts traj_world to an egocentric reference frame assuming
+        ref_state is the origin. The result is assigned to traj_egocentric"""
         ref_position_1k2 = ref_state.position_nk2()
         ref_heading_1k1 = ref_state.heading_nk1()
-        position_nk2 = traj.position_nk2()
-        heading_nk1 = traj.heading_nk1()
+        position_nk2 = traj_world.position_nk2()
+        heading_nk1 = traj_world.heading_nk1()
 
         position_nk2 = position_nk2 - ref_position_1k2
         position_nk2 = rotate_pos_nk2(position_nk2, -ref_heading_1k1)
         heading_nk1 = angle_normalize(heading_nk1 - ref_heading_1k1)
 
-        if traj.k == 1:
-            cls = State
-        else:
-            cls = Trajectory
-        return cls(dt=traj.dt, n=traj.n, k=traj.k,
-                   position_nk2=position_nk2,
-                   speed_nk1=traj.speed_nk1(),
-                   acceleration_nk1=traj.acceleration_nk1(),
+        traj_egocentric.assign_trajectory_from_tensors(position_nk2=position_nk2,
+                   speed_nk1=traj_world.speed_nk1(),
+                   acceleration_nk1=traj_world.acceleration_nk1(),
                    heading_nk1=heading_nk1,
-                   angular_speed_nk1=traj.angular_speed_nk1(),
-                   angular_acceleration_nk1=traj.angular_acceleration_nk1(),
-                   direct_init=True)
-
+                   angular_speed_nk1=traj_world.angular_speed_nk1(),
+                   angular_acceleration_nk1=traj_world.angular_acceleration_nk1())
+        
     @staticmethod
-    def to_world_coordinates(ref_state, traj):
-        """ Converts traj to the world coordinate frame assuming
+    def to_world_coordinates(ref_state, traj_egocentric, traj_world):
+        """ Converts traj_egocentric to the world coordinate frame assuming
         ref_state is the origin of the egocentric coordinate frame
-        in the world coordinate frame."""
+        in the world coordinate frame. Assigns the result to traj_world"""
         ref_position_1k2 = ref_state.position_nk2()
         ref_heading_1k1 = ref_state.heading_nk1()
-        position_nk2 = traj.position_nk2()
-        heading_nk1 = traj.heading_nk1()
+        position_nk2 = traj_egocentric.position_nk2()
+        heading_nk1 = traj_egocentric.heading_nk1()
 
         position_nk2 = rotate_pos_nk2(position_nk2, ref_heading_1k1)
         position_nk2 = position_nk2 + ref_position_1k2
         heading_nk1 = angle_normalize(heading_nk1 + ref_heading_1k1)
 
-        if traj.k == 1:
-            cls = State
-        else:
-            cls = Trajectory
-        return cls(dt=traj.dt, n=traj.n, k=traj.k,
-                   position_nk2=position_nk2,
-                   speed_nk1=traj.speed_nk1(),
-                   acceleration_nk1=traj.acceleration_nk1(),
+        traj_world.assign_trajectory_from_tensors(position_nk2=position_nk2,
+                   speed_nk1=traj_egocentric.speed_nk1(),
+                   acceleration_nk1=traj_egocentric.acceleration_nk1(),
                    heading_nk1=heading_nk1,
-                   angular_speed_nk1=traj.angular_speed_nk1(),
-                   angular_acceleration_nk1=traj.angular_acceleration_nk1(),
-                   direct_init=True)
+                   angular_speed_nk1=traj_egocentric.angular_speed_nk1(),
+                   angular_acceleration_nk1=traj_egocentric.angular_acceleration_nk1())

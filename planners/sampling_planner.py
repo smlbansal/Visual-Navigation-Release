@@ -14,6 +14,9 @@ class SamplingPlanner(Planner):
         self.mode = mode
         self.precompute = precompute
         self.kwargs = kwargs
+        self.start_state_n = State(dt=params.dt, n=params.n, k=1, variable=True)
+        self.opt_waypt = State(dt=params.dt, n=1, k=1, variable=True)
+        self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.k, variable=True)
 
         if precompute:
             self.waypt_egocentric_state_n = None
@@ -21,17 +24,15 @@ class SamplingPlanner(Planner):
 
     def optimize(self, start_state, vf=0.):
         p = self.params
-        start_state_n = State.broadcast_batch_size_to(start_state, p.n)
+        self.start_state_n.assign_from_broadcasted_batch(start_state, p.n)
         waypt_state_n = self._sample_waypoints(vf=vf)
-        obj_vals, trajectory = self.eval_objective(start_state_n,
+        obj_vals, trajectory = self.eval_objective(self.start_state_n,
                                                    waypt_state_n)
         min_idx = tf.argmin(obj_vals)
-        min_waypt = State.new_traj_from_batch_idx(waypt_state_n,
-                                                  batch_idx=min_idx)
-        min_traj = Trajectory.new_traj_from_batch_idx(trajectory,
-                                                      batch_idx=min_idx)
+        self.opt_traj.assign_from_trajectory_batch_idx(trajectory, min_idx)
+        self.opt_waypt.assign_from_state_batch_idx(waypt_state_n, min_idx)
         min_cost = obj_vals[min_idx]
-        return min_waypt, min_traj, min_cost
+        return self.opt_waypt, self.opt_traj, min_cost
 
     def _sample_waypoints(self, vf=0.):
         """ Samples waypoints. Waypoint_bounds is assumed to be specified in

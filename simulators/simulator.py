@@ -20,6 +20,7 @@ class Simulator:
         self.planner = self._init_planner()
         self.rng = np.random.RandomState(params.simulator_seed)
 
+    @profile
     def simulate(self):
         """ A function that simulates an entire episode.
         The agent starts at self.start_state, repeatedly calling _iterate to
@@ -36,6 +37,7 @@ class Simulator:
         self.obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
 
+    @profile
     def _iterate(self, state):
         """ Runs the planner for one step from state to generate an optimal
         subtrajectory and the resulting robot state after the robot executes

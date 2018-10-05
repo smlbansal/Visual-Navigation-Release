@@ -74,20 +74,7 @@ class Trajectory(object):
                                                        else tf.constant(angular_speed_nk1, dtype=dtype)
                 self._angular_acceleration_nk1 = tf.zeros([n, k, 1], dtype=dtype) if angular_acceleration_nk1 is None \
                     else tf.constant(angular_acceleration_nk1, dtype=dtype)
-
-    @classmethod
-    def new_traj_from_batch_idx(cls, traj, batch_idx=0):
-        """ A utility function for creating a new trajectory
-        object corresponding to the trajectory stored at
-        the batch index indicated by batch_idx in traj """
-        return cls(dt=traj.dt, n=1, k=traj.k,
-                   position_nk2=traj.position_nk2()[batch_idx:batch_idx+1],
-                   speed_nk1=traj.speed_nk1()[batch_idx:batch_idx+1],
-                   acceleration_nk1=traj.acceleration_nk1()[batch_idx:batch_idx+1],
-                   heading_nk1=traj.heading_nk1()[batch_idx:batch_idx+1],
-                   angular_speed_nk1=traj.angular_speed_nk1()[batch_idx:batch_idx+1],
-                   angular_acceleration_nk1=traj.angular_acceleration_nk1()[batch_idx:batch_idx+1])
-
+    
     @classmethod
     def init_from_numpy_repr(cls, dt, n, k, position_nk2, speed_nk1,
                              acceleration_nk1, heading_nk1, angular_speed_nk1,
@@ -100,6 +87,22 @@ class Trajectory(object):
                    angular_speed_nk1=angular_speed_nk1,
                    angular_acceleration_nk1=angular_acceleration_nk1,
                    variable=False)
+
+    def assign_from_trajectory_batch_idx(self, trajectory, batch_idx):
+        self.assign_trajectory_from_tensors(position_nk2=trajectory.position_nk2()[batch_idx:batch_idx+1],
+                                            speed_nk1=trajectory.speed_nk1()[batch_idx:batch_idx+1],
+                                            acceleration_nk1=trajectory.acceleration_nk1()[batch_idx:batch_idx+1],
+                                            heading_nk1=trajectory.heading_nk1()[batch_idx:batch_idx+1],
+                                            angular_speed_nk1=trajectory.angular_speed_nk1()[batch_idx:batch_idx+1],
+                                            angular_acceleration_nk1=trajectory.angular_acceleration_nk1()[batch_idx:batch_idx+1])
+        
+    def assign_trajectory_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1, heading_nk1, angular_speed_nk1, angular_acceleration_nk1):
+        tf.assign(self.position_nk2(), position_nk2)
+        tf.assign(self.speed_nk1(), speed_nk1)
+        tf.assign(self.acceleration_nk1(), acceleration_nk1)
+        tf.assign(self.heading_nk1(), heading_nk1)
+        tf.assign(self.angular_speed_nk1(), angular_speed_nk1)
+        tf.assign(self.angular_acceleration_nk1(), angular_acceleration_nk1)
 
     def to_numpy_repr(self):
         """Utility function to return a representation of the trajectory using
@@ -211,31 +214,16 @@ class State(Trajectory):
                          angular_acceleration_nk1, dtype=tf.float32,
                          variable=variable, direct_init=direct_init)
 
-    @classmethod
-    def broadcast_batch_size_to(cls, state, n):
-        """ A utility method to create a new
-            state object thats broadcasts
-            a state of batch size 1 to
-            batch size n """
-        if state.n == n:
-            return state
-
-        assert(state.n == 1 == state.position_nk2().shape[0].value)
+    def assign_from_broadcasted_batch(self, state, n):
+        """ Assigns a states variables by broadcasting a given state to
+        batch size n """ 
         k = state.k
-        position_1k2 = state.position_nk2()
-        speed_1k1 = state.speed_nk1()
-        acceleration_1k1 = state.acceleration_nk1()
-        heading_1k1 = state.heading_nk1()
-        angular_speed_1k1 = state.angular_speed_nk1()
-        angular_acceleration_1k1 = state.angular_acceleration_nk1()
-        return cls(dt=state.dt, n=n, k=k,
-                   position_nk2=tf.broadcast_to(position_1k2, (n, k, 2)),
-                   speed_nk1=tf.broadcast_to(speed_1k1, (n, k, 1)),
-                   acceleration_nk1=tf.broadcast_to(acceleration_1k1, (n, k, 1)),
-                   heading_nk1=tf.broadcast_to(heading_1k1, (n, k, 1)),
-                   angular_speed_nk1=tf.broadcast_to(angular_speed_1k1, (n, k, 1)),
-                   angular_acceleration_nk1=tf.broadcast_to(angular_acceleration_1k1, (n, k, 1)))
-
+        self.assign_state_from_tensors(position_nk2=tf.broadcast_to(state.position_nk2(), (n, k, 2)),
+                                     speed_nk1=tf.broadcast_to(state.speed_nk1(), (n, k, 1)),
+                                     acceleration_nk1=tf.broadcast_to(state.acceleration_nk1(), (n, k, 1)),
+                                     heading_nk1=tf.broadcast_to(state.heading_nk1(), (n, k, 1)),
+                                     angular_speed_nk1=tf.broadcast_to(state.angular_speed_nk1(), (n, k, 1)),
+                                     angular_acceleration_nk1=tf.broadcast_to(state.angular_acceleration_nk1(), (n, k, 1)))
     @classmethod
     def init_state_from_trajectory_time_index(cls, trajectory, t):
         """ A utility method to initialize a state object
@@ -264,6 +252,12 @@ class State(Trajectory):
                    angular_speed_nk1=angular_speed_nk1[:, t:t+1],
                    angular_acceleration_nk1=angular_acceleration_nk1[:, t:t+1])
 
+    def assign_from_state_batch_idx(self, state, batch_idx):
+        super().assign_from_trajectory_batch_idx(state, batch_idx)
+
+    def assign_state_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1, heading_nk1, angular_speed_nk1, angular_acceleration_nk1):
+        super().assign_trajectory_from_tensors(position_nk2, speed_nk1, acceleration_nk1, heading_nk1, angular_speed_nk1, angular_acceleration_nk1)
+        
     def render(self, ax, batch_idx=0, marker='bo'):
         pos_n12 = self.position_nk2()
         pos_2 = pos_n12[batch_idx, 0]
