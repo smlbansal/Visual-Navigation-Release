@@ -10,11 +10,15 @@ from utils.fmm_map import FmmMap
 
 class Simulator:
     episode_termination_reasons = ['Timeout', 'Collision', 'Success']
+    episode_termination_colors = ['b', 'r', 'g']
 
-    def __init__(self, params, goal_cutoff_dist=0.0, goal_dist_norm='l2'):
+    def __init__(self, params, goal_cutoff_dist=0.0, goal_dist_norm='l2',
+                 end_episode_on_collision=True, end_episode_on_success=True):
         self.params = params
         self.goal_cutoff_dist = goal_cutoff_dist
         self.goal_dist_norm = goal_dist_norm
+        self.end_episode_on_collision = end_episode_on_collision
+        self.end_episode_on_success = end_episode_on_success
         self.system_dynamics = self._init_system_dynamics()
         self.obstacle_map = self._init_obstacle_map()
         self.obj_fn = self._init_obj_fn()
@@ -33,6 +37,8 @@ class Simulator:
             waypt_trajectory, next_state = self._iterate(state)
             vehicle_trajectory.append_along_time_axis(waypt_trajectory)
             state = next_state
+        self.min_obs_distances = self._calculate_min_obs_distances(vehicle_trajectory)
+        self.collisions = self._calculate_trajectory_collisions(vehicle_trajectory)
         self.episode_type = self._enforce_episode_termination_conditions(vehicle_trajectory)
         self.obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
@@ -46,6 +52,20 @@ class Simulator:
         next_state = State.init_state_from_trajectory_time_index(min_traj, t=-1)
         return min_traj, next_state
 
+    def _calculate_min_obs_distances(self, vehicle_trajectory):
+        """Returns an array of dimension 1k where each element is the distance to the closest
+        obstacle at each time step."""
+        pos_1k2 = vehicle_trajectory.position_nk2()
+        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
+        return obstacle_dists_1k
+
+    def _calculate_trajectory_collisions(self, vehicle_trajectory):
+        """Returns an array of dimension 1k where each element is a 1 if the robot collided with an
+        obstacle at that time step or 0 otherwise. """
+        pos_1k2 = vehicle_trajectory.position_nk2()
+        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
+        return tf.cast(obstacle_dists_1k < 0.0, tf.float32)
+
     def _enforce_episode_termination_conditions(self, vehicle_trajectory):
         """ A utility function to enforce episode termination conditions.
         Clips a trajectory along the time axis checking the following:
@@ -53,31 +73,36 @@ class Simulator:
             2. There is no collision with an obstacle along the trajectory
             3. Moving within goal_cutoff_dist of the goal is considered a
             success """
-        collision_idx = self.params.episode_horizon + 1
-        success_idx = self.params.episode_horizon + 1
-
-        # Check for collision
-        pos_1k2 = vehicle_trajectory.position_nk2()
-        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
-        collisions = tf.where(tf.less(obstacle_dists_1k, 0.0))
-        collision_idxs = collisions[:, 1]
-        if tf.size(collision_idxs).numpy() != 0:
-            collision_idx = collision_idxs[0]
-
-        # Check within goal radius
-        dist_to_goal_1k = self._dist_to_goal(pos_1k2,
-                                             self.goal_state.position_nk2())
-        successes = tf.where(tf.less(dist_to_goal_1k,
-                                     self.goal_cutoff_dist))
-        success_idxs = successes[:, 1]
-        if tf.size(success_idxs).numpy() != 0:
-            success_idx = success_idxs[0]
-
         # Same order as Simulator.episode_termination_reasons
-        time_idxs = [self.params.episode_horizon, collision_idx, success_idx]
+        time_idxs = [self.params.episode_horizon]
+
+        if self.end_episode_on_collision:
+            collision_idx = self.params.episode_horizon + 1
+
+            # Check for collision
+            pos_1k2 = vehicle_trajectory.position_nk2()
+            obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
+            collisions = tf.where(tf.less(obstacle_dists_1k, 0.0))
+            collision_idxs = collisions[:, 1]
+            if tf.size(collision_idxs).numpy() != 0:
+                collision_idx = collision_idxs[0]
+            time_idxs.append(collision_idx)
+
+        if self.end_episode_on_success:
+            success_idx = self.params.episode_horizon + 1
+
+            # Check within goal radius
+            dist_to_goal_1k = self._dist_to_goal(pos_1k2,
+                                                 self.goal_state.position_nk2())
+            successes = tf.where(tf.less(dist_to_goal_1k,
+                                         self.goal_cutoff_dist))
+            success_idxs = successes[:, 1]
+            if tf.size(success_idxs).numpy() != 0:
+                success_idx = success_idxs[0]
+            time_idxs.append(success_idx)
+
         idx = np.argmin(time_idxs)
-        time_idx = time_idxs[idx]
-        vehicle_trajectory.clip_along_time_axis(time_idx)
+        vehicle_trajectory.clip_along_time_axis(time_idxs[idx])
         return idx
 
     def _update_obj_fn(self):
@@ -160,19 +185,22 @@ class Simulator:
                                         self.goal_state.position_nk2())
         init_dist = self._dist_to_goal(self.vehicle_trajectory.position_nk2()[:, -1],
                                        self.start_state.position_nk2())
+        collisions_mu = np.mean(self.collisions)
         return np.array([self.obj_val,
                          init_dist,
                          final_dist,
                          self.vehicle_trajectory.k,
+                         collisions_mu,
+                         np.min(self.min_obs_distances),
                          self.episode_type])
 
     @staticmethod
     def collect_metrics(ms):
         ms = np.array(ms)
-        obj_vals, init_dists, final_dists, episode_length, episode_types = ms.T
+        obj_vals, init_dists, final_dists, episode_length, collisions, min_obs_distances, episode_types = ms.T
         keys = ['Objective Value', 'Initial Distance', 'Final Distance',
-                'Episode Length']
-        vals = [obj_vals, init_dists, final_dists, episode_length]
+                'Episode Length', 'Collisions_Mu', 'Min Obstacle Distance']
+        vals = [obj_vals, init_dists, final_dists, episode_length, collisions, min_obs_distances]
 
         # mean, 25 percentile, median, 75 percentile
         fns = [np.mean, lambda x: np.percentile(x, q=25), lambda x:
@@ -208,8 +236,7 @@ class Simulator:
 
         goal = self.goal_state.position_nk2()[0, 0]
         start = self.start_state.position_nk2()[0, 0]
-        ax.set_title('Start: [{start_x:.2f}, {start_y:.2f}], Goal: [{goal_x:.2f}, {goal_y:.2f}]'.format(start_x=start[0],
-                                                                                                        start_y=start[1],
-                                                                                                        goal_x=goal[0],
-                                                                                                        goal_y=goal[1]))
-        ax.set_xlabel('Cost: {cost:.3f}'.format(cost=self.obj_val))
+        text_color = self.episode_termination_colors[self.episode_type]
+        ax.set_title('Start: [{:.2f}, {:.2f}] '.format(*start) +
+                     'Goal: [{:.2f}, {:.2f}]'.format(*goal), color=text_color)
+        ax.set_xlabel('Cost: {cost:.3f}'.format(cost=self.obj_val), color=text_color)
