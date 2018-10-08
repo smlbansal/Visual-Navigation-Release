@@ -208,8 +208,8 @@ class Simulator:
 
         goal = self.goal_state.position_nk2()[0, 0]
         start = self.start_state.position_nk2()[0, 0]
-        ax.set_title('Start: [%.02f, %.02f], Goal: [%.02f, %.02f]'.format(start[0],
-                                                                          start[1],
-                                                                          goal[0],
-                                                                          goal[1]))
-        ax.set_xlabel('Cost: %.03f'.format(self.obj_val))
+        ax.set_title('Start: [{start_x:.2f}, {start_y:.2f}], Goal: [{goal_x:.2f}, {goal_y:.2f}]'.format(start_x=start[0],
+                                                                                                        start_y=start[1],
+                                                                                                        goal_x=goal[0],
+                                                                                                        goal_y=goal[1]))
+        ax.set_xlabel('Cost: {cost:.3f}'.format(cost=self.obj_val))
