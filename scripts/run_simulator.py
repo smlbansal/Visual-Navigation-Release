@@ -21,6 +21,7 @@ def simulate(params):
                                  (8, 8), (.4, .4))
     axs = axs[::-1]
     k = 0
+    metrics = []
     for i in range(num_maps):
             sim.reset(obstacle_params=obstacle_params)
             for j in range(num_tests_per_map):
@@ -29,10 +30,15 @@ def simulate(params):
                 if j != 0:
                     sim.reset()
                 sim.simulate()
+                metrics.append(sim.get_metrics())
                 ax = axs.pop()
                 sim.render(ax, freq=4)
+    metrics_keys, metrics_vals = sim.collect_metrics(metrics)
     fig.suptitle('Circular Obstacle Map Simulator')
-    plt.savefig('./tmp/circular_obstacle_map.png', bbox_inches='tight')
+    fig.savefig('./tmp/circular_obstacle_map.png', bbox_inches='tight')
+
+    for key, val in zip(metrics_keys, metrics_vals):
+        print('{:s}: {:f}'.format(key, val))
 
 
 def main():

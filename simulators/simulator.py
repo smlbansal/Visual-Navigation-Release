@@ -9,6 +9,7 @@ from utils.fmm_map import FmmMap
 
 
 class Simulator:
+    episode_termination_reasons = ['Timeout', 'Collision', 'Success']
 
     def __init__(self, params, goal_cutoff_dist=0.0, goal_dist_norm='l2'):
         self.params = params
@@ -72,12 +73,12 @@ class Simulator:
         if tf.size(success_idxs).numpy() != 0:
             success_idx = success_idxs[0]
 
-        reasons = ['Timeout', 'Collision', 'Success']
+        # Same order as Simulator.episode_termination_reasons
         time_idxs = [self.params.episode_horizon, collision_idx, success_idx]
         idx = np.argmin(time_idxs)
         time_idx = time_idxs[idx]
         vehicle_trajectory.clip_along_time_axis(time_idx)
-        return reasons[idx]
+        return idx
 
     def _update_obj_fn(self):
         """ Update the objective function to use a new
@@ -95,16 +96,8 @@ class Simulator:
             idx += 1
 
     def _init_obstacle_map(self, obstacle_params=None):
-        p = self.params
-        if obstacle_params is None:
-            return p._obstacle_map(map_bounds=p.map_bounds,
-                                   **p.obstacle_map_params)
-        else:
-            return p._obstacle_map.init_random_map(map_bounds=p.map_bounds,
-                                                   min_n=obstacle_params['min_n'],
-                                                   max_n=obstacle_params['max_n'],
-                                                   min_r=obstacle_params['min_r'],
-                                                   max_r=obstacle_params['max_r'])
+        """ Initializes a new obstacle map."""
+        raise NotImplementedError
 
     def _init_system_dynamics(self):
         p = self.params
@@ -158,6 +151,49 @@ class Simulator:
         each point in pos_nk2 and the given goal, goal_12"""
         if self.goal_dist_norm == 'l2':
             return tf.norm(pos_nk2-goal_12, axis=2)
+
+    def get_metrics(self):
+        """After the episode is over, call the get_metrics function to get metrics
+        per episode.  Returns a structure, lists of which are passed to accumulate
+        metrics static function to generate summary statistics."""
+        final_dist = self._dist_to_goal(self.vehicle_trajectory.position_nk2()[:, -1],
+                                        self.goal_state.position_nk2())
+        init_dist = self._dist_to_goal(self.vehicle_trajectory.position_nk2()[:, -1],
+                                       self.start_state.position_nk2())
+        return np.array([self.obj_val,
+                         init_dist,
+                         final_dist,
+                         self.vehicle_trajectory.k,
+                         self.episode_type])
+
+    @staticmethod
+    def collect_metrics(ms):
+        ms = np.array(ms)
+        obj_vals, init_dists, final_dists, episode_length, episode_types = ms.T
+        keys = ['Objective Value', 'Initial Distance', 'Final Distance',
+                'Episode Length']
+        vals = [obj_vals, init_dists, final_dists, episode_length]
+
+        # mean, 25 percentile, median, 75 percentile
+        fns = [np.mean, lambda x: np.percentile(x, q=25), lambda x:
+               np.percentile(x, q=50), lambda x: np.percentile(x, q=75)]
+        fn_names = ['mu', '25', '50', '75']
+        out_vals, out_keys = [], []
+        for k, v in zip(keys, vals):
+            for fn, name in zip(fns, fn_names):
+                _ = fn(v)
+                out_keys.append('{:s}_{:s}'.format(k, name))
+                out_vals.append(_)
+        num_episodes = len(episode_types)
+
+        # Follow the indexing order of Simulator.episode_terimination_reasons
+        out_keys.append('Percent Timeout')
+        out_vals.append(np.sum(episode_types == 0)/num_episodes)
+        out_keys.append('Percent Collision')
+        out_vals.append(np.sum(episode_types == 1)/num_episodes)
+        out_keys.append('Percent Success')
+        out_vals.append(np.sum(episode_types == 2)/num_episodes)
+        return out_keys, out_vals
 
     def render(self, ax, freq=4):
         ax.clear()

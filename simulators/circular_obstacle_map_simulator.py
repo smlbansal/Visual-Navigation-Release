@@ -32,3 +32,16 @@ class CircularObstacleMapSimulator(Simulator):
                                  position_nk2=start_pos_12[None])
         self.goal_state = State(dt=p.dt, n=1, k=1,
                                 position_nk2=goal_pos_12[None])
+
+    def _init_obstacle_map(self, obstacle_params=None):
+        """ Initializes a new circular obstacle map."""
+        p = self.params
+        if obstacle_params is None:
+            return p._obstacle_map(map_bounds=p.map_bounds,
+                                   **p.obstacle_map_params)
+        else:
+            return p._obstacle_map.init_random_map(map_bounds=p.map_bounds,
+                                                   min_n=obstacle_params['min_n'],
+                                                   max_n=obstacle_params['max_n'],
+                                                   min_r=obstacle_params['min_r'],
+                                                   max_r=obstacle_params['max_r'])
