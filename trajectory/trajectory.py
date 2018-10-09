@@ -263,7 +263,7 @@ class State(Trajectory):
                              boundary_params=None):
         self.render(ax, batch_idx, marker)
         if boundary_params is not None:
-            if boundary_params['norm'] == 'l2':
+            if boundary_params['norm'] == 2:
                 center = self.position_nk2()[batch_idx, 0].numpy()
                 radius = boundary_params['cutoff']
                 c = plt.Circle(center, radius, color=boundary_params['color'])

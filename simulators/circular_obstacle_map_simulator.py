@@ -7,7 +7,7 @@ from simulators.simulator import Simulator
 
 class CircularObstacleMapSimulator(Simulator):
 
-    def __init__(self, params, goal_cutoff_dist=0.0, goal_dist_norm='l2',
+    def __init__(self, params, goal_cutoff_dist=0.0, goal_dist_norm=2,
                  end_episode_on_collision=True, end_episode_on_success=True):
         assert(params._obstacle_map is CircularObstacleMap)
         super().__init__(params=params, goal_cutoff_dist=goal_cutoff_dist,
@@ -30,7 +30,9 @@ class CircularObstacleMapSimulator(Simulator):
 
     def sample_start_and_goal(self):
         p = self.params
-        start_pos_12, goal_pos_12 = self.obstacle_map.sample_start_and_goal_12(self.rng)
+        start_pos_12, goal_pos_12 = self.obstacle_map.sample_start_and_goal_12(self.rng,
+                                                                               goal_radius=self.goal_cutoff_dist,
+                                                                               goal_norm=self.goal_dist_norm)
         self.start_state = State(dt=p.dt, n=1, k=1,
                                  position_nk2=start_pos_12[None])
         self.goal_state = State(dt=p.dt, n=1, k=1,

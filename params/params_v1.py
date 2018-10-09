@@ -44,7 +44,7 @@ def load_params():
 
     # Obstacle Avoidance Objective
     p.avoid_obstacle_objective = DotMap(obstacle_margin=0.3,
-                                        power=2,
+                                        power=3,
                                         obstacle_cost=25.0)
     # Angle Distance parameters
     p.goal_angle_objective = DotMap(power=1,
@@ -103,10 +103,10 @@ def load_params():
                                  'load_from_pickle_file': True,
                                  'bin_velocity': True}
     p.simulator_params = {'goal_cutoff_dist': .3,
-                          'goal_dist_norm': 'l2',
+                          'goal_dist_norm': 2,  # Default is l2 norm
                           'end_episode_on_collision': True,
                           'end_episode_on_success': True}
 
     p.control_validation_params = DotMap(num_tests_per_map=1,
-                                         num_maps=2)
+                                         num_maps=50)
     return p

@@ -12,11 +12,11 @@ class Simulator:
     episode_termination_reasons = ['Timeout', 'Collision', 'Success']
     episode_termination_colors = ['b', 'r', 'g']
 
-    def __init__(self, params, goal_cutoff_dist=0.0, goal_dist_norm='l2',
+    def __init__(self, params, goal_cutoff_dist=0.0, goal_dist_norm=2,
                  end_episode_on_collision=True, end_episode_on_success=True):
         self.params = params
         self.goal_cutoff_dist = goal_cutoff_dist
-        self.goal_dist_norm = goal_dist_norm
+        self.goal_dist_norm = goal_dist_norm  #Default- L2 norm
         self.end_episode_on_collision = end_episode_on_collision
         self.end_episode_on_success = end_episode_on_success
         self.system_dynamics = self._init_system_dynamics()
@@ -174,8 +174,10 @@ class Simulator:
     def _dist_to_goal(self, pos_nk2, goal_12):
         """Calculate the distance between
         each point in pos_nk2 and the given goal, goal_12"""
-        if self.goal_dist_norm == 'l2':
+        if self.goal_dist_norm == 2:
             return tf.norm(pos_nk2-goal_12, axis=2)
+        else:
+            assert(False)
 
     def get_metrics(self):
         """After the episode is over, call the get_metrics function to get metrics
