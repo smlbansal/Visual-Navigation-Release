@@ -187,7 +187,7 @@ class LQRSolver:
 
                 # update value function for the previous time step
                 Vxx_ndd = Qxx_ndd - tf.matmul(tf.matmul(fdbck_gain_nfd, Quu_nff),
-                                          fdbck_gain_Tnfd[t])
+                                              fdbck_gain_Tnfd[t])
                 Vx_nd1 = Qx_nd1 - tf.matmul(tf.matmul(fdbck_gain_nfd, Quu_nff), fdfwd_Tnf1[t])
             return fdfwd_Tnf1, fdbck_gain_Tnfd
 

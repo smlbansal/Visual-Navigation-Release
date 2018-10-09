@@ -1,10 +1,17 @@
-import dotmap
-import pickle
 import os
-import importlib
+import pickle
 import json
+import importlib
 import numpy as np
 import tensorflow as tf
+import copy
+import dotmap
+
+
+def ensure_odd(integer):
+    if integer % 2 == 0:
+        integer += 1
+    return integer
 
 
 def load_params(version):
@@ -28,28 +35,34 @@ def load_params_json(version):
         p = dotmap.DotMap(params)
     return p
 
-def log_params(params, filename):
+
+def log_dict_as_json(params, filename):
+    """Save params (either a DotMap object or a python dictionary) to a file in json format"""
     with open(filename, 'w') as f:
-        param_dict_serializable = _to_json_serializable_dict(params.toDict())
+        if isinstance(params, dotmap.DotMap):
+            params = params.toDict()
+        param_dict_serializable = _to_json_serializable_dict(copy.deepcopy(params))
         json.dump(param_dict_serializable, f, indent=4, sort_keys=True)
+
 
 def _to_json_serializable_dict(param_dict):
     """ Converts params_dict to a json serializable dict."""
     def _to_serializable_type(elem):
         """ Converts an element to a json serializable type. """
         if isinstance(elem, tf.Tensor):
-            return elem.numpy().tolist() 
+            return elem.numpy().tolist()
         if isinstance(elem, np.ndarray):
             return elem.tolist()
         if isinstance(elem, dict):
             return _to_json_serializable_dict(elem)
-        if type(elem) is type: #elem is a class
+        if type(elem) is type:  # elem is a class
             return str(elem)
         else:
             return elem
     for key in param_dict.keys():
         param_dict[key] = _to_serializable_type(param_dict[key])
     return param_dict
+
 
 def mkdir_if_missing(dirname):
     if not os.path.exists(dirname):

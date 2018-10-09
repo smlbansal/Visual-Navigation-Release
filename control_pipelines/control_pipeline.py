@@ -60,14 +60,16 @@ class Control_Pipeline_v0(Control_Pipeline):
         filename = p.planner_params['mode']
         if p.planner_params['mode'] == 'random':
             filename += '_%d'%(p.seed)
-        filename += '_%.03f_%.03f_%.03f_%.03f'%(waypt_bounds[0][0],
-                                                waypt_bounds[0][1],
-                                                waypt_bounds[1][0],
-                                                waypt_bounds[1][1])
-        filename += '_%.03f_%d'%(p.planner_params['dx'],
-                                 p.planner_params['num_theta_bins'])
+            filename += '_%.02f_%.02f_%.02f_%.02f'%(waypt_bounds[0][0],
+                                                    waypt_bounds[0][1],
+                                                    waypt_bounds[1][0],
+                                                    waypt_bounds[1][1])
+        else:
+            filename += '_X_{:.2f}_{:.2f}_{:d}'.format(*p.planner_params['waypt_x_params'])
+            filename += '_Y_{:.2f}_{:.2f}_{:d}'.format(*p.planner_params['waypt_y_params'])
+            filename += '_Theta_{:.3f}_{:.3f}_{:d}'.format(*p.planner_params['waypt_theta_params'])
 
-        filename += '_velocity_%.04f.pkl'%(self.v0)
+        filename += '_velocity_{:.3f}.pkl'.format(self.v0)
         filename = os.path.join(base_dir, filename)
         return filename
 
@@ -120,6 +122,7 @@ class Control_Pipeline_v0(Control_Pipeline):
         return data
 
     def plan(self, start_state, goal_state):
+        #import pdb; pdb.set_trace()
         if self.precompute and self.computed:
             if self.bin_velocity or self.params._spline.check_start_goal_equivalence(self.start_state,
                                                                                      self.goal_state,

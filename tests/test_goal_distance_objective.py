@@ -13,26 +13,27 @@ def create_params():
     p = DotMap()
     # Goal Distance parameters
     p.goal_distance_objective = DotMap(power=2,
-                                       goal_cost=25.0)
+                                       goal_cost=25.0,
+                                       goal_margin=0.0)
     return p
 
 
 def test_goal_distance():
     # Create parameters
     p = create_params()
-    
+ 
     # Create a circular obstacle map
     map_bounds = [(-2., -2.), (2., 2.)]  # [(min_x, min_y), (max_x, max_y)]
     cs = np.array([[-1.0, -1.0], [1.0, 1.0]])
     rs = np.array([[1.0], [1.0]])
     obstacle_map = CircularObstacleMap(map_bounds, cs, rs)
-    
+
     # Create the occupancy grid
     xx, yy = np.meshgrid(np.linspace(-2., 2., 40), np.linspace(-2., 2., 40), indexing='xy')
     obstacle_occupancy_grid = obstacle_map.create_occupancy_grid(tf.constant(xx, dtype=tf.float32),
                                                                  tf.constant(yy, dtype=tf.float32))
     assert obstacle_occupancy_grid.shape == (40, 40)
-    
+
     # Define a goal position and compute the corresponding fmm map
     fmm_map = FmmMap.create_fmm_map_based_on_goal_position(goal_positions_n2=np.array([[0., 0.]]),
                                                            map_size_2=np.array([40, 40]),

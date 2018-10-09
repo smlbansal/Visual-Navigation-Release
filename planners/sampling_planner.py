@@ -14,7 +14,6 @@ class SamplingPlanner(Planner):
         self.mode = mode
         self.precompute = precompute
         self.kwargs = kwargs
-        self.start_state_n = State(dt=params.dt, n=params.n, k=1, variable=True)
         self.opt_waypt = State(dt=params.dt, n=1, k=1, variable=True)
         self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.k, variable=True)
 
@@ -40,27 +39,31 @@ class SamplingPlanner(Planner):
         if self.precompute and self.waypt_egocentric_state_n is not None:
             return self.waypt_egocentric_state_n
         else:
-            waypoint_bounds = self.params.waypoint_bounds
-            x0, y0 = waypoint_bounds[0]
-            xf, yf = waypoint_bounds[1]
             n = self.params.n
             if self.mode == 'random':
+                waypoint_bounds = self.params.waypoint_bounds
+                x0, y0 = waypoint_bounds[0]
+                xf, yf = waypoint_bounds[1]
                 wx = np.random.uniform(x0, xf, size=n).astype(np.float32)[:, None]
                 wy = np.random.uniform(y0, yf, size=n).astype(np.float32)[:, None]
                 wt = np.random.uniform(-np.pi, np.pi, size=n).astype(np.float32)[:, None]
             elif self.mode == 'uniform':
-                assert('dx' in self.kwargs and 'num_theta_bins' in self.kwargs)
-                nx = int((xf-x0)/self.kwargs['dx'])
-                ny = int((yf-y0)/self.kwargs['dx'])
-
-                wx = np.linspace(x0, xf, nx, dtype=np.float32)
-                wy = np.linspace(y0, yf, ny, dtype=np.float32)
-                wt = np.linspace(-np.pi, np.pi, self.kwargs['num_theta_bins'],
-                                 dtype=np.float32)
+                wx = np.linspace(*self.kwargs['waypt_x_params'], dtype=np.float32)
+                wy = np.linspace(*self.kwargs['waypt_y_params'], dtype=np.float32)
+                wt = np.linspace(*self.kwargs['waypt_theta_params'], dtype=np.float32)
                 wx, wy, wt = np.meshgrid(wx, wy, wt)
                 wx = wx.ravel()[:, None]
                 wy = wy.ravel()[:, None]
                 wt = wt.ravel()[:, None]
+
+                # Spline assumes (0,0) start position so 
+                # the waypoint cannot be (0, 0, theta). Find these
+                # waypoints and change them to (epsilon, epsilon, theta)
+                norms = np.linalg.norm(np.concatenate([wx, wy], axis=1), axis=1)
+                eps = self.params.spline_params['epsilon']
+                small_norms_idx = (norms < eps)
+                wx[small_norms_idx] += eps
+                wy[small_norms_idx] += eps
             else:
                 assert(False)
 

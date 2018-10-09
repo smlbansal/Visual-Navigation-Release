@@ -21,29 +21,36 @@ from control_pipelines.control_pipeline import Control_Pipeline_v0
 def create_params(planner):
     p = DotMap()
     p.seed = 1
-    p.horizon = 1.5  # seconds
-    p.dx, p.dt = .05, .1
-    p.k = int(np.ceil(p.horizon/p.dt))
+    p.dx, p.dt = .05, .01
+
+    # Horizons in seconds
+    p.planning_horizon_s = 1.5  # .15
+
+    # Horizons in timesteps
+    p.k = int(np.ceil(p.planning_horizon_s/p.dt))
+
     p.map_bounds = [[-2.0, -2.0], [2.0, 2.0]]
     p.waypoint_bounds = [[-2.0, -2.0], [2.0, 2.0]]
     p.lqr_coeffs = DotMap({'quad': [1.0, 1.0, 1.0, 1e-10, 1e-10],
                            'linear': [0.0, 0.0, 0.0, 0.0, 0.0]})
 
-    p.avoid_obstacle_objective = DotMap(obstacle_margin=0.3,
-                                        power=2,
-                                        obstacle_cost=25.0)
+    p.avoid_obstacle_objective = DotMap(obstacle_margin0=0.3,
+                                        obstacle_margin1=.5,
+                                        power=3,
+                                        obstacle_cost=1.0)
     # Angle Distance parameters
     p.goal_angle_objective = DotMap(power=1,
-                                    angle_cost=25.0)
+                                    angle_cost=.004)
     # Goal Distance parameters
     p.goal_distance_objective = DotMap(power=2,
-                                       goal_cost=25.0)
+                                       goal_cost=.04,
+                                       goal_margin=0.0)
     C = tf.diag(p.lqr_coeffs.quad, name='lqr_coeffs_quad')
     c = tf.constant(p.lqr_coeffs.linear, name='lqr_coeffs_linear',
                     dtype=tf.float32)
 
-    p.cost_params = {'C': C, 'c': c}
-    p.spline_params = {}
+    p.cost_params = {'C_gg': C, 'c_g': c}
+    p.spline_params = {'epsilon': 1e-10}
 
     p._cost = QuadraticRegulatorRef
     p._spline = Spline3rdOrder
@@ -63,7 +70,7 @@ def create_params(planner):
                             'num_theta_bins': num_theta_bins}
         p._planner = SamplingPlanner
     elif planner == 'gradient':
-        p.planner_params = {'learning_rate': 1e-1,
+        p.planner_params = {'learning_rate': 1e-2,
                             'optimizer': tf.train.AdamOptimizer,
                             'num_opt_iters': 30}
         p.n = 1
@@ -165,7 +172,7 @@ def test_gradient_planner(visualize=False):
         axes = axes[::-1]
         axs = axes[:3]
         planner.render(axs, start_state, min_waypt, obstacle_map=obstacle_map)
-        plt.show()
+        plt.savefig('./tmp/gradient_planner.png')
     else:
         print('rerun test_gradient_based_data_gen with '
               'visualize=True to see visualization')
@@ -173,7 +180,7 @@ def test_gradient_planner(visualize=False):
 
 def main():
     plt.style.use('ggplot')
-    test_sampling_planner(visualize=True)
+    #test_sampling_planner(visualize=True)
     test_gradient_planner(visualize=True)
 
 

@@ -30,7 +30,8 @@ def create_params(cs, rs):
                            'linear': [0.0, 0.0, 0.0, 0.0, 0.0]})
     p.ctrl = 1.
 
-    p.avoid_obstacle_objective = DotMap(obstacle_margin=0.3,
+    p.avoid_obstacle_objective = DotMap(obstacle_margin0=0.3,
+                                        obstacle_margin1=0.5,
                                         power=2,
                                         obstacle_cost=25.0)
     # Angle Distance parameters
@@ -38,7 +39,8 @@ def create_params(cs, rs):
                                     angle_cost=25.0)
     # Goal Distance parameters
     p.goal_distance_objective = DotMap(power=2,
-                                       goal_cost=25.0)
+                                       goal_cost=25.0,
+                                       goal_margin=0.0)
 
     C = tf.diag(p.lqr_coeffs.quad, name='lqr_coeffs_quad')
     c = tf.constant(p.lqr_coeffs.linear,

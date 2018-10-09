@@ -4,10 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils import utils
 import argparse
-import logging
 import os
 
 logdir = './logs'
+
 
 def parameter_sweep(params):
     p = utils.load_params(params)
@@ -20,15 +20,15 @@ def parameter_sweep(params):
                                  (8, 8), (.4, .4))
     axs = axs[::-1]
 
-    angle_coeffs = np.linspace(0.0, 1.0, 6)
-    collision_coeffs = np.linspace(0.0, 1.0, 6)
-    goal_coeffs = np.linspace(0.0, 1.0, 6)
- 
+    angle_coeffs = np.linspace(0.002, .006, 4)
+    collision_coeffs = np.linspace(.5, 2.0, 4)
+    goal_coeffs = np.linspace(0.02, .06, 4)
+
     for angle in angle_coeffs:
         for goal in goal_coeffs:
             for collision in collision_coeffs:
                 sim_dir = os.path.join(logdir,
-                                       'angle_{:.02f}_goal_{:.02f}_collision_{:.02f}'.format(angle,
+                                       'angle_{:.04f}_goal_{:.04f}_collision_{:.04f}'.format(angle,
                                                                                              goal,
                                                                                              collision))
                 p.goal_angle_objective.angle_cost = angle
@@ -38,11 +38,9 @@ def parameter_sweep(params):
 
 
 def simulate(p, logdir, fig, axs):
-    utils.mkdir_if_missing(logdir)
     print(logdir)
-    logging.basicConfig(filename=os.path.join(logdir, 'log.log'), filemode='w')
-
-    utils.log_params(p, os.path.join(logdir, 'params.json'))
+    utils.mkdir_if_missing(logdir)
+    utils.log_dict_as_json(p, os.path.join(logdir, 'params.json'))
     tf.set_random_seed(p.seed)
     np.random.seed(p.seed)
     obstacle_params = {'min_n': 4, 'max_n': 7, 'min_r': .3, 'max_r': .8}
@@ -56,19 +54,20 @@ def simulate(p, logdir, fig, axs):
     for i in range(num_maps):
             sim.reset(obstacle_params=obstacle_params)
             for j in range(num_tests_per_map):
-                k += 1
                 if j != 0:
                     sim.reset()
                 sim.simulate()
                 metrics.append(sim.get_metrics())
-                sim.render(axs[k], freq=4)
+                sim.render(axs[k], freq=75)
+                axs[k].set_title('#{:d}, {:s}'.format(k, axs[k].get_title()))
+                k += 1
     metrics_keys, metrics_vals = sim.collect_metrics(metrics)
     fig.suptitle('Circular Obstacle Map Simulator')
     figname = os.path.join(logdir, 'circular_obstacle_map.png')
     fig.savefig(figname, bbox_inches='tight')
 
-    for key, val in zip(metrics_keys, metrics_vals):
-        logging.error('{:s}: {:f}'.format(key, val))
+    utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)),
+                           os.path.join(logdir, 'metrics.json'))
 
 
 def main():

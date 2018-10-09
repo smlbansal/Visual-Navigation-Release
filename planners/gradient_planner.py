@@ -18,25 +18,25 @@ class GradientPlanner(Planner):
 
     def optimize(self, start_state, vf=0.):
         p = self.params
-        start_state_n = State.broadcast_batch_size_to(start_state, p.n)
-        waypt_state_n = self._sample_waypoints(start_state_n, vf=vf)
+        self.start_state_n.assign_from_broadcasted_batch(start_state, p.n)
+        waypt_state_n = self._sample_waypoints(vf=vf)
 
         objs = []
         for i in range(self.num_opt_iters):
-            obj_val, grads, variables = self._compute_obj_val_and_grad(
-                                                start_state_n, waypt_state_n)
+            obj_val, grads, variables = self._compute_obj_val_and_grad(self.start_state_n,
+                                                                       waypt_state_n)
             objs.append(obj_val)
             self.optimizer.apply_gradients(zip(grads, variables))
-        obj_vals, trajectory = self.eval_objective(start_state_n,
-                                                   waypt_state_n)
-        min_waypt = State.new_traj_from_batch_idx(waypt_state_n,
-                                                  batch_idx=0)
-        min_traj = trajectory
+        obj_vals, trajectory = self.eval_objective(self.start_state_n,
+                                                   waypt_state_n, mode='new')
+        self.opt_traj.assign_from_trajectory_batch_idx(trajectory, batch_idx=0)
+        self.opt_waypt.assign_from_state_batch_idx(waypt_state_n, batch_idx=0)
+
         min_cost = obj_vals[0]
         self.objs = objs
-        return min_waypt, min_traj, min_cost
+        return self.opt_waypt, self.opt_traj, min_cost
 
-    def _sample_waypoints(self, state_n, vf=0.):
+    def _sample_waypoints(self, vf=0.):
         waypoint_bounds = self.params.waypoint_bounds
         n = self.params.n
         wx = np.random.uniform(waypoint_bounds[0][0],
@@ -59,7 +59,7 @@ class GradientPlanner(Planner):
     def _compute_obj_val_and_grad(self, start_state_n, waypt_state_n):
         with tf.GradientTape() as tape:
             trainable_vars = waypt_state_n.trainable_variables
-            obj_vals, _ = self.eval_objective(start_state_n, waypt_state_n)
+            obj_vals, _ = self.eval_objective(start_state_n, waypt_state_n, mode='new')
             obj_val = tf.reduce_mean(obj_vals)
             grads = tape.gradient(obj_val, trainable_vars)
         return obj_val, grads, trainable_vars

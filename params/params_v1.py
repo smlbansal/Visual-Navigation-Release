@@ -8,6 +8,7 @@ from planners.sampling_planner_v1 import SamplingPlanner_v1
 from systems.dubins_v2 import Dubins_v2
 from control_pipelines.control_pipeline import Control_Pipeline_v0
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
+import utils.utils as utils
 
 
 def load_params():
@@ -43,7 +44,8 @@ def load_params():
     p.control_horizon = int(np.ceil(p.control_horizon_s/p.dt))
 
     # Obstacle Avoidance Objective
-    p.avoid_obstacle_objective = DotMap(obstacle_margin=0.3,
+    p.avoid_obstacle_objective = DotMap(obstacle_margin0=0.3,
+                                        obstacle_margin1=0.5,
                                         power=3,
                                         obstacle_cost=25.0)
     # Angle Distance parameters
@@ -51,7 +53,8 @@ def load_params():
                                     angle_cost=25.0)
     # Goal Distance parameters
     p.goal_distance_objective = DotMap(power=2,
-                                       goal_cost=25.0)
+                                       goal_cost=25.0,
+                                       goal_margin=.3)
 
     p._cost = QuadraticRegulatorRef
     p._spline = Spline3rdOrder
@@ -69,7 +72,7 @@ def load_params():
                     dtype=tf.float32)
     p.cost_params = {'C_gg': C, 'c_g': c}
 
-    p.spline_params = {}
+    p.spline_params = {'epsilon': 1e-10}
 
     centers_m2 = [[2.0, 2.0]]
     radii_m1 = [[.5]]
@@ -80,14 +83,12 @@ def load_params():
     p.system_dynamics_params = {'v_bounds': [0.0, .6],
                                 'w_bounds': [-1.1, 1.1]}
 
-    # dx and num_theta_bins only have effect in uniform sampling mode
+    # dx and num_theta_bins only used if sampling mode is uniform
     dx = .1
-    num_theta_bins = 21
+    num_theta_bins = utils.ensure_odd(11)
     precompute = True
     velocity_disc = .01  # discretization of velocity for control pipeline
     p.planner_params = {'mode': 'uniform',
-                        'dx': dx,  # discretization of the waypoint grid
-                        'num_theta_bins': num_theta_bins,
                         'precompute': precompute,
                         'velocity_disc': velocity_disc}
 
@@ -95,16 +96,20 @@ def load_params():
     if p.planner_params['mode'] == 'uniform':
         x0, y0 = p.waypoint_bounds[0]
         xf, yf = p.waypoint_bounds[1]
-        nx = int((xf-x0)/dx)
-        ny = int((yf-y0)/dx)
+        # Make sure these are odd so the origin is included (for turning waypoints)
+        nx = utils.ensure_odd(int((xf-x0)/dx))
+        ny = utils.ensure_odd(int((yf-y0)/dx))
+        p.planner_params['waypt_x_params'] = [x0, xf, nx]
+        p.planner_params['waypt_y_params'] = [y0, yf, ny]
+        p.planner_params['waypt_theta_params'] = [-np.pi/2, np.pi/2, num_theta_bins]
         p.n = int(nx*ny*num_theta_bins)
 
     p.control_pipeline_params = {'precompute': precompute,
                                  'load_from_pickle_file': True,
                                  'bin_velocity': True}
-    p.simulator_params = {'goal_cutoff_dist': .3,
+    p.simulator_params = {'goal_cutoff_dist': p.goal_distance_objective.goal_margin,
                           'goal_dist_norm': 2,  # Default is l2 norm
-                          'end_episode_on_collision': True,
+                          'end_episode_on_collision': False,
                           'end_episode_on_success': True}
 
     p.control_validation_params = DotMap(num_tests_per_map=1,

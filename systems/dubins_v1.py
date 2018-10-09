@@ -96,9 +96,10 @@ class Dubins_v1(Dynamics):
                      angular_speed_nk1=angular_speed_nk1, variable=False)
 
     @staticmethod
-    def to_egocentric_coordinates(ref_state, traj_world, traj_egocentric):
+    def to_egocentric_coordinates(ref_state, traj_world, traj_egocentric, mode='assign'):
         """ Converts traj_world to an egocentric reference frame assuming
-        ref_state is the origin. The result is assigned to traj_egocentric"""
+        ref_state is the origin. If mode is assign the result is assigned to traj_egocentric. If
+        mode is new a new trajectory object is returned."""
         ref_position_1k2 = ref_state.position_nk2()
         ref_heading_1k1 = ref_state.heading_nk1()
         position_nk2 = traj_world.position_nk2()
@@ -108,15 +109,35 @@ class Dubins_v1(Dynamics):
         position_nk2 = rotate_pos_nk2(position_nk2, -ref_heading_1k1)
         heading_nk1 = angle_normalize(heading_nk1 - ref_heading_1k1)
 
-        traj_egocentric.assign_trajectory_from_tensors(position_nk2=position_nk2,
-                                                       speed_nk1=traj_world.speed_nk1(),
-                                                       acceleration_nk1=traj_world.acceleration_nk1(),
-                                                       heading_nk1=heading_nk1,
-                                                       angular_speed_nk1=traj_world.angular_speed_nk1(),
-                                                       angular_acceleration_nk1=traj_world.angular_acceleration_nk1())
+        if mode == 'assign':
+            traj_egocentric.assign_trajectory_from_tensors(position_nk2=position_nk2,
+                                                           speed_nk1=traj_world.speed_nk1(),
+                                                           acceleration_nk1=traj_world.acceleration_nk1(),
+                                                           heading_nk1=heading_nk1,
+                                                           angular_speed_nk1=traj_world.angular_speed_nk1(),
+                                                           angular_acceleration_nk1=traj_world.angular_acceleration_nk1())
+            return traj_egocentric
+        # Use mode == new with gradient planner as the tf.assign op does
+        # not track gradients
+        elif mode == 'new':
+            if traj_world.k == 1:
+                cls = State
+            else:
+                cls = Trajectory
+            traj_egocentric = cls(dt=traj_world.dt, n=traj_world.n, k=traj_world.k,
+                                  position_nk2=position_nk2,
+                                  speed_nk1=traj_world.speed_nk1(),
+                                  acceleration_nk1=traj_world.acceleration_nk1(),
+                                  heading_nk1=heading_nk1,
+                                  angular_speed_nk1=traj_world.angular_speed_nk1(),
+                                  angular_acceleration_nk1=traj_world.angular_acceleration_nk1(),
+                                  direct_init=True)
+            return traj_egocentric
+        else:
+            assert(mode in ['new', 'assign'])
 
     @staticmethod
-    def to_world_coordinates(ref_state, traj_egocentric, traj_world):
+    def to_world_coordinates(ref_state, traj_egocentric, traj_world, mode='assign'):
         """ Converts traj_egocentric to the world coordinate frame assuming
         ref_state is the origin of the egocentric coordinate frame
         in the world coordinate frame. Assigns the result to traj_world"""
@@ -129,9 +150,28 @@ class Dubins_v1(Dynamics):
         position_nk2 = position_nk2 + ref_position_1k2
         heading_nk1 = angle_normalize(heading_nk1 + ref_heading_1k1)
 
-        traj_world.assign_trajectory_from_tensors(position_nk2=position_nk2,
-                                                  speed_nk1=traj_egocentric.speed_nk1(),
-                                                  acceleration_nk1=traj_egocentric.acceleration_nk1(),
-                                                  heading_nk1=heading_nk1,
-                                                  angular_speed_nk1=traj_egocentric.angular_speed_nk1(),
-                                                  angular_acceleration_nk1=traj_egocentric.angular_acceleration_nk1())
+        if mode == 'assign':
+            traj_world.assign_trajectory_from_tensors(position_nk2=position_nk2,
+                                                      speed_nk1=traj_egocentric.speed_nk1(),
+                                                      acceleration_nk1=traj_egocentric.acceleration_nk1(),
+                                                      heading_nk1=heading_nk1,
+                                                      angular_speed_nk1=traj_egocentric.angular_speed_nk1(),
+                                                      angular_acceleration_nk1=traj_egocentric.angular_acceleration_nk1())
+            return traj_world
+        elif mode == 'new':
+            if traj_world.k == 1:
+                cls = State
+            else:
+                cls = Trajectory
+            traj_world = cls(dt=traj_egocentric.dt, n=traj_egocentric.n, k=traj_egocentric.k,
+                                  position_nk2=position_nk2,
+                                  speed_nk1=traj_egocentric.speed_nk1(),
+                                  acceleration_nk1=traj_egocentric.acceleration_nk1(),
+                                  heading_nk1=heading_nk1,
+                                  angular_speed_nk1=traj_egocentric.angular_speed_nk1(),
+                                  angular_acceleration_nk1=traj_egocentric.angular_acceleration_nk1(),
+                                  direct_init=True)
+            return traj_world
+        else:
+            assert(mode in ['new', 'assign'])
+

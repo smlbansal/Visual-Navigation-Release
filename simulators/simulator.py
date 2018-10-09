@@ -33,13 +33,22 @@ class Simulator:
         (timeout, collision, success)"""
         state = self.start_state
         vehicle_trajectory = self.vehicle_trajectory
+        states = []
+        state_time_idxs = []
         while vehicle_trajectory.k < self.params.episode_horizon:
             waypt_trajectory, next_state = self._iterate(state)
             vehicle_trajectory.append_along_time_axis(waypt_trajectory)
+            states.append(next_state)
+            state_time_idxs.append(vehicle_trajectory.k)
             state = next_state
         self.min_obs_distances = self._calculate_min_obs_distances(vehicle_trajectory)
         self.collisions = self._calculate_trajectory_collisions(vehicle_trajectory)
-        self.episode_type = self._enforce_episode_termination_conditions(vehicle_trajectory)
+        self.episode_type, end_time_idx = self._enforce_episode_termination_conditions(vehicle_trajectory)
+        
+        # Only keep the states corresponding to unclipped parts of the trajectory
+        keep_idx = np.array(state_time_idxs) <= end_time_idx
+        self.states = np.array(states)[keep_idx]
+
         self.obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
 
@@ -75,35 +84,35 @@ class Simulator:
             success """
         # Same order as Simulator.episode_termination_reasons
         time_idxs = [self.params.episode_horizon]
+        pos_1k2 = vehicle_trajectory.position_nk2()
 
-        if self.end_episode_on_collision:
-            collision_idx = self.params.episode_horizon + 1
+        collision_idx = self.params.episode_horizon + 1
 
-            # Check for collision
-            pos_1k2 = vehicle_trajectory.position_nk2()
-            obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
-            collisions = tf.where(tf.less(obstacle_dists_1k, 0.0))
-            collision_idxs = collisions[:, 1]
-            if tf.size(collision_idxs).numpy() != 0:
-                collision_idx = collision_idxs[0]
-            time_idxs.append(collision_idx)
+        # Check for collision
+        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
+        collisions = tf.where(tf.less(obstacle_dists_1k, 0.0))
+        collision_idxs = collisions[:, 1]
+        if tf.size(collision_idxs).numpy() != 0:
+            collision_idx = collision_idxs[0]
+        time_idxs.append(collision_idx)
 
-        if self.end_episode_on_success:
-            success_idx = self.params.episode_horizon + 1
+        success_idx = self.params.episode_horizon + 1
 
-            # Check within goal radius
-            dist_to_goal_1k = self._dist_to_goal(pos_1k2,
-                                                 self.goal_state.position_nk2())
-            successes = tf.where(tf.less(dist_to_goal_1k,
-                                         self.goal_cutoff_dist))
-            success_idxs = successes[:, 1]
-            if tf.size(success_idxs).numpy() != 0:
-                success_idx = success_idxs[0]
-            time_idxs.append(success_idx)
+        # Check within goal radius
+        dist_to_goal_1k = self._dist_to_goal(pos_1k2,
+                                             self.goal_state.position_nk2())
+        successes = tf.where(tf.less(dist_to_goal_1k,
+                                     self.goal_cutoff_dist))
+        success_idxs = successes[:, 1]
+        if tf.size(success_idxs).numpy() != 0:
+            success_idx = success_idxs[0]
+        time_idxs.append(success_idx)
 
         idx = np.argmin(time_idxs)
-        vehicle_trajectory.clip_along_time_axis(time_idxs[idx])
-        return idx
+        if idx == 0 or (idx == 1 and self.end_episode_on_collision) or \
+           (idx == 2 and self.end_episode_on_success):
+            vehicle_trajectory.clip_along_time_axis(time_idxs[idx])
+        return idx, time_idxs[idx]
 
     def _update_obj_fn(self):
         """ Update the objective function to use a new
@@ -225,10 +234,15 @@ class Simulator:
         out_vals.append(np.sum(episode_types == 2)/num_episodes)
         return out_keys, out_vals
 
+    def _render_obstacle_map(self, ax):
+        raise NotImplementedError
+
     def render(self, ax, freq=4):
         ax.clear()
-        self.obstacle_map.render(ax)
+        self._render_obstacle_map(ax)
         self.vehicle_trajectory.render(ax, freq=freq)
+        for waypt in self.states:
+            waypt.render(ax, batch_idx=0, marker='co')
 
         boundary_params = {'norm': self.goal_dist_norm, 'cutoff':
                            self.goal_cutoff_dist, 'color': 'g'}

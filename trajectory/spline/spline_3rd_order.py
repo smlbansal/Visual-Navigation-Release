@@ -3,6 +3,10 @@ import tensorflow as tf
 
 
 class Spline3rdOrder(Spline):
+    def __init__(self, dt, n, k, epsilon):
+        super().__init__(dt=dt, n=n, k=k)
+        self.epsilon = epsilon
+
     """ A class representing a 3rd order spline for a mobile ground robot
     (in a 2d cartesian plane). The 3rd order spline allows for constraints
     on the start state, [x0, y0, theta0, v0], and goal state,
@@ -58,7 +62,7 @@ class Spline3rdOrder(Spline):
         with tf.name_scope('eval_spline'):
             ts_n4k = tf.stack([tf.pow(ts_nk, 3), tf.pow(ts_nk, 2),
                                ts_nk, tf.ones_like(ts_nk)], axis=1)
-            ps_nk = tf.squeeze(tf.matmul(p_coeffs_n14, ts_n4k))
+            ps_nk = tf.squeeze(tf.matmul(p_coeffs_n14, ts_n4k), axis=1)
 
             ps_n4k = tf.stack([tf.pow(ps_nk, 3), tf.pow(ps_nk, 2),
                                ps_nk, tf.ones_like(ps_nk)], axis=1)
@@ -66,11 +70,11 @@ class Spline3rdOrder(Spline):
                                    tf.ones_like(ps_nk), tf.zeros_like(ps_nk)],
                                   axis=1)
 
-            xs_nk = tf.squeeze(tf.matmul(x_coeffs_n14, ps_n4k))
-            ys_nk = tf.squeeze(tf.matmul(y_coeffs_n14, ps_n4k))
+            xs_nk = tf.squeeze(tf.matmul(x_coeffs_n14, ps_n4k), axis=1)
+            ys_nk = tf.squeeze(tf.matmul(y_coeffs_n14, ps_n4k), axis=1)
 
-            xs_dot_nk = tf.squeeze(tf.matmul(x_coeffs_n14, ps_dot_n4k))
-            ys_dot_nk = tf.squeeze(tf.matmul(y_coeffs_n14, ps_dot_n4k))
+            xs_dot_nk = tf.squeeze(tf.matmul(x_coeffs_n14, ps_dot_n4k), axis=1)
+            ys_dot_nk = tf.squeeze(tf.matmul(y_coeffs_n14, ps_dot_n4k), axis=1)
 
             self._position_nk2 = tf.stack([xs_nk, ys_nk], axis=2)
             self._heading_nk1 = tf.atan2(ys_dot_nk, xs_dot_nk)[:, :, None]
@@ -87,11 +91,11 @@ class Spline3rdOrder(Spline):
                                         tf.zeros_like(ps_nk),
                                         tf.zeros_like(ps_nk)], axis=1)
 
-                ps_dot_nk = tf.squeeze(tf.matmul(p_coeffs_n14, ts_dot_n4k))
+                ps_dot_nk = tf.squeeze(tf.matmul(p_coeffs_n14, ts_dot_n4k), axis=1)
 
-                ps_ddot_nk = tf.squeeze(tf.matmul(p_coeffs_n14, ts_ddot_n4k))
-                xs_ddot_nk = tf.squeeze(tf.matmul(x_coeffs_n14, ps_ddot_n4k))
-                ys_ddot_nk = tf.squeeze(tf.matmul(y_coeffs_n14, ps_ddot_n4k))
+                ps_ddot_nk = tf.squeeze(tf.matmul(p_coeffs_n14, ts_ddot_n4k), axis=1)
+                xs_ddot_nk = tf.squeeze(tf.matmul(x_coeffs_n14, ps_ddot_n4k), axis=1)
+                ys_ddot_nk = tf.squeeze(tf.matmul(y_coeffs_n14, ps_ddot_n4k), axis=1)
 
                 speed_ps_nk = tf.sqrt(xs_dot_nk**2 + ys_dot_nk**2)
                 speed_nk = (speed_ps_nk*ps_dot_nk)
