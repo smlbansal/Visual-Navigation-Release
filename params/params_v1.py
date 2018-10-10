@@ -31,7 +31,7 @@ def load_params():
     Ny = int((p.map_bounds[1][1] - p.map_bounds[0][1])/p.dx)
     p.map_size_2 = [Nx, Ny]
 
-    p.dt = .01  # time discretization
+    p.dt = .05  # time discretization
 
     # Horizons in seconds
     p.episode_horizon_s = 20

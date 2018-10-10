@@ -3,13 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils import utils
 import argparse
-import os
 
-logdir = './logs/parameter_sweep'
-
-
-def parameter_sweep(params):
+@profile
+def simulate(params):
+    """ A script to see how changing dt affects experimental runtime."""
     p = utils.load_params(params)
+    print(p.dt)
 
     num_tests_per_map = p.control_validation_params.num_tests_per_map
     num_maps = p.control_validation_params.num_maps
@@ -19,35 +18,10 @@ def parameter_sweep(params):
                                  (8, 8), (.4, .4))
     axs = axs[::-1]
 
-    # Heuristically calculated ranges
-    angle_coeffs = np.linspace(0.002, .006, 4)
-    collision_coeffs = np.linspace(.5, 2.0, 4)
-    goal_coeffs = np.linspace(0.02, .06, 4)
-
-    for angle in angle_coeffs:
-        for goal in goal_coeffs:
-            for collision in collision_coeffs:
-                sim_dir = os.path.join(logdir,
-                                       'angle_{:.04f}_goal_{:.04f}_collision_{:.04f}'.format(angle,
-                                                                                             goal,
-                                                                                             collision))
-                p.goal_angle_objective.angle_cost = angle
-                p.goal_distance_objective.goal_cost = goal
-                p.avoid_obstacle_objective.obstacle_cost = collision
-                simulate(p=p, logdir=sim_dir, fig=fig, axs=axs)
-
-
-def simulate(p, logdir, fig, axs):
-    print(logdir)
-    utils.mkdir_if_missing(logdir)
-    utils.log_dict_as_json(p, os.path.join(logdir, 'params.json'))
     tf.set_random_seed(p.seed)
     np.random.seed(p.seed)
     obstacle_params = {'min_n': 4, 'max_n': 7, 'min_r': .3, 'max_r': .8}
     sim = p._simulator(params=p, **p.simulator_params)
-
-    num_tests_per_map = p.control_validation_params.num_tests_per_map
-    num_maps = p.control_validation_params.num_maps
 
     k = 0
     metrics = []
@@ -63,21 +37,18 @@ def simulate(p, logdir, fig, axs):
                 k += 1
     metrics_keys, metrics_vals = sim.collect_metrics(metrics)
     fig.suptitle('Circular Obstacle Map Simulator')
-    figname = os.path.join(logdir, 'circular_obstacle_map.png')
-    fig.savefig(figname, bbox_inches='tight')
-
-    utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)),
-                           os.path.join(logdir, 'metrics.json'))
+    fig.savefig('./tmp/change_dt.png', bbox_inches='tight')
 
 
 def main():
     plt.style.use('ggplot')
+    #tf.enable_eager_execution()
     tf.enable_eager_execution(config=utils.gpu_config())
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--params', help='parameter version number', default='v1')
     args = parser.parse_args()
-    parameter_sweep(params=args.params)
+    simulate(params=args.params)
 
 
 if __name__ == '__main__':

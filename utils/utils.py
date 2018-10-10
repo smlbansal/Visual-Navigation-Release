@@ -10,10 +10,7 @@ import dotmap
 
 def gpu_config():
     config = tf.ConfigProto()
-    config.device_count['GPU'] = 1
     config.gpu_options.allow_growth = True
-    config.intra_op_parallelism_threads = 1
-    config.inter_op_parallelism_threads = 1
     return config
 
 
