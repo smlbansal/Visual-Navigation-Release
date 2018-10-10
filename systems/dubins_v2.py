@@ -1,10 +1,9 @@
-from systems.dynamics import Dynamics
-from trajectory.trajectory import Trajectory, State
-from utils.angle_utils import angle_normalize, rotate_pos_nk2
+from systems.dubins_3d import Dubins_3d
+from trajectory.trajectory import Trajectory
 import tensorflow as tf
 
 
-class Dubins_v2(Dynamics):
+class Dubins_v2(Dubins_3d):
     """ A discrete time dubins car with dynamics
         x(t+1) = x(t) + s1(v_tilde(t)) cos(theta_t)*delta_t
         y(t+1) = y(t) + s1(v_tilde(t)) sin(theta_t)*delta_t
@@ -13,10 +12,9 @@ class Dubins_v2(Dynamics):
         velocity respectively. """
 
     def __init__(self, dt, v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1]):
-        super().__init__(dt, x_dim=3, u_dim=2)
+        super().__init__(dt)
         self.v_bounds = v_bounds
         self.w_bounds = w_bounds
-        self._angle_dims = 2
 
     def simulate(self, x_nk3, u_nk2, t=None):
         with tf.name_scope('simulate'):
@@ -82,12 +80,6 @@ class Dubins_v2(Dynamics):
         res = tf.cast(tf.logical_not(zero_idxs), wtilde_nk.dtype)
         return res
 
-    def parse_trajectory(self, trajectory):
-        """ A utility function for parsing a trajectory object.
-        Returns x_nkd, u_nkf which are states and actions for the
-        system """
-        return trajectory.position_and_heading_nk3(), trajectory.speed_and_angular_speed()
-
     def assemble_trajectory(self, x_nk3, u_nk2, pad_mode=None):
         """ A utility function for assembling a trajectory object
         from x_nkd, u_nkf, a list of states and actions for the system.
@@ -116,58 +108,3 @@ class Dubins_v2(Dynamics):
         return Trajectory(dt=self._dt, n=n, k=k, position_nk2=position_nk2,
                           heading_nk1=heading_nk1, speed_nk1=speed_nk1,
                           angular_speed_nk1=angular_speed_nk1, variable=False)
-
-    @staticmethod
-    def init_egocentric_robot_state(dt, n, v=0.0, w=0.0, dtype=tf.float32):
-        """ A utility function initializing the robot at
-        [x, y, theta] = [0, 0, 0] applying control
-        [v, omega] = [v, w] """
-        k = 1
-        position_nk2 = tf.zeros((n, k, 2), dtype=dtype)
-        heading_nk1 = tf.zeros((n, k, 1), dtype=dtype)
-        speed_nk1 = v*tf.ones((n, k, 1), dtype=dtype)
-        angular_speed_nk1 = w*tf.ones((n, k, 1), dtype=dtype)
-        return State(dt=dt, n=n, k=k, position_nk2=position_nk2,
-                     heading_nk1=heading_nk1, speed_nk1=speed_nk1,
-                     angular_speed_nk1=angular_speed_nk1, variable=False)
-
-    @staticmethod
-    def to_egocentric_coordinates(ref_state, traj_world, traj_egocentric):
-        """ Converts traj_world to an egocentric reference frame assuming
-        ref_state is the origin. The result is assigned to traj_egocentric"""
-        ref_position_1k2 = ref_state.position_nk2()
-        ref_heading_1k1 = ref_state.heading_nk1()
-        position_nk2 = traj_world.position_nk2()
-        heading_nk1 = traj_world.heading_nk1()
-
-        position_nk2 = position_nk2 - ref_position_1k2
-        position_nk2 = rotate_pos_nk2(position_nk2, -ref_heading_1k1)
-        heading_nk1 = angle_normalize(heading_nk1 - ref_heading_1k1)
-
-        traj_egocentric.assign_trajectory_from_tensors(position_nk2=position_nk2,
-                                                       speed_nk1=traj_world.speed_nk1(),
-                                                       acceleration_nk1=traj_world.acceleration_nk1(),
-                                                       heading_nk1=heading_nk1,
-                                                       angular_speed_nk1=traj_world.angular_speed_nk1(),
-                                                       angular_acceleration_nk1=traj_world.angular_acceleration_nk1())
-
-    @staticmethod
-    def to_world_coordinates(ref_state, traj_egocentric, traj_world):
-        """ Converts traj_egocentric to the world coordinate frame assuming
-        ref_state is the origin of the egocentric coordinate frame
-        in the world coordinate frame. Assigns the result to traj_world"""
-        ref_position_1k2 = ref_state.position_nk2()
-        ref_heading_1k1 = ref_state.heading_nk1()
-        position_nk2 = traj_egocentric.position_nk2()
-        heading_nk1 = traj_egocentric.heading_nk1()
-
-        position_nk2 = rotate_pos_nk2(position_nk2, ref_heading_1k1)
-        position_nk2 = position_nk2 + ref_position_1k2
-        heading_nk1 = angle_normalize(heading_nk1 + ref_heading_1k1)
-
-        traj_world.assign_trajectory_from_tensors(position_nk2=position_nk2,
-                                                  speed_nk1=traj_egocentric.speed_nk1(),
-                                                  acceleration_nk1=traj_egocentric.acceleration_nk1(),
-                                                  heading_nk1=heading_nk1,
-                                                  angular_speed_nk1=traj_egocentric.angular_speed_nk1(),
-                                                  angular_acceleration_nk1=traj_egocentric.angular_acceleration_nk1())

@@ -20,6 +20,7 @@ def parameter_sweep(params):
                                  (8, 8), (.4, .4))
     axs = axs[::-1]
 
+    # Heuristically calculated ranges
     angle_coeffs = np.linspace(0.002, .006, 4)
     collision_coeffs = np.linspace(.5, 2.0, 4)
     goal_coeffs = np.linspace(0.02, .06, 4)
