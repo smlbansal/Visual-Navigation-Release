@@ -2,10 +2,19 @@ import os
 import pickle
 import json
 import importlib
+import copy
 import numpy as np
 import tensorflow as tf
-import copy
 import dotmap
+
+
+def gpu_config():
+    config = tf.ConfigProto()
+    config.device_count['GPU'] = 1
+    config.gpu_options.allow_growth = True
+    config.intra_op_parallelism_threads = 1
+    config.inter_op_parallelism_threads = 1
+    return config
 
 
 def ensure_odd(integer):

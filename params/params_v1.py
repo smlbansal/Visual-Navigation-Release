@@ -47,13 +47,13 @@ def load_params():
     p.avoid_obstacle_objective = DotMap(obstacle_margin0=0.3,
                                         obstacle_margin1=0.5,
                                         power=3,
-                                        obstacle_cost=25.0)
+                                        obstacle_cost=1.0)
     # Angle Distance parameters
     p.goal_angle_objective = DotMap(power=1,
-                                    angle_cost=25.0)
+                                    angle_cost=.008)
     # Goal Distance parameters
     p.goal_distance_objective = DotMap(power=2,
-                                       goal_cost=25.0,
+                                       goal_cost=.08,
                                        goal_margin=.3)
 
     p._cost = QuadraticRegulatorRef

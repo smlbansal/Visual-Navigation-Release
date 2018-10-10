@@ -1,12 +1,11 @@
 import tensorflow as tf
-tf.enable_eager_execution()
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import utils
 import argparse
 import os
 
-logdir = './logs'
+logdir = './logs/parameter_sweep'
 
 
 def parameter_sweep(params):
@@ -73,6 +72,13 @@ def simulate(p, logdir, fig, axs):
 
 def main():
     plt.style.use('ggplot')
+    config = tf.ConfigProto();
+    config.device_count['GPU'] = 1
+    config.gpu_options.allow_growth = True
+    config.intra_op_parallelism_threads = 1
+    config.inter_op_parallelism_threads = 1
+    tf.enable_eager_execution(config=utils.gpu_config())
+    
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--params', help='parameter version number', default='v1')
     args = parser.parse_args()
