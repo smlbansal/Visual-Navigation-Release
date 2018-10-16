@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 class Spline3rdOrder(Spline):
-    def __init__(self, dt, n, k, epsilon):
+    def __init__(self, dt, n, k, epsilon=1e-10):
         super().__init__(dt=dt, n=n, k=k)
         self.epsilon = epsilon
 
@@ -20,31 +20,53 @@ class Spline3rdOrder(Spline):
         if factors_n2 is None:
             factors_n1 = tf.norm(goal_state.position_nk2(), axis=2)
             factors_n2 = tf.concat([factors_n1, factors_n1], axis=1)
+            import pdb; pdb.set_trace()
         with tf.name_scope('fit_spline'):
             f1_n1, f2_n1 = factors_n2[:, 0:1], factors_n2[:, 1:]
+ 
             start_pos_n12 = self.start_state.position_nk2()
+            goal_pos_n12 = self.goal_state.position_nk2()
+            
+            # Multiple solutions if start and goal are the same x,y coordinates
+            assert(tf.reduce_all(tf.norm(goal_pos_n12-start_pos_n12, axis=2) > self.epsilon))
+ 
             x0_n1, y0_n1 = start_pos_n12[:, :, 0], start_pos_n12[:, :, 1]
             t0_n1 = self.start_state.heading_nk1()[:, :, 0]
             v0_n1 = self.start_state.speed_nk1()[:, :, 0]
 
-            goal_pos_n12 = self.goal_state.position_nk2()
             xg_n1, yg_n1 = goal_pos_n12[:, :, 0], goal_pos_n12[:, :, 1]
             tg_n1 = self.goal_state.heading_nk1()[:, :, 0]
             vg_n1 = self.goal_state.speed_nk1()[:, :, 0]
 
-            d1_n1 = x0_n1
-            c1_n1 = f1_n1*tf.cos(t0_n1)
-            a1_n1 = f2_n1*tf.cos(tg_n1)-2*xg_n1+c1_n1+2*d1_n1
-            b1_n1 = 3*xg_n1-f2_n1*tf.cos(tg_n1)-2*c1_n1-3*d1_n1
+            a2_n1 = yg_n1
+            b2_n1 = 0.*a2_n1
+            c2_n1 = 0.*a2_n1
+            d2_n1 = 0.*a2_n1
 
-            d2_n1 = y0_n1
-            c2_n1 = f1_n1*tf.sin(t0_n1)
-            a2_n1 = f2_n1*tf.sin(tg_n1)-2*yg_n1+c2_n1+2*d2_n1
-            b2_n1 = 3*yg_n1-f2_n1*tf.sin(tg_n1)-2*c2_n1-3*d2_n1
+            f2_n1 = 2*a2_n1/tf.sin(tg_n1)
 
-            c3_n1 = v0_n1 / f1_n1
-            a3_n1 = (vg_n1/f2_n1) + c3_n1 - 2.
+            c1_n1 = 0.*a2_n1
+            a1_n1 = f2_n1 * tf.cos(tg_n1)-xg_n1
+            b1_n1 = xg_n1 - a1_n1
+            d1_n1 = 0.*a2_n1
+
+            c3_n1 = v0_n1
+            a3_n1 = vg_n1 + c3_n1 - 2.
             b3_n1 = 1. - c3_n1 - a3_n1
+
+            #d1_n1 = x0_n1
+            #c1_n1 = f1_n1*tf.cos(t0_n1)
+            #a1_n1 = f2_n1*tf.cos(tg_n1)-2*xg_n1+c1_n1+2*d1_n1
+            #b1_n1 = 3*xg_n1-f2_n1*tf.cos(tg_n1)-2*c1_n1-3*d1_n1
+
+            #d2_n1 = y0_n1
+            #c2_n1 = f1_n1*tf.sin(t0_n1)
+            #a2_n1 = f2_n1*tf.sin(tg_n1)-2*yg_n1+c2_n1+2*d2_n1
+            #b2_n1 = 3*yg_n1-f2_n1*tf.sin(tg_n1)-2*c2_n1-3*d2_n1
+
+            #c3_n1 = v0_n1 / f1_n1
+            #a3_n1 = (vg_n1/f2_n1) + c3_n1 - 2.
+            #b3_n1 = 1. - c3_n1 - a3_n1
 
             self.x_coeffs_n14 = tf.stack([a1_n1, b1_n1, c1_n1, d1_n1], axis=2)
             self.y_coeffs_n14 = tf.stack([a2_n1, b2_n1, c2_n1, d2_n1], axis=2)

@@ -57,9 +57,10 @@ class GradientPlanner(Planner):
         return waypt_egocentric_state_n
 
     def _compute_obj_val_and_grad(self, start_state_n, waypt_state_n):
+        p = self.params
         with tf.GradientTape() as tape:
             trainable_vars = waypt_state_n.trainable_variables
-            obj_vals, _ = self.eval_objective(start_state_n, waypt_state_n, mode='new')
+            obj_vals, _ = self.eval_objective(start_state_n, waypt_state_n, p.k, mode='new')
             obj_val = tf.reduce_mean(obj_vals)
             grads = tape.gradient(obj_val, trainable_vars)
         return obj_val, grads, trainable_vars

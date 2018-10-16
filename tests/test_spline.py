@@ -59,6 +59,46 @@ def test_spline_3rd_order(visualize=False):
         spline_traj.render(ax, freq=4)
         plt.show()
 
+def visualize_spline_3rd_order_turn(visualize=False):
+    np.random.seed(seed=1)
+    n = 1
+    dt = .01
+    k = 100
+    epsilon = 1e-10
+
+    target_state = np.random.uniform(-np.pi, np.pi, 3)
+    v0 = np.random.uniform(0., 0.5, 1)[0]  # Initial speed
+    vf = 0.
+
+    # Initial State is [0, 0, 0, v0, 0]
+    start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32)*v0
+
+    goal_pos_nk2 = tf.zeros((n, 1, 2), dtype=tf.float32) + epsilon
+    goal_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * target_state[2]
+    goal_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * vf
+
+    start_state = State(dt, n, 1, speed_nk1=start_speed_nk1, variable=False)
+    goal_state = State(dt, n, 1, position_nk2=goal_pos_nk2,
+                       speed_nk1=goal_speed_nk1, heading_nk1=goal_heading_nk1,
+                       variable=True)
+
+    start_nk5 = start_state.position_heading_speed_and_angular_speed_nk5()
+    start_n5 = start_nk5[:, 0]
+
+    goal_nk5 = goal_state.position_heading_speed_and_angular_speed_nk5()
+    goal_n5 = goal_nk5[:, 0]
+
+    ts_nk = tf.tile(tf.linspace(0., dt*k, k)[None], [n, 1])
+    spline_traj = Spline3rdOrder(dt=dt, n=n, k=k, epsilon=epsilon)
+    spline_traj.fit(start_state, goal_state, factors_n2=None)
+    spline_traj.eval_spline(ts_nk, calculate_speeds=False)
+    
+    if visualize:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        spline_traj.render(ax, freq=4)
+        plt.savefig('./tmp/spline_turn.png')
 
 if __name__ == '__main__':
-    test_spline_3rd_order(visualize=False)
+    #test_spline_3rd_order(visualize=False)
+    visualize_spline_3rd_order_turn(visualize=True)

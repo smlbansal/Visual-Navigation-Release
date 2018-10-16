@@ -21,16 +21,22 @@ class Control_Pipeline_v0(Control_Pipeline):
             as a reference trajectory for LQR
         2. Uses LQR with the spline reference trajectory and
             a known system_dynamics model to plan a dynamically
-            feasible trajectory. """
+            feasible trajectory. 
+            
+        A control pipeline can be precomputed for a vixed v0 and k (planning horizon)
+        assuming start_state and goal_state are specified in egocentric coordinates."""
 
     def __init__(self, system_dynamics, params, precompute=False,
-                 load_from_pickle_file=True, bin_velocity=True, v0=None):
+                 load_from_pickle_file=True, bin_velocity=True, v0=None, k=None):
         self.system_dynamics = system_dynamics
         self.params = params
         self.precompute = precompute
         self.load_from_pickle_file = load_from_pickle_file
         self.bin_velocity = bin_velocity
         self.v0 = v0
+        if k is None:
+            k = params.k
+        self.k = k
 
         self.computed = False
         init_pipeline = True
@@ -42,17 +48,17 @@ class Control_Pipeline_v0(Control_Pipeline):
                 self.cost_fn = None  # Dont need this since LQR is precomputed
         if init_pipeline:
             self.traj_spline = params._spline(dt=params.dt,
-                                              n=params.n, k=params.k,
+                                              n=params.n, k=self.k,
                                               **params.spline_params)
             self.cost_fn = params._cost(trajectory_ref=self.traj_spline,
                                         system=self.system_dynamics,
                                         **params.cost_params)
-        self.lqr_solver = LQRSolver(T=params.k-1,
+        self.lqr_solver = LQRSolver(T=self.k-1,
                                     dynamics=self.system_dynamics,
                                     cost=self.cost_fn)
 
     def _data_file_name(self):
-        base_dir = './data/control_pipelines/v0/k_{}_dt_{}'.format(self.params.k,
+        base_dir = './data/control_pipelines/v0/k_{}_dt_{}'.format(self.k,
                                                                    self.params.dt)
         utils.mkdir_if_missing(base_dir)
         p = self.params
@@ -144,8 +150,8 @@ class Control_Pipeline_v0(Control_Pipeline):
         else:
             self.start_state, self.goal_state = start_state, goal_state
             p = self.params
-            ts_nk = tf.tile(tf.linspace(0., p.planning_horizon_s,
-                                        p.k)[None], [p.n, 1])
+            ts_nk = tf.tile(tf.linspace(0., self.k*p.dt,
+                                        self.k)[None], [p.n, 1])
             self.traj_spline.fit(start_state=start_state, goal_state=goal_state,
                                  factors_n2=None)
             self.traj_spline.eval_spline(ts_nk, calculate_speeds=False)

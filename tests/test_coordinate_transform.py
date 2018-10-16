@@ -29,6 +29,7 @@ def test_coordinate_transform():
     traj_global = Trajectory(dt=dt, n=n, k=k,
                              position_nk2=pos_nk2)
     traj_egocentric = Trajectory(dt=dt, n=n, k=k, variable=True)
+    traj_global_new = Trajectory(dt=dt, n=n, k=k, variable=True)
 
     dubins_car.to_egocentric_coordinates(ref_state, traj_global, traj_egocentric)
 
@@ -40,7 +41,7 @@ def test_coordinate_transform():
     ref_state = State(dt=dt, n=n, k=1,
                       position_nk2=ref_state_pos_n12)
     traj_egocentric = dubins_car.to_egocentric_coordinates(ref_state,
-                                                           traj_global)
+                                                           traj_global, traj_egocentric)
     # Test translation
     assert((pos_nk2-5.0 == traj_egocentric.position_nk2().numpy()).all())
 
@@ -51,9 +52,9 @@ def test_coordinate_transform():
                       heading_nk1=ref_state_heading_nk1)
 
     traj_egocentric = dubins_car.to_egocentric_coordinates(ref_state,
-                                                           traj_global)
+                                                           traj_global, traj_egocentric)
     traj_global_new = dubins_car.to_world_coordinates(ref_state,
-                                                      traj_egocentric)
+                                                      traj_egocentric, traj_global_new)
 
     assert(np.allclose(traj_global.position_nk2().numpy(),
                        traj_global_new.position_nk2().numpy()))

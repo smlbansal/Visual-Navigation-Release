@@ -30,19 +30,19 @@ class CircularObstacleMap(ObstacleMap):
             distance_to_centers_nkm2 = tf.norm(pos_nk12 - obstacle_centers_11m2, axis=3) - self.obstacle_radii_m1[:, 0]
             return tf.reduce_min(distance_to_centers_nkm2, axis=2)
 
-    def sample_start_and_goal_12(self, rng, goal_radius=0.0, goal_norm=2):
+    def sample_start_and_goal_12(self, rng, goal_radius=0.0, goal_norm=2, obs_margin=0.0):
         """ Samples a random start and goal point on the map
         of dimension (1,2). Ensures that |start-goal|_{goal_norm} > goal_radius"""
         start_112 = self._sample_point_112(rng)
         dist_to_obs = tf.squeeze(self.dist_to_nearest_obs(start_112))
-        while dist_to_obs <= 0:
+        while dist_to_obs <= obs_margin:
             start_112 = self._sample_point_112(rng)
             dist_to_obs = tf.squeeze(self.dist_to_nearest_obs(start_112))
 
         goal_112 = self._sample_point_112(rng)
         dist_to_obs = tf.squeeze(self.dist_to_nearest_obs(goal_112))
         dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
-        while dist_to_obs <= 0 or dist_to_goal <= goal_radius:
+        while dist_to_obs <= obs_margin or dist_to_goal <= goal_radius:
             goal_112 = self._sample_point_112(rng)
             dist_to_obs = tf.squeeze(self.dist_to_nearest_obs(goal_112))
             dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)

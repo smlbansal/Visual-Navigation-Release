@@ -51,6 +51,7 @@ def simulate(p, logdir, fig, axs):
 
     k = 0
     metrics = []
+    render_angle_freq = int(p.episode_horizon/25)  # heuristic- this looks good
     for i in range(num_maps):
             sim.reset(obstacle_params=obstacle_params)
             for j in range(num_tests_per_map):
@@ -58,7 +59,7 @@ def simulate(p, logdir, fig, axs):
                     sim.reset()
                 sim.simulate()
                 metrics.append(sim.get_metrics())
-                sim.render(axs[k], freq=75)
+                sim.render(axs[k], freq=render_angle_freq)
                 axs[k].set_title('#{:d}, {:s}'.format(k, axs[k].get_title()))
                 k += 1
     metrics_keys, metrics_vals = sim.collect_metrics(metrics)

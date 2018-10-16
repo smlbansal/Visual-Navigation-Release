@@ -5,8 +5,8 @@ from objectives.objective_function import Objective
 
 class ObstacleAvoidance(Objective):
     """
-    Define the obstacle avoidance objective. Penalty is incurred for distances closed to the
-    obstaclobstacle than obstacle_margin1. Cost is normalized by a normalization factor ensuring
+    Define the obstacle avoidance objective. Penalty is incurred for distances closer to the
+    obstacle than obstacle_margin1. Cost is normalized by a normalization factor ensuring
     the cost is 1 at obstacle_margin0.
     """
     def __init__(self, params, obstacle_map):

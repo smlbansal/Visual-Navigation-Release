@@ -32,7 +32,8 @@ class CircularObstacleMapSimulator(Simulator):
         p = self.params
         start_pos_12, goal_pos_12 = self.obstacle_map.sample_start_and_goal_12(self.rng,
                                                                                goal_radius=self.goal_cutoff_dist,
-                                                                               goal_norm=self.goal_dist_norm)
+                                                                               goal_norm=self.goal_dist_norm,
+                                                                               obs_margin=p.avoid_obstacle_objective.obstacle_margin1)
         self.start_state = State(dt=p.dt, n=1, k=1,
                                  position_nk2=start_pos_12[None])
         self.goal_state = State(dt=p.dt, n=1, k=1,
@@ -55,8 +56,7 @@ class CircularObstacleMapSimulator(Simulator):
         p = self.params
         self.obstacle_map.render_with_obstacle_margins(ax,
                                                        margin0=p.avoid_obstacle_objective.obstacle_margin0,
-                                                       margin1=p.avoid_obstacle_objective.obstacle_margin1
-                                                      )
+                                                       margin1=p.avoid_obstacle_objective.obstacle_margin1)
 
     def render(self, ax, freq=4):
         ax.clear()
@@ -76,4 +76,7 @@ class CircularObstacleMapSimulator(Simulator):
         text_color = self.episode_termination_colors[self.episode_type]
         ax.set_title('Start: [{:.2f}, {:.2f}] '.format(*start) +
                      'Goal: [{:.2f}, {:.2f}]'.format(*goal), color=text_color)
-        ax.set_xlabel('Cost: {cost:.3f}'.format(cost=self.obj_val), color=text_color)
+ 
+        final_pos = self.vehicle_trajectory.position_nk2()[0, -1]
+        ax.set_xlabel('Cost: {cost:.3f} '.format(cost=self.obj_val) +
+                      'End: [{:.2f}, {:.2f}]'.format(*final_pos), color=text_color)

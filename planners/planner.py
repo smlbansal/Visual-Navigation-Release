@@ -26,7 +26,7 @@ class Planner:
         """
         raise NotImplementedError
 
-    def eval_objective(self, start_state, waypt_state, mode='assign'):
+    def eval_objective(self, start_state, waypt_state, k, mode='assign'):
         """ Evaluate the objective function on a trajectory
         generated through the control pipeline from start_state (world frame)
         to waypt_state (egocentric frame)"""
@@ -36,14 +36,15 @@ class Planner:
         self.start_state_egocentric = sys.to_egocentric_coordinates(start_state, start_state,
                                                                     self.start_state_egocentric,
                                                                     mode=mode)
-        control_pipeline = self._choose_control_pipeline(self.start_state_egocentric)
+        control_pipeline = self._choose_control_pipeline(self.start_state_egocentric, k)
         trajectory = control_pipeline.plan(self.start_state_egocentric,
                                            waypt_state)
-        self.trajectory_world = sys.to_world_coordinates(start_state, trajectory, self.trajectory_world, mode=mode)
+        self.trajectory_world = sys.to_world_coordinates(start_state, trajectory,
+                                                         self.trajectory_world, mode=mode)
         obj_val = self.obj_fn.evaluate_function(self.trajectory_world)
         return obj_val, self.trajectory_world
 
-    def _choose_control_pipeline(self, start_state):
+    def _choose_control_pipeline(self, start_state, k):
         return self.control_pipeline
 
     def render(self, axs, start_state, waypt_state, freq=4, obstacle_map=None):

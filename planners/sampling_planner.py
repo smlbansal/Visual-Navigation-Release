@@ -26,7 +26,7 @@ class SamplingPlanner(Planner):
         self.start_state_n.assign_from_broadcasted_batch(start_state, p.n)
         waypt_state_n = self._sample_waypoints(vf=vf)
         obj_vals, trajectory = self.eval_objective(self.start_state_n,
-                                                   waypt_state_n, mode='assign')
+                                                   p.k, waypt_state_n, mode='assign')
         min_idx = tf.argmin(obj_vals)
         self.opt_traj.assign_from_trajectory_batch_idx(trajectory, min_idx)
         self.opt_waypt.assign_from_state_batch_idx(waypt_state_n, min_idx)

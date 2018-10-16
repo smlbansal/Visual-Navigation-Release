@@ -124,7 +124,7 @@ class Trajectory(object):
 
     @property
     def shape(self):
-        return '(%d, %d)'.format(self.n, self.k)
+        return '({:d}, {:d})'.format(self.n, self.k)
 
     def position_nk2(self):
         return self._position_nk2
@@ -191,6 +191,23 @@ class Trajectory(object):
         self._angular_acceleration_nk1 = self._angular_acceleration_nk1[:, :horizon]
         self.k = horizon
 
+    @classmethod
+    def new_traj_clip_along_time_axis(cls, trajectory, horizon):
+        """ Utility function for clipping a trajectory along
+        the time axis. Useful for clipping a trajectory within
+        a specified horizon. Creates a new object as dimensions
+        are being changed and assign will not work."""
+        if trajectory.k <= horizon:
+            return trajectory
+
+        return cls(dt=trajectory.dt, n=trajectory.n, k=horizon,
+                   position_nk2=trajectory.position_nk2()[:, :horizon],
+                   speed_nk1=trajectory.speed_nk1()[:, :horizon],
+                   acceleration_nk1=trajectory.acceleration_nk1()[:, :horizon],
+                   heading_nk1=trajectory.heading_nk1()[:, :horizon],
+                   angular_speed_nk1=trajectory.angular_speed_nk1()[:, :horizon],
+                   angular_acceleration_nk1=trajectory.angular_acceleration_nk1()[:, :horizon])
+        
     def render(self, ax, batch_idx=0, freq=4):
         xs = self._position_nk2[batch_idx, :, 0]
         ys = self._position_nk2[batch_idx, :, 1]

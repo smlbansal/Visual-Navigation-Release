@@ -130,7 +130,7 @@ def test_control_pipeline(visualize=False):
     obj1, obj2, obj3 = obj_val.numpy()
     val = 8333452.5
     assert(np.abs(obj2-val)/val < 1e-4)
-    val = 36033.918
+    val = 36063.99
     assert(np.abs(obj1-val)/val < 1e-4)
     val = 0.8815087
     assert(np.abs(obj3-val)/val < 1e-4)

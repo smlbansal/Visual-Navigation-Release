@@ -4,7 +4,7 @@ from objectives.objective_function import ObjectiveFunction
 from objectives.angle_distance import AngleDistance
 from objectives.goal_distance import GoalDistance
 from objectives.obstacle_avoidance import ObstacleAvoidance
-from trajectory.trajectory import State
+from trajectory.trajectory import State, Trajectory
 from utils.fmm_map import FmmMap
 
 
@@ -57,7 +57,7 @@ class Simulator:
         subtrajectory and the resulting robot state after the robot executes
         the subtrajectory"""
         min_waypt, min_traj, min_cost = self.planner.optimize(state)
-        min_traj.clip_along_time_axis(self.params.control_horizon)
+        min_traj = Trajectory.new_traj_clip_along_time_axis(min_traj, self.params.control_horizon)
         next_state = State.init_state_from_trajectory_time_index(min_traj, t=-1)
         return min_traj, next_state
 
@@ -255,4 +255,8 @@ class Simulator:
         text_color = self.episode_termination_colors[self.episode_type]
         ax.set_title('Start: [{:.2f}, {:.2f}] '.format(*start) +
                      'Goal: [{:.2f}, {:.2f}]'.format(*goal), color=text_color)
-        ax.set_xlabel('Cost: {cost:.3f}'.format(cost=self.obj_val), color=text_color)
+        
+        final_pos = self.vehicle_trajectory.position_nk2()[0, -1]
+        ax.set_xlabel('Cost: {cost:.3f} '.format(cost=self.obj_val) +
+                      'End: [{:.2f}, {:.2f}]'.format(*final_pos), color=text_color)
+    

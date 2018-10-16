@@ -1,14 +1,19 @@
 import tensorflow as tf
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import utils
 import argparse
 
-@profile
+logdir = './logs/simulator'
+
+
 def simulate(params):
-    """ A script to see how changing dt affects experimental runtime."""
     p = utils.load_params(params)
-    print(p.dt)
+
+    print(logdir)
+    utils.mkdir_if_missing(logdir)
+    utils.log_dict_as_json(p, os.path.join(logdir, 'params.json'))
 
     num_tests_per_map = p.control_validation_params.num_tests_per_map
     num_maps = p.control_validation_params.num_maps
@@ -38,12 +43,15 @@ def simulate(params):
                 k += 1
     metrics_keys, metrics_vals = sim.collect_metrics(metrics)
     fig.suptitle('Circular Obstacle Map Simulator')
-    fig.savefig('./tmp/change_dt.png', bbox_inches='tight')
+    figname = os.path.join(logdir, 'circular_obstacle_map.png')
+    fig.savefig(figname, bbox_inches='tight')
+
+    utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)),
+                           os.path.join(logdir, 'metrics.json'))
 
 
 def main():
     plt.style.use('ggplot')
-    #tf.enable_eager_execution()
     tf.enable_eager_execution(config=utils.gpu_config())
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
