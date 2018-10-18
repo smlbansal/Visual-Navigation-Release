@@ -1,4 +1,4 @@
-from systems.dubins_3d import Dubins_3d
+from systems.dubins_car import Dubins_3d
 from trajectory.trajectory import Trajectory
 import tensorflow as tf
 
@@ -79,32 +79,3 @@ class Dubins_v2(Dubins_3d):
         zero_idxs = tf.logical_or(less_than_idx, greater_than_idx)
         res = tf.cast(tf.logical_not(zero_idxs), wtilde_nk.dtype)
         return res
-
-    def assemble_trajectory(self, x_nk3, u_nk2, pad_mode=None):
-        """ A utility function for assembling a trajectory object
-        from x_nkd, u_nkf, a list of states and actions for the system.
-        Here d=3=state dimension and u=2=action dimension. """
-        n = x_nk3.shape[0].value
-        k = x_nk3.shape[1].value
-        if pad_mode == 'zero':  # the last action is 0
-            if u_nk2.shape[1]+1 == k:
-                u_nk2 = tf.concat([u_nk2, tf.zeros((n, 1, self._u_dim))],
-                                  axis=1)
-            else:
-                assert(u_nk2.shape[1] == k)
-        # the last action is the same as the second to last action
-        elif pad_mode == 'repeat':
-            if u_nk2.shape[1]+1 == k:
-                u_end_n12 = tf.zeros((n, 1, self._u_dim)) + u_nk2[:, -1:]
-                u_nk2 = tf.concat([u_nk2, u_end_n12], axis=1)
-            else:
-                assert(u_nk2.shape[1] == k)
-        else:
-            assert(pad_mode is None)
-        position_nk2, heading_nk1 = x_nk3[:, :, :2], x_nk3[:, :, 2:3]
-        speed_nk1, angular_speed_nk1 = u_nk2[:, :, 0:1], u_nk2[:, :, 1:2]
-        speed_nk1 = self.s1(speed_nk1)
-        angular_speed_nk1 = self.s2(angular_speed_nk1)
-        return Trajectory(dt=self._dt, n=n, k=k, position_nk2=position_nk2,
-                          heading_nk1=heading_nk1, speed_nk1=speed_nk1,
-                          angular_speed_nk1=angular_speed_nk1, variable=False)

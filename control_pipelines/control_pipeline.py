@@ -128,7 +128,6 @@ class Control_Pipeline_v0(Control_Pipeline):
         return data
 
     def plan(self, start_state, goal_state):
-        #import pdb; pdb.set_trace()
         if self.precompute and self.computed:
             if self.bin_velocity or self.params._spline.check_start_goal_equivalence(self.start_state,
                                                                                      self.goal_state,
@@ -155,9 +154,7 @@ class Control_Pipeline_v0(Control_Pipeline):
             self.traj_spline.fit(start_state=start_state, goal_state=goal_state,
                                  factors_n2=None)
             self.traj_spline.eval_spline(ts_nk, calculate_speeds=False)
-            start_state_n = State.init_state_from_trajectory_time_index(
-                                        self.traj_spline, t=0)
-            self.lqr_res = self.lqr_solver.lqr(start_state_n, self.traj_spline,
+            self.lqr_res = self.lqr_solver.lqr(start_state, self.traj_spline,
                                                verbose=False)
             self.traj_opt = self.lqr_res['trajectory_opt']
             self.traj_plot = self.traj_opt

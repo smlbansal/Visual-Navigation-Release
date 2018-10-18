@@ -1,8 +1,8 @@
-from trajectory.spline.spline import Spline
+from trajectory.spline.spline_3rd_order import Spline3rdOrder
 import tensorflow as tf
 
 
-class Spline3rdOrder(Spline):
+class Spline3rdOrderTurnV1(Spline3rdOrder):
     def __init__(self, dt, n, k, epsilon=1e-10):
         super().__init__(dt=dt, n=n, k=k)
         self.epsilon = epsilon
@@ -18,17 +18,18 @@ class Spline3rdOrder(Spline):
         self.goal_state = goal_state
         # compute them heuristically based on dist to goal
         if factors_n2 is None:
-            factors_n1 = tf.norm(goal_state.position_nk2()-start_state.position_nk2(), axis=2)
+            factors_n1 = tf.norm(goal_state.position_nk2(), axis=2)
             factors_n2 = tf.concat([factors_n1, factors_n1], axis=1)
+        
         with tf.name_scope('fit_spline'):
             f1_n1, f2_n1 = factors_n2[:, 0:1], factors_n2[:, 1:]
-
+ 
             start_pos_n12 = self.start_state.position_nk2()
             goal_pos_n12 = self.goal_state.position_nk2()
-
+            
             # Multiple solutions if start and goal are the same x,y coordinates
             assert(tf.reduce_all(tf.norm(goal_pos_n12-start_pos_n12, axis=2) > self.epsilon))
-
+ 
             x0_n1, y0_n1 = start_pos_n12[:, :, 0], start_pos_n12[:, :, 1]
             t0_n1 = self.start_state.heading_nk1()[:, :, 0]
             v0_n1 = self.start_state.speed_nk1()[:, :, 0]
@@ -37,18 +38,20 @@ class Spline3rdOrder(Spline):
             tg_n1 = self.goal_state.heading_nk1()[:, :, 0]
             vg_n1 = self.goal_state.speed_nk1()[:, :, 0]
 
-            d1_n1 = x0_n1
-            c1_n1 = f1_n1*tf.cos(t0_n1)
-            a1_n1 = f2_n1*tf.cos(tg_n1)-2*xg_n1+c1_n1+2*d1_n1
-            b1_n1 = 3*xg_n1-f2_n1*tf.cos(tg_n1)-2*c1_n1-3*d1_n1
+            a2_n1 = yg_n1
+            b2_n1 = 0.*a2_n1
+            c2_n1 = 0.*a2_n1
+            d2_n1 = 0.*a2_n1
 
-            d2_n1 = y0_n1
-            c2_n1 = f1_n1*tf.sin(t0_n1)
-            a2_n1 = f2_n1*tf.sin(tg_n1)-2*yg_n1+c2_n1+2*d2_n1
-            b2_n1 = 3*yg_n1-f2_n1*tf.sin(tg_n1)-2*c2_n1-3*d2_n1
+            f2_n1 = 2*a2_n1/tf.sin(tg_n1)
 
-            c3_n1 = v0_n1 / f1_n1
-            a3_n1 = (vg_n1/f2_n1) + c3_n1 - 2.
+            c1_n1 = 0.*a2_n1
+            a1_n1 = f2_n1 * tf.cos(tg_n1)-xg_n1
+            b1_n1 = xg_n1 - a1_n1
+            d1_n1 = 0.*a2_n1
+
+            c3_n1 = v0_n1
+            a3_n1 = vg_n1 + c3_n1 - 2.
             b3_n1 = 1. - c3_n1 - a3_n1
 
             self.x_coeffs_n14 = tf.stack([a1_n1, b1_n1, c1_n1, d1_n1], axis=2)
@@ -114,55 +117,3 @@ class Spline3rdOrder(Spline):
                 self._speed_ps_nk1 = speed_ps_nk[:, :, None]
                 self._speed_nk1 = speed_nk[:, :, None]
                 self._angular_speed_nk1 = angular_speed_nk[:, :, None]
-
-    @staticmethod
-    def check_start_goal_equivalence(start_state_old, goal_state_old,
-                                     start_state_new, goal_state_new):
-        """ A utility function that checks whether start_state_old,
-        goal_state_old imply the same spline constraints as those implied by
-        start_state_new, goal_state_new. Useful for checking that a
-        precomputed spline on the old start and goal will work on new start
-        and goal."""
-        start_old_pos_nk2 = start_state_old.position_nk2()
-        start_old_heading_nk1 = start_state_old.heading_nk1()
-        start_old_speed_nk1 = start_state_old.speed_nk1()
-
-        start_new_pos_nk2 = start_state_new.position_nk2()
-        start_new_heading_nk1 = start_state_new.heading_nk1()
-        start_new_speed_nk1 = start_state_new.speed_nk1()
-
-        start_pos_match = (tf.norm(start_old_pos_nk2-start_new_pos_nk2).numpy() == 0.0)
-        start_heading_match = (tf.norm(start_old_heading_nk1-start_new_heading_nk1).numpy() == 0.0)
-        start_speed_match = (tf.norm(start_old_speed_nk1-start_new_speed_nk1).numpy() == 0.0)
-
-        start_match = (start_pos_match and start_heading_match and
-                       start_speed_match)
-
-        # Check whether they are the same object
-        if goal_state_old is goal_state_new:
-            return start_match
-        else:
-            goal_old_pos_nk2 = goal_state_old.position_nk2()
-            goal_old_heading_nk1 = goal_state_old.heading_nk1()
-            goal_old_speed_nk1 = goal_state_old.speed_nk1()
-
-            goal_new_pos_nk2 = goal_state_new.position_nk2()
-            goal_new_heading_nk1 = goal_state_new.heading_nk1()
-            goal_new_speed_nk1 = goal_state_new.speed_nk1()
-
-            goal_pos_match = (tf.norm(goal_old_pos_nk2-goal_new_pos_nk2).numpy() == 0.0)
-            goal_heading_match = (tf.norm(goal_old_heading_nk1-goal_new_heading_nk1).numpy() == 0.0)
-            goal_speed_match = (tf.norm(goal_old_speed_nk1-goal_new_speed_nk1).numpy() == 0.0)
-
-            goal_match = (goal_pos_match and goal_heading_match and
-                          goal_speed_match)
-            return start_match and goal_match
-
-    def render(self, ax, batch_idx=0, freq=4):
-        super().render(ax, batch_idx, freq)
-        goal_n15 = self.goal_state.position_heading_speed_and_angular_speed_nk5()
-        target_state = goal_n15[batch_idx, 0]
-        ax.quiver([target_state[0]], [target_state[1]],
-                  [tf.cos(target_state[2])],
-                  [tf.sin(target_state[2])], units='width')
-        ax.set_title('3rd Order Spline')

@@ -4,52 +4,13 @@ from utils.angle_utils import angle_normalize, rotate_pos_nk2
 import tensorflow as tf
 
 
-class Dubins_3d(Dynamics):
-    """ A discrete time dubins car with state
-    [x, y, theta] and actions [v, w]."""
-
-    def __init__(self, dt):
-        super().__init__(dt, x_dim=3, u_dim=2)
-        self._angle_dims = 2
-
-    def parse_trajectory(self, trajectory):
-        """ A utility function for parsing a trajectory object.
-        Returns x_nkd, u_nkf which are states and actions for the
-        system """
-        return trajectory.position_and_heading_nk3(), trajectory.speed_and_angular_speed()
-
-    def assemble_trajectory(self, x_nk3, u_nk2, pad_mode=None):
-        """ A utility function for assembling a trajectory object
-        from x_nkd, u_nkf, a list of states and actions for the system.
-        Here d=3=state dimension and u=2=action dimension. """
-        n = x_nk3.shape[0].value
-        k = x_nk3.shape[1].value
-        if pad_mode == 'zero':  # the last action is 0
-            if u_nk2.shape[1]+1 == k:
-                u_nk2 = tf.concat([u_nk2, tf.zeros((n, 1, self._u_dim))],
-                                  axis=1)
-            else:
-                assert(u_nk2.shape[1] == k)
-        # the last action is the same as the second to last action
-        elif pad_mode == 'repeat':
-            if u_nk2.shape[1]+1 == k:
-                u_end_n12 = tf.zeros((n, 1, self._u_dim)) + u_nk2[:, -1:]
-                u_nk2 = tf.concat([u_nk2, u_end_n12], axis=1)
-            else:
-                assert(u_nk2.shape[1] == k)
-        else:
-            assert(pad_mode is None)
-        position_nk2, heading_nk1 = x_nk3[:, :, :2], x_nk3[:, :, 2:3]
-        speed_nk1, angular_speed_nk1 = u_nk2[:, :, 0:1], u_nk2[:, :, 1:2]
-        return Trajectory(dt=self._dt, n=n, k=k, position_nk2=position_nk2,
-                          heading_nk1=heading_nk1, speed_nk1=speed_nk1,
-                          angular_speed_nk1=angular_speed_nk1, variable=False)
+class DubinsCar(Dynamics):
+    """ An abstract class with utility functions for all Dubins Cars"""
 
     @staticmethod
     def init_egocentric_robot_state(dt, n, v=0.0, w=0.0, dtype=tf.float32):
         """ A utility function initializing the robot at
-        [x, y, theta] = [0, 0, 0] applying control
-        [v, omega] = [v, w] """
+        x=0, y=0, theta=0, v=v, w=w, a=0, alpha=0."""
         k = 1
         position_nk2 = tf.zeros((n, k, 2), dtype=dtype)
         heading_nk1 = tf.zeros((n, k, 1), dtype=dtype)
@@ -139,3 +100,110 @@ class Dubins_3d(Dynamics):
             return traj_world
         else:
             assert(mode in ['new', 'assign'])
+
+
+class Dubins_3d(DubinsCar):
+    """ A discrete time dubins car with state
+    [x, y, theta] and actions [v, w]."""
+
+    def __init__(self, dt):
+        super().__init__(dt, x_dim=3, u_dim=2)
+        self._angle_dims = 2
+
+    def parse_trajectory(self, trajectory):
+        """ A utility function for parsing a trajectory object.
+        Returns x_nkd, u_nkf which are states and actions for the
+        system """
+        return trajectory.position_and_heading_nk3(), trajectory.speed_and_angular_speed()
+
+    def assemble_trajectory(self, x_nkd, u_nkf, pad_mode=None):
+        """ A utility function for assembling a trajectory object
+        from x_nkd, u_nkf, a list of states and actions for the system.
+        Here d=5=state dimension and u=2=action dimension. """
+        n = x_nkd.shape[0].value
+        k = x_nkd.shape[1].value
+        if pad_mode == 'zero':  # the last action is 0
+            if u_nkf.shape[1]+1 == k:
+                u_nkf = tf.concat([u_nkf, tf.zeros((n, 1, self._u_dim))],
+                                  axis=1)
+            else:
+                assert(u_nkf.shape[1] == k)
+        # the last action is the same as the second to last action
+        elif pad_mode == 'repeat':
+            if u_nkf.shape[1]+1 == k:
+                u_end_n12 = tf.zeros((n, 1, self._u_dim)) + u_nkf[:, -1:]
+                u_nkf = tf.concat([u_nkf, u_end_n12], axis=1)
+            else:
+                assert(u_nkf.shape[1] == k)
+        else:
+            assert(pad_mode is None)
+        position_nk2, heading_nk1 = x_nkd[:, :, :2], x_nkd[:, :, 2:3]
+        speed_nk1, angular_speed_nk1 = u_nkf[:, :, 0:1], u_nkf[:, :, 1:2]
+        speed_nk1 = self.s1(speed_nk1)
+        angular_speed_nk1 = self.s2(angular_speed_nk1)
+        return Trajectory(dt=self._dt, n=n, k=k, position_nk2=position_nk2,
+                          heading_nk1=heading_nk1, speed_nk1=speed_nk1,
+                          angular_speed_nk1=angular_speed_nk1, variable=False)
+
+    def s1(self, vtilde_nk):
+        """ Saturation function for linear velocity"""
+        return vtilde_nk
+
+    def s2(self, wtilde_nk):
+        """ Saturation function for angular velocity"""
+        return wtilde_nk
+
+
+class Dubins_5d(Dynamics):
+    """ A discrete time dubins car with state
+    [x, y, theta, v, w] and actions [a, alpha]
+    (linear and angular acceleration)."""
+
+    def __init__(self, dt):
+        super().__init__(dt, x_dim=5, u_dim=2)
+        self._angle_dims = 2
+
+    def parse_trajectory(self, trajectory):
+        """ A utility function for parsing a trajectory object.
+        Returns x_nkd, u_nkf which are states and actions for the
+        system """
+        u_nk2 = tf.concat([trajectory.acceleration_nk1(),
+                           trajectory.angular_acceleration_nk1()], axis=2)
+        return trajectory.position_heading_speed_and_angular_speed_nk5(), u_nk2
+
+    def assemble_trajectory(self, x_nkd, u_nkf, pad_mode=None):
+        """ A utility function for assembling a trajectory object
+        from x_nkd, u_nkf, a list of states and actions for the system.
+        Here d=5=state dimension and u=2=action dimension. """
+        n = x_nkd.shape[0].value
+        k = x_nkd.shape[1].value
+        if pad_mode == 'zero':  # the last action is 0
+            if u_nkf.shape[1]+1 == k:
+                u_nkf = tf.concat([u_nkf, tf.zeros((n, 1, self._u_dim))],
+                                  axis=1)
+            else:
+                assert(u_nkf.shape[1] == k)
+        # the last action is the same as the second to last action
+        elif pad_mode == 'repeat':
+            if u_nkf.shape[1]+1 == k:
+                u_end_n12 = tf.zeros((n, 1, self._u_dim)) + u_nkf[:, -1:]
+                u_nkf = tf.concat([u_nkf, u_end_n12], axis=1)
+            else:
+                assert(u_nkf.shape[1] == k)
+        else:
+            assert(pad_mode is None)
+        position_nk2, heading_nk1 = x_nkd[:, :, :2], x_nkd[:, :, 2:3]
+        speed_nk1, angular_speed_nk1 = x_nkd[:, :, 3:4], x_nkd[:, :, 4:]
+        acceleration_nk1, angular_acceleration_nk1 = u_nkf[:, :, 0:1], u_nkf[:, :, 1:2]
+        return Trajectory(dt=self._dt, n=n, k=k, position_nk2=position_nk2,
+                          heading_nk1=heading_nk1, speed_nk1=speed_nk1,
+                          angular_speed_nk1=angular_speed_nk1, acceleration_nk1=acceleration_nk1,
+                          angular_acceleration_nk1=angular_acceleration_nk1, variable=False)
+
+    def s1(self, vtilde_nk):
+        """ Saturation function for linear velocity"""
+        return vtilde_nk
+
+    def s2(self, wtilde_nk):
+        """ Saturation function for angular velocity"""
+        return wtilde_nk

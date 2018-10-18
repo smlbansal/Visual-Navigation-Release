@@ -1,4 +1,4 @@
-from systems.dubins_3d import Dubins_3d
+from systems.dubins_car import Dubins_3d
 from trajectory.trajectory import Trajectory, State
 from utils.angle_utils import angle_normalize, rotate_pos_nk2
 import tensorflow as tf

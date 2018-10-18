@@ -13,7 +13,7 @@ class Dynamics:
         self.isNonlinear = True
         self.isContinuous = False
 
-    def simulate(self, x, u, t=None):
+    def simulate(self, x_nkd, u_nkf, t=None):
         """ Apply one action u from state x
         """
         raise NotImplementedError
