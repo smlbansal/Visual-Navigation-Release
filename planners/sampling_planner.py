@@ -56,14 +56,8 @@ class SamplingPlanner(Planner):
                 wy = wy.ravel()[:, None]
                 wt = wt.ravel()[:, None]
 
-                # Spline assumes (0,0) start position so 
-                # the waypoint cannot be (0, 0, theta). Find these
-                # waypoints and change them to (epsilon, epsilon, theta)
-                norms = np.linalg.norm(np.concatenate([wx, wy], axis=1), axis=1)
-                eps = self.params.spline_params['epsilon']
-                small_norms_idx = (norms < eps)
-                wx[small_norms_idx] += eps
-                wy[small_norms_idx] += eps
+                wx, wy, wt = self.params._spline.ensure_goals_valid(0.0, 0.0, wx, wy, wt,
+                                                                    epsilon=self.params.spline_params['epsilon'])
             else:
                 assert(False)
 

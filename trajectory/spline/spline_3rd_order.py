@@ -1,5 +1,6 @@
 from trajectory.spline.spline import Spline
 import tensorflow as tf
+import numpy as np
 
 
 class Spline3rdOrder(Spline):
@@ -18,8 +19,10 @@ class Spline3rdOrder(Spline):
         self.goal_state = goal_state
         # compute them heuristically based on dist to goal
         if factors_n2 is None:
-            factors_n1 = tf.norm(goal_state.position_nk2()-start_state.position_nk2(), axis=2)
-            factors_n2 = tf.concat([factors_n1, factors_n1], axis=1)
+            factor1_n1 = self.start_state.speed_nk1()[:, :, 0] +\
+            tf.norm(goal_state.position_nk2()-start_state.position_nk2(), axis=2)#+ self.epsilon 
+            factor2_n1 = factor1_n1#tf.norm(goal_state.position_nk2()-start_state.position_nk2(), axis=2)
+            factors_n2 = tf.concat([factor1_n1, factor2_n1], axis=1)
         with tf.name_scope('fit_spline'):
             f1_n1, f2_n1 = factors_n2[:, 0:1], factors_n2[:, 1:]
 
@@ -157,6 +160,17 @@ class Spline3rdOrder(Spline):
             goal_match = (goal_pos_match and goal_heading_match and
                           goal_speed_match)
             return start_match and goal_match
+
+    @staticmethod
+    def ensure_goals_valid(start_x, start_y, goal_x_nk1, goal_y_nk1, goal_theta_nk1, epsilon):
+        """ Perturbs goal_x and goal_y by epsilon if needed ensuring that a unique spline exists.
+        Assumes that all goal angles are within [-pi/2., pi/2]."""
+        assert((goal_theta_nk1 >= -np.pi/2. and goal_theta_nk1 <= np.pi/2.).all())
+        norms = np.linalg.norm(np.concatenate([goal_x_nk1-start_x, goal_y_nk1-start_y], axis=2), axis=2)
+        invalid_idxs = (norms == 0.0)
+        goal_x_nk1[invalid_idxs] += epsilon
+        goal_y_nk1[invalid_idxs] += np.sign(np.sin(goal_theta_nk1[invalid_idxs]))*epsilon
+        return goal_x_nk1, goal_y_nk1, goal_theta_nk1
 
     def render(self, ax, batch_idx=0, freq=4):
         super().render(ax, batch_idx, freq)

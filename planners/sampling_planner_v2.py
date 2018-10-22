@@ -5,7 +5,7 @@ from planners.sampling_planner import SamplingPlanner
 
 
 class SamplingPlanner_v2(SamplingPlanner):
-    """ A planner which selects an optimal waypoint and planning horizon using a sampling
+    """ A planner which selects an optimal waypoint and planning horizon (k) using a sampling
     based method. Precomputes the control pipeline"""
 
     def __init__(self, system_dynamics,
