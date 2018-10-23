@@ -10,19 +10,24 @@ def run_all_tests():
                      if f.startswith('test')]
     
     for file in files_to_test:
-        run_test(file)
+        exit_code = run_test(file)
+        if exit_code != 0:
+            print('Test failed: %s' % os.path.basename(file))
+            break
 
 
 def run_test(filename):
     """
     Run a particular test defined by the filename.
     """
+    print('======================================================================')
     print('Running test %s' % os.path.basename(filename))
     t_start = time.time()
-    subprocess.call(["python", filename])
+    exit_code = subprocess.call(["python", filename])
     t_end = time.time()
     print('Execution time for test %s is %d seconds.' % (os.path.basename(filename), t_end - t_start))
-
+    print('======================================================================')
+    return exit_code
 
 if __name__ == '__main__':
     run_all_tests()
