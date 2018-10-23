@@ -17,6 +17,7 @@ class Control_Pipeline_v0(Control_Pipeline):
 
         A control pipeline can be precomputed for a vixed v0 and k (planning horizon)
         assuming start_state and goal_state are specified in egocentric coordinates."""
+    pipeline_name = 'v0'
 
     def __init__(self, system_dynamics, params, precompute=False,
                  load_from_pickle_file=True, bin_velocity=True, v0=None, k=None):
@@ -50,8 +51,9 @@ class Control_Pipeline_v0(Control_Pipeline):
                                     cost=self.cost_fn)
 
     def _data_file_name(self):
-        base_dir = './data/control_pipelines/v0/k_{}_dt_{}'.format(self.k,
-                                                                   self.params.dt)
+        base_dir = './data/control_pipelines/{:s}/k_{:d}_dt_{:.02f}'.format(self.pipeline_name,
+                                                                            self.k,
+                                                                            self.params.dt)
         utils.mkdir_if_missing(base_dir)
         p = self.params
         waypt_bounds = p.waypoint_bounds
@@ -89,7 +91,7 @@ class Control_Pipeline_v0(Control_Pipeline):
                         'k_array_opt': k_array_opt,
                         'K_array_opt': K_array_opt,
                         'J_hist': J_hist}
-        self.valid_idxs = tf.constant(data['valid_idxs'], dtype=tf.float32)
+        self.valid_idxs = tf.constant(data['valid_idxs'], dtype=tf.int32)
         self.computed = True
 
     def _save_control_pipeline_data(self, start_state, goal_state, traj_spline,

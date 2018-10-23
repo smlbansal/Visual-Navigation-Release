@@ -209,14 +209,25 @@ class Trajectory(object):
                    heading_nk1=trajectory.heading_nk1()[:, :horizon],
                    angular_speed_nk1=trajectory.angular_speed_nk1()[:, :horizon],
                    angular_acceleration_nk1=trajectory.angular_acceleration_nk1()[:, :horizon])
-        
-    def render(self, ax, batch_idx=0, freq=4):
+
+    def render(self, axs, batch_idx=0, freq=4, plot_control=False):
+        [ax.clear() for ax in axs]
+        ax = axs[0]
         xs = self._position_nk2[batch_idx, :, 0]
         ys = self._position_nk2[batch_idx, :, 1]
         thetas = self._heading_nk1[batch_idx]
         ax.plot(xs, ys, 'r-')
         ax.quiver(xs[::freq], ys[::freq],
                   tf.cos(thetas[::freq]), tf.sin(thetas[::freq]))
+
+        if plot_control:
+            ax = axs[1]
+            ax.plot(self._speed_nk1[batch_idx, :, 0].numpy(), 'r-')
+            ax.set_title('Linear Velocity')
+
+            ax = axs[2]
+            ax.plot(self._angular_speed_nk1[batch_idx, :, 0].numpy(), 'r-')
+            ax.set_title('Angular Velocity')
 
 
 class State(Trajectory):

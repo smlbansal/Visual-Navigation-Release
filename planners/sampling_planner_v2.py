@@ -79,7 +79,7 @@ class SamplingPlanner_v2(SamplingPlanner):
             self.trajectory_world = self.trajectories_world[i]  # used in super.eval_objective
             obj_vals, trajectory = self.eval_objective(self.start_state_n,
                                                        waypt_state_n, k=k, mode='assign')
-            
+
             # Compute the min over valid indices.
             # For control pipeline v0 this is all indices
             valid_idxs = self._choose_control_pipeline(self.start_state_n, k).valid_idxs

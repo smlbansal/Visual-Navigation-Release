@@ -190,12 +190,14 @@ class Spline3rdOrder(Spline):
         goal_y_nk1[invalid_idxs] += np.sign(np.sin(goal_theta_nk1[invalid_idxs]))*epsilon
         return goal_x_nk1, goal_y_nk1, goal_theta_nk1
 
-    def render(self, ax, batch_idx=0, freq=4):
+    def render(self, axs, batch_idx=0, freq=4, plot_control=False):
         """Render the spline trajectory from batch_idx
         including goal position."""
-        super().render(ax, batch_idx, freq)
+        super().render(axs, batch_idx, freq, plot_control=plot_control)
         goal_n15 = self.goal_state.position_heading_speed_and_angular_speed_nk5()
         target_state = goal_n15[batch_idx, 0]
+        ax = axs[0]
         ax.quiver([target_state[0]], [target_state[1]],
                   [tf.cos(target_state[2])],
                   [tf.sin(target_state[2])], units='width')
+        ax.set_title('Spline Trajectory')

@@ -1,5 +1,6 @@
 from dotmap import DotMap
 import tensorflow as tf
+tf.enable_eager_execution()
 import numpy as np
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from obstacles.circular_obstacle_map import CircularObstacleMap
@@ -7,9 +8,11 @@ from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from planners.sampling_planner_v2 import SamplingPlanner_v2
 from systems.dubins_v2 import Dubins_v2
 from control_pipelines.control_pipeline_v1 import Control_Pipeline_v1
-from control_pipelines.control_pipeline_v0 import Control_Pipeline_v0
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 import utils.utils as utils
+from trajectory.trajectory import State
+import matplotlib.pyplot as plt
+import os
 
 
 def load_params():
@@ -36,7 +39,7 @@ def load_params():
 
     # Horizons in seconds
     p.episode_horizon_s = 20
-    p.planning_horizons_s = [3.0]
+    p.planning_horizons_s = [1.5]
     p.control_horizon_s = 20.0
 
     # Horizons in timesteps
@@ -116,3 +119,77 @@ def load_params():
     p.control_validation_params = DotMap(num_tests_per_map=1,
                                          num_maps=50)
     return p
+
+
+def sample_waypoints(p, vf=0.):
+    n = p.n
+    wx = np.linspace(*p.planner_params['waypt_x_params'], dtype=np.float32)
+    wy = np.linspace(*p.planner_params['waypt_y_params'], dtype=np.float32)
+    wt = np.linspace(*p.planner_params['waypt_theta_params'], dtype=np.float32)
+    wx, wy, wt = np.meshgrid(wx, wy, wt)
+    wx_n11 = wx.ravel()[:, None, None]
+    wy_n11 = wy.ravel()[:, None, None]
+    wt_n11 = wt.ravel()[:, None, None]
+
+    wx_n11, wy_n11, wt_n11 = p._spline.ensure_goals_valid(0.0, 0.0, wx_n11,
+                                                          wy_n11, wt_n11,
+                                                          epsilon=p.spline_params['epsilon'])
+
+    vf = tf.ones((n, 1, 1), dtype=tf.float32)*vf
+    waypt_pos_n12 = tf.concat([wx_n11, wy_n11], axis=2)
+    waypt_egocentric_state_n = State(dt=p.dt, n=n, k=1,
+                                     position_nk2=waypt_pos_n12,
+                                     speed_nk1=vf,
+                                     heading_nk1=wt_n11,
+                                     variable=True)
+    return waypt_egocentric_state_n
+
+
+def plot_pipeline(pipeline, axess, fig, v0):
+    n = pipeline.valid_idxs.shape[0].value
+    logdir = '/'.join(pipeline._data_file_name().split('/')[:-1])
+    logdir = os.path.join(logdir, 'plots', 'v0_{:.3f}'.format(v0))
+    utils.mkdir_if_missing(logdir)
+    for idx in pipeline.valid_idxs:
+        axs = axess[:3]
+        pipeline.traj_spline.render(axs, batch_idx=idx, freq=4, plot_control=True)
+        axs = axess[3:]
+        pipeline.traj_opt.render(axs, batch_idx=idx, freq=4, plot_control=True)
+        axs[0].set_title('LQR Trajectory')
+        filename = os.path.join(logdir, 'idx_{:d}.png'.format(idx))
+        goal_pos = pipeline.goal_state.position_nk2()[idx, 0].numpy()
+        goal_heading = pipeline.goal_state.heading_nk1()[idx, 0, 0].numpy() 
+        fig.suptitle('Control Pipeline for Waypt: [{:e}, {:e}, {:.3f}]'.format(*goal_pos,
+                                                                               goal_heading))
+        fig.savefig(filename)
+
+
+def main():
+    plt.style.use('ggplot')
+    p = load_params()
+    system_dynamics = p._system_dynamics(dt=p.dt, **p.system_dynamics_params)
+    delta_v = system_dynamics.v_bounds[1] - system_dynamics.v_bounds[0]
+    start_velocities = np.linspace(system_dynamics.v_bounds[0],
+                                   system_dynamics.v_bounds[1],
+                                   int(np.ceil(delta_v/p.planner_params['velocity_disc'])))
+   
+    waypt_egocentric_state_n = sample_waypoints(p)
+    print('Control_Pipeline: {:s}'.format(p._control_pipeline.pipeline_name))
+    fig, _, axs = utils.subplot2(plt, (2, 3), (8, 8), (.4, .4))
+    axs = axs[::-1]
+    for k in p.ks:
+        for velocity in start_velocities:
+            start_state = system_dynamics.init_egocentric_robot_state(dt=p.dt, n=p.n,
+                                                                  v=velocity, w=0.0)
+            pipeline = p._control_pipeline(system_dynamics=system_dynamics, params=p, v0=velocity,
+                                           k=k, ** p.control_pipeline_params)
+            pipeline.plan(start_state, waypt_egocentric_state_n)
+            plot_pipeline(pipeline, axs, fig, velocity)
+            num_good_waypts = pipeline.valid_idxs.shape[0].value
+            percent_good_waypt = num_good_waypts/p.n
+            print('k: {:d}, v0: {:.3f}, # Good Waypts: {:d}, % Good waypoints: {:.3f}'.format(k, velocity,
+                                                                         num_good_waypts, percent_good_waypt))
+
+
+if __name__ == '__main__':
+    main()

@@ -18,28 +18,7 @@ class Control_Pipeline_v1(Control_Pipeline_v0):
 
         A control pipeline can be precomputed for a vixed v0 and k (planning horizon)
         assuming start_state and goal_state are specified in egocentric coordinates."""
-
-    def _data_file_name(self):
-        base_dir = './data/control_pipelines/v1/k_{}_dt_{}'.format(self.k,
-                                                                   self.params.dt)
-        utils.mkdir_if_missing(base_dir)
-        p = self.params
-        waypt_bounds = p.waypoint_bounds
-        filename = p.planner_params['mode']
-        if p.planner_params['mode'] == 'random':
-            filename += '_{:d}'.format(p.seed)
-            filename += '_{:.2f}_{:.2f}_{:.02f}_{:.2f}'.format(waypt_bounds[0][0],
-                                                               waypt_bounds[0][1],
-                                                               waypt_bounds[1][0],
-                                                               waypt_bounds[1][1])
-        else:
-            filename += '_X_{:.2f}_{:.2f}_{:d}'.format(*p.planner_params['waypt_x_params'])
-            filename += '_Y_{:.2f}_{:.2f}_{:d}'.format(*p.planner_params['waypt_y_params'])
-            filename += '_Theta_{:.3f}_{:.3f}_{:d}'.format(*p.planner_params['waypt_theta_params'])
-
-        filename += '_velocity_{:.3f}.pkl'.format(self.v0)
-        filename = os.path.join(base_dir, filename)
-        return filename
+    pipeline_name = 'v1'
 
     def plan(self, start_state, goal_state):
         if self.precompute and self.computed:
