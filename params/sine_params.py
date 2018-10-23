@@ -103,7 +103,7 @@ def create_params():
     
     # Test parameters
     p.test = DotMap(
-                    # Trainer seed
+                    # Test seed
                     seed=10
     )
 
