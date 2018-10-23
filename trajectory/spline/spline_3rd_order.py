@@ -19,9 +19,9 @@ class Spline3rdOrder(Spline):
         self.goal_state = goal_state
         # compute them heuristically based on dist to goal
         if factors_n2 is None:
-            factor1_n1 = self.start_state.speed_nk1()[:, :, 0] +\
-            tf.norm(goal_state.position_nk2()-start_state.position_nk2(), axis=2)#+ self.epsilon 
-            factor2_n1 = factor1_n1#tf.norm(goal_state.position_nk2()-start_state.position_nk2(), axis=2)
+            factor1_n1 = self.start_state.speed_nk1()[:, :, 0] + \
+                         tf.norm(goal_state.position_nk2()-start_state.position_nk2(), axis=2)
+            factor2_n1 = factor1_n1
             factors_n2 = tf.concat([factor1_n1, factor2_n1], axis=1)
         with tf.name_scope('fit_spline'):
             f1_n1, f2_n1 = factors_n2[:, 0:1], factors_n2[:, 1:]
@@ -87,33 +87,25 @@ class Spline3rdOrder(Spline):
             self._position_nk2 = tf.stack([xs_nk, ys_nk], axis=2)
             self._heading_nk1 = tf.atan2(ys_dot_nk, xs_dot_nk)[:, :, None]
 
-            # CHECK FOR NANS if calculating speeds!!!!
             if calculate_speeds:
                 ts_dot_n4k = tf.stack([3.0*tf.pow(ts_nk, 2), 2.0*ts_nk,
                                        tf.ones_like(ts_nk), tf.zeros_like(ts_nk)],
                                       axis=1)
-                ts_ddot_n4k = tf.stack([6.0*ts_nk, 2.0*tf.ones_like(ts_nk),
-                                        tf.zeros_like(ts_nk),
-                                        tf.zeros_like(ts_nk)], axis=1)
                 ps_ddot_n4k = tf.stack([6.0*ps_nk, 2.0*tf.ones_like(ps_nk),
                                         tf.zeros_like(ps_nk),
                                         tf.zeros_like(ps_nk)], axis=1)
 
                 ps_dot_nk = tf.squeeze(tf.matmul(p_coeffs_n14, ts_dot_n4k), axis=1)
 
-                ps_ddot_nk = tf.squeeze(tf.matmul(p_coeffs_n14, ts_ddot_n4k), axis=1)
                 xs_ddot_nk = tf.squeeze(tf.matmul(x_coeffs_n14, ps_ddot_n4k), axis=1)
                 ys_ddot_nk = tf.squeeze(tf.matmul(y_coeffs_n14, ps_ddot_n4k), axis=1)
 
                 speed_ps_nk = tf.sqrt(xs_dot_nk**2 + ys_dot_nk**2)
                 speed_nk = (speed_ps_nk*ps_dot_nk)
-                with tf.name_scope('omega'):
-                    ps_sq_nk = tf.square(ps_dot_nk)
-                    num_l_nk = ys_ddot_nk*ps_sq_nk + ys_dot_nk*ps_ddot_nk
-                    num_l_nk = num_l_nk*xs_dot_nk*ps_dot_nk
-                    num_r_nk = xs_ddot_nk*ps_sq_nk + xs_dot_nk*ps_ddot_nk
-                    num_r_nk = num_r_nk*ys_dot_nk*ps_dot_nk
-                    angular_speed_nk = (num_l_nk + num_r_nk) / tf.square(speed_nk)
+
+                numerator_nk = xs_dot_nk*ys_ddot_nk-ys_dot_nk*xs_ddot_nk
+                angular_speed_nk = numerator_nk/(speed_ps_nk**2) * ps_dot_nk
+
                 self._speed_ps_nk1 = speed_ps_nk[:, :, None]
                 self._speed_nk1 = speed_nk[:, :, None]
                 self._angular_speed_nk1 = angular_speed_nk[:, :, None]
@@ -166,7 +158,8 @@ class Spline3rdOrder(Spline):
         """ Perturbs goal_x and goal_y by epsilon if needed ensuring that a unique spline exists.
         Assumes that all goal angles are within [-pi/2., pi/2]."""
         assert((goal_theta_nk1 >= -np.pi/2. and goal_theta_nk1 <= np.pi/2.).all())
-        norms = np.linalg.norm(np.concatenate([goal_x_nk1-start_x, goal_y_nk1-start_y], axis=2), axis=2)
+        norms = np.linalg.norm(np.concatenate([goal_x_nk1-start_x, goal_y_nk1-start_y], axis=2),
+                               axis=2)
         invalid_idxs = (norms == 0.0)
         goal_x_nk1[invalid_idxs] += epsilon
         goal_y_nk1[invalid_idxs] += np.sign(np.sin(goal_theta_nk1[invalid_idxs]))*epsilon
