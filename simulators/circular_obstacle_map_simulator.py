@@ -76,7 +76,7 @@ class CircularObstacleMapSimulator(Simulator):
         text_color = self.episode_termination_colors[self.episode_type]
         ax.set_title('Start: [{:.2f}, {:.2f}] '.format(*start) +
                      'Goal: [{:.2f}, {:.2f}]'.format(*goal), color=text_color)
- 
+
         final_pos = self.vehicle_trajectory.position_nk2()[0, -1]
         ax.set_xlabel('Cost: {cost:.3f} '.format(cost=self.obj_val) +
                       'End: [{:.2f}, {:.2f}]'.format(*final_pos), color=text_color)

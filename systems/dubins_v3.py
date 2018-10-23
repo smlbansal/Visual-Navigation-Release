@@ -1,5 +1,4 @@
 from systems.dubins_car import Dubins_5d
-from trajectory.trajectory import Trajectory
 import tensorflow as tf
 
 
@@ -105,4 +104,3 @@ class Dubins_v3(Dubins_5d):
         zero_idxs = tf.logical_or(less_than_idx, greater_than_idx)
         res = tf.cast(tf.logical_not(zero_idxs), wtilde_nk.dtype)
         return res
-

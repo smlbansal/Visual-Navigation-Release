@@ -34,10 +34,10 @@ class SamplingPlanner_v2(SamplingPlanner):
                                    in params.ks]
 
         self.start_state_n = State(dt=params.dt, n=params.n, k=1, variable=True)
-        
+
         self.opt_waypt = State(dt=params.dt, n=1, k=1, variable=True)
         self.opt_trajs = [Trajectory(dt=params.dt, n=1, k=k, variable=True) for k in
-                         params.ks]
+                          params.ks]
 
     def precompute_control_pipelines(self):
         p = self.params
@@ -63,7 +63,7 @@ class SamplingPlanner_v2(SamplingPlanner):
         the closest starting velocity"""
         p = self.params
         idx_k = p.ks.index(k)
-        
+
         start_speed = start_state.speed_nk1()[0, 0, 0].numpy()
         diff = np.abs(start_speed - self.start_velocities)
         idx_v = np.argmin(diff)
@@ -89,4 +89,3 @@ class SamplingPlanner_v2(SamplingPlanner):
                                                                  min_idx_per_k[min_idx])
         self.opt_traj = self.opt_trajs[min_idx]
         return self.opt_waypt, self.opt_traj, min_cost
-

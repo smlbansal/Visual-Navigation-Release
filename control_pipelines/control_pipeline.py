@@ -21,8 +21,8 @@ class Control_Pipeline_v0(Control_Pipeline):
             as a reference trajectory for LQR
         2. Uses LQR with the spline reference trajectory and
             a known system_dynamics model to plan a dynamically
-            feasible trajectory. 
-            
+            feasible trajectory.
+
         A control pipeline can be precomputed for a vixed v0 and k (planning horizon)
         assuming start_state and goal_state are specified in egocentric coordinates."""
 
@@ -65,11 +65,11 @@ class Control_Pipeline_v0(Control_Pipeline):
         waypt_bounds = p.waypoint_bounds
         filename = p.planner_params['mode']
         if p.planner_params['mode'] == 'random':
-            filename += '_%d'%(p.seed)
-            filename += '_%.02f_%.02f_%.02f_%.02f'%(waypt_bounds[0][0],
-                                                    waypt_bounds[0][1],
-                                                    waypt_bounds[1][0],
-                                                    waypt_bounds[1][1])
+            filename += '_{:d}'.format(p.seed)
+            filename += '_{:.2f}_{:.2f}_{:.02f}_{:.2f}'.format(waypt_bounds[0][0],
+                                                               waypt_bounds[0][1],
+                                                               waypt_bounds[1][0],
+                                                               waypt_bounds[1][1])
         else:
             filename += '_X_{:.2f}_{:.2f}_{:d}'.format(*p.planner_params['waypt_x_params'])
             filename += '_Y_{:.2f}_{:.2f}_{:d}'.format(*p.planner_params['waypt_y_params'])
