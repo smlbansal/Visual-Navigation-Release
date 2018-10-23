@@ -16,7 +16,7 @@ class Simulator:
                  end_episode_on_collision=True, end_episode_on_success=True):
         self.params = params
         self.goal_cutoff_dist = goal_cutoff_dist
-        self.goal_dist_norm = goal_dist_norm  #Default- L2 norm
+        self.goal_dist_norm = goal_dist_norm  # Default- L2 norm
         self.end_episode_on_collision = end_episode_on_collision
         self.end_episode_on_success = end_episode_on_success
         self.system_dynamics = self._init_system_dynamics()
@@ -44,7 +44,7 @@ class Simulator:
         self.min_obs_distances = self._calculate_min_obs_distances(vehicle_trajectory)
         self.collisions = self._calculate_trajectory_collisions(vehicle_trajectory)
         self.episode_type, end_time_idx = self._enforce_episode_termination_conditions(vehicle_trajectory)
-        
+
         # Only keep the states corresponding to unclipped parts of the trajectory
         keep_idx = np.array(state_time_idxs) <= end_time_idx
         self.states = np.array(states)[keep_idx]
@@ -255,8 +255,7 @@ class Simulator:
         text_color = self.episode_termination_colors[self.episode_type]
         ax.set_title('Start: [{:.2f}, {:.2f}] '.format(*start) +
                      'Goal: [{:.2f}, {:.2f}]'.format(*goal), color=text_color)
-        
+
         final_pos = self.vehicle_trajectory.position_nk2()[0, -1]
         ax.set_xlabel('Cost: {cost:.3f} '.format(cost=self.obj_val) +
                       'End: [{:.2f}, {:.2f}]'.format(*final_pos), color=text_color)
-    

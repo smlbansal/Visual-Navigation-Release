@@ -16,7 +16,7 @@ from dotmap import DotMap
 def create_params():
     p = DotMap()
     p.seed = 1
-    p.planning_horizon_s = 1.5  # seconds
+    p.planning_horizon_s = 3.0#1.5  # seconds
     p.n = 1
     p.map_bounds = [[-2.0, -2.0], [2.0, 2.0]]
     p.dx, p.dt = .05, .1
@@ -27,11 +27,8 @@ def create_params():
         p.lqr_coeffs = DotMap({'quad': [1.0, 1.0, 1.0, 1e-5, 1e-5, 1e-5, 1e-5],
                                'linear': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]})
     else:
-        p.lqr_coeffs = DotMap({'quad': [1.e16/(7e-5), 1.e16/(7e-5), (0.e-16)/3.4, 1e-5, 1e-5],
+        p.lqr_coeffs = DotMap({'quad': [1.0, 1.0, 1.0, 1e-5, 1e-5],
                                'linear': [0.0, 0.0, 0.0, 0.0, 0.0]})
-
-        #p.lqr_coeffs = DotMap({'quad': [1.0, 1.0, 1.0, 1e-5, 1e-5],
-        #                       'linear': [0.0, 0.0, 0.0, 0.0, 0.0]})
     p.ctrl = 1.
 
     C = tf.diag(p.lqr_coeffs.quad, name='lqr_coeffs_quad')
@@ -58,12 +55,12 @@ def visualize_control_pipeline_turn(v0, theta_goal, axes):
     dt = p.dx
 
     # Initial State is [0, 0, 0, v0, 0]
-    x0, y0 = 0., 0.
+    x0, y0 = .0, 0.
     start_pos_nk2 = np.array([[[x0, y0]]], dtype=np.float32)
     start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32)*v0
 
     vf = 0.
-    xg, yg = 0., 0.
+    xg, yg = 0.5, 0.5
     goal_x = np.ones((n,1,1), dtype=np.float32)*xg
     goal_y = np.ones((n, 1, 1), dtype=np.float32)*yg
     goal_theta = np.ones((n, 1, 1), dtype=np.float32) * theta_goal
@@ -105,18 +102,31 @@ def visualize_control_pipeline_turn(v0, theta_goal, axes):
     trajectory_lqr.render(ax, batch_idx=0, freq=1)
     end_pose_3 = trajectory_lqr.position_and_heading_nk3()[0, -1]
     ax.set_title('LQR Traj, End: [{:e}, {:e}, {:.03f}]'.format(*end_pose_3))
+   
+    ax = axes[3]
+    omega = trajectory_lqr.angular_speed_nk1()[0, :, 0]
+    ax.plot(omega.numpy(), 'r--')
+    ax.set_title('Omega')
+
+    
+    ax = axes[4]
+    velocity = trajectory_lqr.speed_nk1()[0, :, 0]
+    ax.plot(velocity.numpy(), 'r--')
+    ax.set_title('Velocity')
+
+
 
 
 if __name__ == '__main__':
     plt.style.use('ggplot')
     N = 21
     #thetas = np.linspace(-np.pi/2., np.pi/2., N)
-    thetas = [-np.pi/2.]
+    thetas = [np.pi/3.]
     N = len(thetas)
-    fig, _, axess = utils.subplot2(plt, (N, 3), (8, 8), (.4, .4))
+    fig, _, axess = utils.subplot2(plt, (N, 5), (8, 8), (.4, .4))
     v0 = 0.1
     for theta_goal in thetas:
-        axes = [axess.pop(), axess.pop(), axess.pop()]
+        axes = [axess.pop(), axess.pop(), axess.pop(), axess.pop(), axess.pop()]
         visualize_control_pipeline_turn(v0, theta_goal, axes)
     fig.suptitle('Turning Trajectories for v0={:.3f}, vf={:.3f}'.format(v0, 0.0))
     plt.savefig('./tmp/control_pipeline_turn_v0_{:.2f}.png'.format(v0))

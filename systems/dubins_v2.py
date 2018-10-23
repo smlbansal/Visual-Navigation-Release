@@ -1,5 +1,4 @@
 from systems.dubins_car import Dubins_3d
-from trajectory.trajectory import Trajectory
 import tensorflow as tf
 
 
