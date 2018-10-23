@@ -24,10 +24,10 @@ def test_dubins_v1(visualize=False):
     assert(state_tp1_nk3.shape == (n, k, x_dim))
     jac_x_nk33 = db.jac_x(trajectory)
     assert(jac_x_nk33.shape == (n, k, x_dim, x_dim))
-    
+
     jac_u_nk32 = db.jac_u(trajectory)
     assert(jac_u_nk32.shape == (n, k, x_dim, u_dim))
-    
+
     A, B, c = db.affine_factors(trajectory)
 
     # Test that computation is occurring correctly
@@ -164,32 +164,39 @@ def test_dubins_v3():
     trajectory = db.simulate_T(state_n15, ctrl_nk2, T=k)
     state_nk5 = trajectory.position_heading_speed_and_angular_speed_nk5()
 
-    x1, x2, x3, x4 = (state_nk5[0, 0].numpy(), state_nk5[0, 1].numpy(),
-                      state_nk5[0, 2].numpy(), state_nk5[0, 3].numpy())
-    assert(np.allclose(x2, [0.0, 0.0, 0.0, .1, .1]))
-    assert(np.allclose(x2, [.01, 0., .01, .2, .2]))
+    x2, x3, x4 = state_nk5[0, 1].numpy(), state_nk5[0, 2].numpy(), state_nk5[0, 3].numpy()
 
-    #assert(np.allclose(x3, [.06+.06*np.cos(.1), .06*np.sin(.1), .2]))
-    #assert(np.allclose(x4, [.17850246, .01791017, .3], atol=1e-4))
+    assert(np.allclose(x2, [0.0, 0.0, 0.0, .1, .1]))
+    assert(np.allclose(x3, [.01, 0., .01, .2, .2]))
+    assert(np.allclose(x4, [np.cos(.01)*.1*.2+.01, np.sin(.01)*.1*.2, .03, .3, .3], atol=1e-4))
 
     trajectory = db.assemble_trajectory(state_nk5[:, :-1], ctrl_nk2)
     A, B, c = db.affine_factors(trajectory)
     A0, A1, A2 = A[0, 0], A[0, 1], A[0, 2]
-    A0_c = np.array([[1., 0., 0.], [0., 1., .06], [0., 0., 1.]])
-    A1_c = np.array([[1., 0., -.06*np.sin(.1)],
-                     [0., 1., .06*np.cos(.1)],
-                     [0., 0., 1.]])
-    A2_c = np.array([[1., 0., -.06*np.sin(.2)],
-                     [0., 1., .06*np.cos(.2)],
-                     [0., 0., 1.]])
+
+    A0_c = np.eye(5)
+    A0_c[0, 3] += .1
+    A0_c[2, 4] += dt
+    A1_c = np.eye(5)
+    A1_c[0, 3] += .1
+    A1_c[1, 2] += .01
+    A1_c[2, 4] += dt
+    A2_c = np.eye(5)
+    A2_c[2, 4] += dt
+    A2_c[0, 2] += -.2*np.sin(.01)*dt
+    A2_c[1, 2] += .2*np.cos(.01)*dt
+    A2_c[0, 3] += dt*np.cos(.01)
+    A2_c[1, 3] += dt*np.sin(.01)
     assert(np.allclose(A0, A0_c))
     assert(np.allclose(A1, A1_c))
     assert(np.allclose(A2, A2_c))
 
     B0, B1, B2 = B[0, 0], B[0, 1], B[0, 2]
-    B0_c = np.array([[.1, 0.], [0., 0.], [0., .1]])
-    B1_c = np.array([[.1*np.cos(.1), 0.], [.1*np.sin(.1), 0.], [0., .1]])
-    B2_c = np.array([[.1*np.cos(.2), 0.], [.1*np.sin(.2), 0.], [0., .1]])
+    B0_c = np.zeros((x_dim, u_dim))
+    B0_c[3, 0] += .1
+    B0_c[4, 1] += .1
+    B1_c = 1.0*B0_c
+    B2_c = 1.0*B0_c
     assert(np.allclose(B0, B0_c))
     assert(np.allclose(B1, B1_c))
     assert(np.allclose(B2, B2_c))
