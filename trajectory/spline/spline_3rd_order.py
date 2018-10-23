@@ -40,7 +40,7 @@ class Spline3rdOrder(Spline):
             goal_pos_n12 = self.goal_state.position_nk2()
 
             # Multiple solutions if start and goal are the same x,y coordinates
-            assert(tf.reduce_all(tf.norm(goal_pos_n12-start_pos_n12, axis=2) > self.epsilon))
+            assert(tf.reduce_all(tf.norm(goal_pos_n12-start_pos_n12, axis=2) >= self.epsilon))
 
             x0_n1, y0_n1 = start_pos_n12[:, :, 0], start_pos_n12[:, :, 1]
             t0_n1 = self.start_state.heading_nk1()[:, :, 0]
@@ -116,9 +116,24 @@ class Spline3rdOrder(Spline):
                 numerator_nk = xs_dot_nk*ys_ddot_nk-ys_dot_nk*xs_ddot_nk
                 angular_speed_nk = numerator_nk/(speed_ps_nk**2) * ps_dot_nk
 
-                self._speed_ps_nk1 = speed_ps_nk[:, :, None]
                 self._speed_nk1 = speed_nk[:, :, None]
                 self._angular_speed_nk1 = angular_speed_nk[:, :, None]
+
+    def check_dynamic_feasability(self, speed_max_system, angular_speed_max_system, horizon_s):
+        """Checks whether the current computed spline (on time points in [0, 1])
+        can be executed in time <= horizon_s (specified in seconds) while respecting max speed and
+        angular speed constraints. Returns the batch indices of all valid splines."""
+        # Speed assumed to be in [0, speed_max_system]
+        # Angular speed assumed to be in [-angular_speed_max_system, angular_speed_max_system]
+        max_speed = tf.reduce_max(self.speed_nk1(), axis=1)
+        max_angular_speed = tf.reduce_max(tf.abs(self.angular_speed_nk1()), axis=1)
+
+        horizon_opt_speed = max_speed/speed_max_system
+        horizon_opt_angular_speed = max_angular_speed/angular_speed_max_system
+        horizons = tf.concat([horizon_opt_speed, horizon_opt_angular_speed], axis=1)
+        cutoff_horizon = tf.reduce_max(horizons, axis=1)
+        valid_idxs = tf.squeeze(tf.where(cutoff_horizon <= horizon_s), axis=1)
+        return tf.cast(valid_idxs, tf.int32)
 
     @staticmethod
     def check_start_goal_equivalence(start_state_old, goal_state_old,
@@ -167,7 +182,7 @@ class Spline3rdOrder(Spline):
     def ensure_goals_valid(start_x, start_y, goal_x_nk1, goal_y_nk1, goal_theta_nk1, epsilon):
         """ Perturbs goal_x and goal_y by epsilon if needed ensuring that a unique spline exists.
         Assumes that all goal angles are within [-pi/2., pi/2]."""
-        assert((goal_theta_nk1 >= -np.pi/2. and goal_theta_nk1 <= np.pi/2.).all())
+        assert((goal_theta_nk1 >= -np.pi/2.).all() and (goal_theta_nk1 <= np.pi/2.).all())
         norms = np.linalg.norm(np.concatenate([goal_x_nk1-start_x, goal_y_nk1-start_y], axis=2),
                                axis=2)
         invalid_idxs = (norms == 0.0)

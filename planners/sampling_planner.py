@@ -44,27 +44,29 @@ class SamplingPlanner(Planner):
                 waypoint_bounds = self.params.waypoint_bounds
                 x0, y0 = waypoint_bounds[0]
                 xf, yf = waypoint_bounds[1]
-                wx = np.random.uniform(x0, xf, size=n).astype(np.float32)[:, None]
-                wy = np.random.uniform(y0, yf, size=n).astype(np.float32)[:, None]
-                wt = np.random.uniform(-np.pi, np.pi, size=n).astype(np.float32)[:, None]
+                wx_n11 = np.random.uniform(x0, xf, size=n).astype(np.float32)[:, None, None]
+                wy_n11 = np.random.uniform(y0, yf, size=n).astype(np.float32)[:, None, None]
+                wt_n11 = np.random.uniform(-np.pi, np.pi, size=n).astype(np.float32)[:, None, None]
             elif self.mode == 'uniform':
                 wx = np.linspace(*self.kwargs['waypt_x_params'], dtype=np.float32)
                 wy = np.linspace(*self.kwargs['waypt_y_params'], dtype=np.float32)
                 wt = np.linspace(*self.kwargs['waypt_theta_params'], dtype=np.float32)
                 wx, wy, wt = np.meshgrid(wx, wy, wt)
-                wx = wx.ravel()[:, None]
-                wy = wy.ravel()[:, None]
-                wt = wt.ravel()[:, None]
+                wx_n11 = wx.ravel()[:, None, None]
+                wy_n11 = wy.ravel()[:, None, None]
+                wt_n11 = wt.ravel()[:, None, None]
 
-                wx, wy, wt = self.params._spline.ensure_goals_valid(0.0, 0.0, wx, wy, wt,
-                                                                    epsilon=self.params.spline_params['epsilon'])
+                wx_n11, wy_n11, wt_n11 = self.params._spline.ensure_goals_valid(0.0, 0.0, wx_n11,
+                                                                                wy_n11, wt_n11,
+                                                                                epsilon=self.params.spline_params['epsilon'])
             else:
                 assert(False)
 
-            vf = tf.ones((n, 1), dtype=tf.float32)*vf
-            waypt_pos_n2 = tf.concat([wx, wy], axis=1)
+            vf = tf.ones((n, 1, 1), dtype=tf.float32)*vf
+            waypt_pos_n12 = tf.concat([wx_n11, wy_n11], axis=2)
             waypt_egocentric_state_n = State(dt=self.params.dt, n=n, k=1,
-                                             position_nk2=waypt_pos_n2[:, None],
-                                             speed_nk1=vf[:, None],
-                                             heading_nk1=wt[:, None], variable=True)
+                                             position_nk2=waypt_pos_n12,
+                                             speed_nk1=vf,
+                                             heading_nk1=wt_n11,
+                                             variable=True)
             return waypt_egocentric_state_n

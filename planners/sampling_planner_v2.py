@@ -79,9 +79,14 @@ class SamplingPlanner_v2(SamplingPlanner):
             self.trajectory_world = self.trajectories_world[i]  # used in super.eval_objective
             obj_vals, trajectory = self.eval_objective(self.start_state_n,
                                                        waypt_state_n, k=k, mode='assign')
-            min_idx = tf.argmin(obj_vals)
-            min_idx_per_k.append(min_idx)
-            costs.append(obj_vals[min_idx])
+            
+            # Compute the min over valid indices.
+            # For control pipeline v0 this is all indices
+            valid_idxs = self._choose_control_pipeline(self.start_state_n, k).valid_idxs
+            valid_obj_vals = tf.gather(obj_vals, valid_idxs)
+            min_valid_idx = tf.argmin(valid_obj_vals)
+            min_idx_per_k.append(valid_idxs[min_valid_idx])
+            costs.append(valid_obj_vals[min_valid_idx])
         min_idx = tf.argmin(costs).numpy()
         min_cost = costs[min_idx]
         self.opt_waypt.assign_from_state_batch_idx(waypt_state_n, min_idx_per_k[min_idx])

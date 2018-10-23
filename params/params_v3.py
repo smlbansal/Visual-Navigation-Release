@@ -6,7 +6,7 @@ from obstacles.circular_obstacle_map import CircularObstacleMap
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from planners.sampling_planner_v2 import SamplingPlanner_v2
 from systems.dubins_v2 import Dubins_v2
-from control_pipelines.control_pipeline import Control_Pipeline_v0
+from control_pipelines.control_pipeline_v1 import Control_Pipeline_v1
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 import utils.utils as utils
 
@@ -35,7 +35,7 @@ def load_params():
 
     # Horizons in seconds
     p.episode_horizon_s = 20
-    p.planning_horizons_s = [.75, 1.5, 3.0]
+    p.planning_horizons_s = [3.0]
     p.control_horizon_s = 20.0
 
     # Horizons in timesteps
@@ -61,7 +61,7 @@ def load_params():
     p._obstacle_map = CircularObstacleMap
     p._system_dynamics = Dubins_v2
     p._planner = SamplingPlanner_v2
-    p._control_pipeline = Control_Pipeline_v0
+    p._control_pipeline = Control_Pipeline_v1
     p._simulator = CircularObstacleMapSimulator
 
     # Store params as dictionaries so they can be used with **kwargs
@@ -85,7 +85,7 @@ def load_params():
 
     # dx and num_theta_bins only used if sampling mode is uniform
     dx = .1
-    num_theta_bins = utils.ensure_odd(11)
+    num_theta_bins = utils.ensure_odd(21)
     precompute = True
     velocity_disc = .01  # discretization of velocity for control pipeline
     p.planner_params = {'mode': 'uniform',

@@ -20,27 +20,32 @@ class QuadraticRegulatorRef(DiscreteCost):
                 state that corresponds to angles and should be wrapped.
         """
 
-        # Used for parsing trajectory objects
+        # Used for parsing trajectory objects into tensors of states and actions
         self.system = system
 
-        # Check dimensions
-        x_dim, u_dim = system._x_dim, system._u_dim  # d, f
-        assert ((tf.reduce_all(tf.equal(C_gg[:x_dim, x_dim:],
-                                        tf.transpose(C_gg[x_dim:,
-                                                          :x_dim]))).numpy()))
-        assert ((x_dim + u_dim) == C_gg.shape[0].value
-                == C_gg.shape[1].value == c_g.shape[0].value)
-
-        self._x_dim, self._u_dim = x_dim, u_dim
+        self._x_dim, self._u_dim = system._x_dim, system._u_dim  # d, f
         self.angle_dims = system._angle_dims
-        self.trajectory_ref = trajectory_ref
-        n, k, g = trajectory_ref.n, trajectory_ref.k, C_gg.shape[0]
-        self._C_nkgg = tf.broadcast_to(C_gg, (n, k, g, g))
-        self._c_nkg = tf.broadcast_to(c_g, (n, k, g))
+        self.update_trajectory_ref_and_cost(trajectory_ref, C_gg, c_g)
         super().__init__(x_dim=self._x_dim, u_dim=self._u_dim)
 
         self.isTimevarying = True
         self.isNonquadratic = False
+
+    def update_trajectory_ref_and_cost(self, trajectory_ref, C_gg, c_g):
+        """Update the reference trajectory and quadratic/linear penalites of the
+        cost function. Allows a cost function object to be reused over multiple trajectories
+        of different shapes."""
+        x_dim, u_dim = self._x_dim, self._u_dim
+        # Check dimensions
+        assert ((tf.reduce_all(tf.equal(C_gg[:x_dim, x_dim:],
+                                        tf.transpose(C_gg[x_dim:, :x_dim]))).numpy()))
+        assert ((x_dim + u_dim) == C_gg.shape[0].value
+                == C_gg.shape[1].value == c_g.shape[0].value)
+
+        self.trajectory_ref = trajectory_ref
+        n, k, g = trajectory_ref.n, trajectory_ref.k, C_gg.shape[0]
+        self._C_nkgg = tf.broadcast_to(C_gg, (n, k, g, g))
+        self._c_nkg = tf.broadcast_to(c_g, (n, k, g))
 
     def compute_trajectory_cost(self, trajectory, trials=1):
         with tf.name_scope('compute_traj_cost'):

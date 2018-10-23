@@ -89,6 +89,8 @@ class Trajectory(object):
                    variable=False)
 
     def assign_from_trajectory_batch_idx(self, trajectory, batch_idx):
+        """Assigns a trajectory object's instance variables from the trajectory stored
+        at batch index batch_idx in trajectory."""
         self.assign_trajectory_from_tensors(position_nk2=trajectory.position_nk2()[batch_idx:batch_idx+1],
                                             speed_nk1=trajectory.speed_nk1()[batch_idx:batch_idx+1],
                                             acceleration_nk1=trajectory.acceleration_nk1()[batch_idx:batch_idx+1],
