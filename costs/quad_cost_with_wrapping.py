@@ -42,7 +42,7 @@ class QuadraticRegulatorRef(DiscreteCost):
         self.isTimevarying = True
         self.isNonquadratic = False
 
-    def compute_trajectory_cost(self, trajectory):
+    def compute_trajectory_cost(self, trajectory, trials=1):
         with tf.name_scope('compute_traj_cost'):
             z_nkg = self.construct_z(trajectory)
             C_nkgg, c_nkg = self._C_nkgg, self._c_nkg

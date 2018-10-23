@@ -147,12 +147,12 @@ class Trajectory(object):
     def position_and_heading_nk3(self):
         return tf.concat([self.position_nk2(), self.heading_nk1()], axis=2)
 
-    def speed_and_angular_speed(self):
+    def speed_and_angular_speed_nk2(self):
         return tf.concat([self.speed_nk1(), self.angular_speed_nk1()], axis=2)
 
     def position_heading_speed_and_angular_speed_nk5(self):
         return tf.concat([self.position_and_heading_nk3(),
-                          self.speed_and_angular_speed()], axis=2)
+                          self.speed_and_angular_speed_nk2()], axis=2)
 
     def append_along_time_axis(self, trajectory):
         """ Utility function to concatenate trajectory

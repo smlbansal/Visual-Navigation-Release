@@ -2,8 +2,11 @@ import numpy as np
 
 
 class DiscreteCost:
+
     def __init__(self, x_dim, u_dim, running_cost=None, terminal_cost=None,
                  Horizon=np.inf):
+        """Implement a discrete cost function."""
+
         self._Horizon = Horizon
         self.isTimevarying = False
         self.isNonquadratic = True

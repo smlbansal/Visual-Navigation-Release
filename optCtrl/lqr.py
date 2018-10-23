@@ -22,7 +22,7 @@ class LQRSolver:
             n- batch size
             d- x_dim
             f- u_dim
-            T- self.T
+            T- self.T (LQR Planning Horizon)
 
     """
     def __init__(self, T, dynamics, cost):
@@ -30,7 +30,7 @@ class LQRSolver:
         """
         T:              Length of horizon
         dynamics:       Discrete time plant dynamics, can be nonlinear
-        cost:           instantaneous cost function; the terminal cost can be defined by judging the time index
+        cost:           instantaneous cost function
         """
 
         self.T = T
@@ -57,6 +57,7 @@ class LQRSolver:
         """
         Compute the cost incurred by a trajectory.
         """
+        # Note(Somil): Add the dimensions of J?
         _, J = self.cost.compute_trajectory_cost(trajectory)
         return J
 
@@ -111,10 +112,10 @@ class LQRSolver:
             actions = []
             states = [x0_n1d*1.]
             x_ref_nkd, u_ref_nkf = self.plant_dyn.parse_trajectory(trajectory)
-            x_tp1_n1d = x0_n1d*1.
+            x_next_n1d = x0_n1d*1.
             for t in range(self.T):
                 x_ref_n1d, u_ref_n1f = x_ref_nkd[:, t:t+1], u_ref_nkf[:, t:t+1]
-                error_t_n1d = x_tp1_n1d - x_ref_n1d
+                error_t_n1d = x_next_n1d - x_ref_n1d
                 error_t_n1d = tf.concat([error_t_n1d[:, :, :angle_dims],
                                          angle_normalize(error_t_n1d[:, :, angle_dims:angle_dims+1]),
                                          error_t_n1d[:, :, angle_dims+1:]],
@@ -123,9 +124,9 @@ class LQRSolver:
                                    tf.transpose(error_t_n1d, perm=[0, 2, 1]))
                 u_n1f = u_ref_n1f + tf.transpose(k_array_Tnf1[t] + fdback,
                                                  perm=[0, 2, 1])
-                x_tp1_n1d = self.fwdSim(x_tp1_n1d, u_n1f)
+                x_next_n1d = self.fwdSim(x_next_n1d, u_n1f)
                 actions.append(u_n1f)
-                states.append(x_tp1_n1d)
+                states.append(x_next_n1d)
             u_nkf = tf.concat(actions, axis=1)
             x_nkd = tf.concat(states, axis=1)
             trajectory = self.plant_dyn.assemble_trajectory(x_nkd,

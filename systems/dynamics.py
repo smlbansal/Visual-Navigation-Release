@@ -50,7 +50,7 @@ class Dynamics:
         """
         raise NotImplementedError
 
-    def assemble_trajectory(self, x_nkd, u_nkf):
+    def assemble_trajectory(self, x_nkd, u_nkf, pad_mode=None):
         """ Assembles a trajectory object from
         states x_nkd and actions u_nkf """
         raise NotImplementedError

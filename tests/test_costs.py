@@ -8,6 +8,7 @@ from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from systems.dubins_v1 import Dubins_v1
 
 def test_quad_cost_with_wrapping():
+    # Note(Somil): Style guide.
     x_dim, u_dim = 3,2
     n,k = 2,3
     a,b = 1., 0.

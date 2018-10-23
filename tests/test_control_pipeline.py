@@ -4,7 +4,6 @@ tf.enable_eager_execution()
 import matplotlib.pyplot as plt
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from systems.dubins_v1 import Dubins_v1
-from systems.dubins_v2 import Dubins_v2
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from utils.fmm_map import FmmMap
 from obstacles.circular_obstacle_map import CircularObstacleMap
@@ -192,7 +191,6 @@ def test_control_pipeline(visualize=False):
         plt.show()
     else:
         print('Run with visualize=True to visualize the control pipeline')
-
 
 
 if __name__ == '__main__':

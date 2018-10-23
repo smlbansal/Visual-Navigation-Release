@@ -15,14 +15,24 @@ class Spline3rdOrder(Spline):
     """
 
     def fit(self, start_state, goal_state, factors_n2=None):
+        """Fit a 3rd order spline between start state and goal state.
+        Factors_n2 represent 2 degrees of freedom in fitting the spline.
+        If factors_n2=None it is set heuristically below.
+        The spline is of the form:
+            p(t) = a3t^3+b3t^2+c3t+d3
+            x(p) = a1p^3+b1p^2+c1p+d1
+            y(p) = a2p^2+b2p^2+c2p+d2
+        """
+
         self.start_state = start_state
         self.goal_state = goal_state
-        # compute them heuristically based on dist to goal
-        if factors_n2 is None:
+
+        if factors_n2 is None:  # Compute them heuristically
             factor1_n1 = self.start_state.speed_nk1()[:, :, 0] + \
                          tf.norm(goal_state.position_nk2()-start_state.position_nk2(), axis=2)
             factor2_n1 = factor1_n1
             factors_n2 = tf.concat([factor1_n1, factor2_n1], axis=1)
+
         with tf.name_scope('fit_spline'):
             f1_n1, f2_n1 = factors_n2[:, 0:1], factors_n2[:, 1:]
 
@@ -166,10 +176,11 @@ class Spline3rdOrder(Spline):
         return goal_x_nk1, goal_y_nk1, goal_theta_nk1
 
     def render(self, ax, batch_idx=0, freq=4):
+        """Render the spline trajectory from batch_idx
+        including goal position."""
         super().render(ax, batch_idx, freq)
         goal_n15 = self.goal_state.position_heading_speed_and_angular_speed_nk5()
         target_state = goal_n15[batch_idx, 0]
         ax.quiver([target_state[0]], [target_state[1]],
                   [tf.cos(target_state[2])],
                   [tf.sin(target_state[2])], units='width')
-        ax.set_title('3rd Order Spline')

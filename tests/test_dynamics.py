@@ -21,19 +21,13 @@ def test_dubins_v1(visualize=False):
 
     trajectory = db.assemble_trajectory(state_nk3, ctrl_nk2)
     state_tp1_nk3 = db.simulate(state_nk3, ctrl_nk2)
-    s = state_tp1_nk3.shape
-    assert(s[0].value == n and s[1].value == k and s[2].value == x_dim)
-
+    assert(state_tp1_nk3.shape == (n, k, x_dim))
     jac_x_nk33 = db.jac_x(trajectory)
-    s = jac_x_nk33.shape
-    assert(s[0].value == n and s[1].value == k
-           and s[2].value == x_dim and s[3].value == x_dim)
-
+    assert(jac_x_nk33.shape == (n, k, x_dim, x_dim))
+    
     jac_u_nk32 = db.jac_u(trajectory)
-    s = jac_u_nk32.shape
-    assert(s[0].value == n and s[1].value == k
-           and s[2].value == x_dim and s[3].value == u_dim)
-
+    assert(jac_u_nk32.shape == (n, k, x_dim, u_dim))
+    
     A, B, c = db.affine_factors(trajectory)
 
     # Test that computation is occurring correctly
@@ -170,16 +164,15 @@ def test_dubins_v3():
     trajectory = db.simulate_T(state_n15, ctrl_nk2, T=k)
     state_nk5 = trajectory.position_heading_speed_and_angular_speed_nk5()
 
-    import pdb; pdb.set_trace()
     x1, x2, x3, x4 = (state_nk5[0, 0].numpy(), state_nk5[0, 1].numpy(),
                       state_nk5[0, 2].numpy(), state_nk5[0, 3].numpy())
     assert(np.allclose(x2, [0.0, 0.0, 0.0, .1, .1]))
     assert(np.allclose(x2, [.01, 0., .01, .2, .2]))
-    
+
     #assert(np.allclose(x3, [.06+.06*np.cos(.1), .06*np.sin(.1), .2]))
     #assert(np.allclose(x4, [.17850246, .01791017, .3], atol=1e-4))
 
-    trajectory = db.assemble_trajectory(state_nk3[:, :-1], ctrl_nk2)
+    trajectory = db.assemble_trajectory(state_nk5[:, :-1], ctrl_nk2)
     A, B, c = db.affine_factors(trajectory)
     A0, A1, A2 = A[0, 0], A[0, 1], A[0, 2]
     A0_c = np.array([[1., 0., 0.], [0., 1., .06], [0., 0., 1.]])
@@ -200,8 +193,9 @@ def test_dubins_v3():
     assert(np.allclose(B0, B0_c))
     assert(np.allclose(B1, B1_c))
     assert(np.allclose(B2, B2_c))
-    
+
+
 if __name__ == '__main__':
-    #test_dubins_v1(visualize=False)
-    #test_dubins_v2(visualize=False)
+    test_dubins_v1(visualize=False)
+    test_dubins_v2(visualize=False)
     test_dubins_v3()

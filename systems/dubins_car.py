@@ -114,7 +114,7 @@ class Dubins_3d(DubinsCar):
         """ A utility function for parsing a trajectory object.
         Returns x_nkd, u_nkf which are states and actions for the
         system """
-        return trajectory.position_and_heading_nk3(), trajectory.speed_and_angular_speed()
+        return trajectory.position_and_heading_nk3(), trajectory.speed_and_angular_speed_nk2()
 
     def assemble_trajectory(self, x_nkd, u_nkf, pad_mode=None):
         """ A utility function for assembling a trajectory object
