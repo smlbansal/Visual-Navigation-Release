@@ -63,7 +63,7 @@ def test_cost_function():
     
     # Define a set of positions and evaluate objective
     pos_nk2 = tf.constant([[[-1., 1.], [0.1, 0.1], [-0.1, -0.1]]], dtype=tf.float32)
-    trajectory = Trajectory(dt=0.1, k=3, position_nk2=pos_nk2)
+    trajectory = Trajectory(dt=0.1, n=1, k=3, position_nk2=pos_nk2)
     
     # Compute the objective function
     values_by_objective = objective_function.evaluate_function_by_objective(trajectory)

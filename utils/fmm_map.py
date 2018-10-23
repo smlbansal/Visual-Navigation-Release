@@ -65,7 +65,15 @@ class FmmMap(object):
         """
         self.goal_grid_mn = goal_grid_mn
         self.compute_fmm_distance_and_angle(mask_value)
-        
+
+    def render_distance_map(self, ax):
+        ax.contour(self.fmm_distance_map.voxel_function_mn)
+        ax.set_title('Fmm Dist')
+
+    def render_angle_map(self, ax):
+        ax.contour(self.fmm_angle_map.voxel_function_mn)        
+        ax.set_title('Fmm Angle')
+
     @classmethod
     def create_fmm_map_based_on_goal_position(cls, goal_positions_n2, map_size_2, dx=1,
                                               map_origin_2=tf.zeros([2], dtype=tf.float32), mask_grid_mn=None):

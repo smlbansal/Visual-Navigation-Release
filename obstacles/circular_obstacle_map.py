@@ -46,8 +46,8 @@ class CircularObstacleMap(ObstacleMap):
             r = self.obstacle_radii_m1[i][0].numpy()
             c = plt.Circle((c[0], c[1]), r, color='b')
             ax.add_artist(c)
-        ax.plot(0.0, 0.0, 'ro')
         map_bounds = self.map_bounds
         x_min, y_min, x_max, y_max = map_bounds[0][0], map_bounds[0][1], map_bounds[1][0], map_bounds[1][1]
         ax.set_xlim([x_min, x_max])
         ax.set_ylim([y_min, y_max])
+        ax.set_title('Obstacle Map')

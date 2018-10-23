@@ -8,6 +8,3 @@ class Spline(Trajectory):
 
   def evaluate(self, ts):
     raise NotImplementedError
-
-  def render(self, ax):
-    raise NotImplementedError
