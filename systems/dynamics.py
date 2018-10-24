@@ -56,21 +56,21 @@ class Dynamics:
         raise NotImplementedError
 
     @staticmethod
-    def init_egocentric_robot_state(dt, n, dtype):
+    def init_egocentric_robot_config(dt, n, dtype):
         """ A utility function to initialize a
-        State object with robot at the origin
+        SystemConfig object with robot at the origin
         applying 0 control """
         raise NotImplementedError
 
     @staticmethod
-    def to_egocentric_coordinates(ref_state, traj):
+    def to_egocentric_coordinates(ref_config, traj):
         """ Converts traj to an egocentric reference frame assuming
-        ref_state is the origin."""
+        ref_config is the origin."""
         raise NotImplementedError
 
     @staticmethod
-    def to_world_coordinates(ref_state, traj):
+    def to_world_coordinates(ref_config, traj):
         """ Converts traj to the world coordinate frame assuming
-        ref_state is the origin of the egocentric coordinate frame
+        ref_config is the origin of the egocentric coordinate frame
         in the world coordinate frame."""
         raise NotImplementedError

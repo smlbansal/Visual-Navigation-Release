@@ -1,7 +1,7 @@
-from control_pipelines.control_pipeline import Control_Pipeline
+from control_pipelines.control_pipeline import ControlPipeline
 
 
-class Control_Pipeline_v1(Control_Pipeline):
+class Control_Pipeline_v1(ControlPipeline):
     """ A control pipeline which masks off trajectories involving invalid splines.
     A valid spline is one that respects dynamic constraints on speed and
     angular speed within a given horizon_s."""

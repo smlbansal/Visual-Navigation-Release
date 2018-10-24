@@ -1,8 +1,8 @@
 import tensorflow as tf
-from control_pipelines.control_pipeline import Control_Pipeline
+from control_pipelines.control_pipeline import ControlPipeline
 
 
-class Control_Pipeline_v0(Control_Pipeline):
+class Control_Pipeline_v0(ControlPipeline):
     """A control pipeline in which all trajectories in the pipeline are
     valid. """
     pipeline_name = 'v0'

@@ -12,8 +12,7 @@ class QuadraticRegulatorRef(DiscreteCost):
 
     def __init__(self, trajectory_ref, C_gg, c_g, system):
         """
-        :param: x_ref, u_ref: state and controller reference trajectories (of
-                            dimension d and f respectively)
+        :param: trajectory_ref: A reference trajectory against which to penalize
                 C_gg, c_g: Quadratic and linear penalties (of dimension g where
                             g = d + f)
                 angle_dims: index array which specifies the dimensions of the

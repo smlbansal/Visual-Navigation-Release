@@ -239,9 +239,9 @@ class Trajectory(object):
             ax.set_title('Angular Velocity')
 
 
-class State(Trajectory):
+class SystemConfig(Trajectory):
     """
-    A class representing robot state using a trajectory of
+    A class representing a system configuration using a trajectory of
     time duration = 1 step.
     """
 
@@ -254,20 +254,20 @@ class State(Trajectory):
                          angular_acceleration_nk1, dtype=tf.float32,
                          variable=variable, direct_init=direct_init)
 
-    def assign_from_broadcasted_batch(self, state, n):
-        """ Assigns a states variables by broadcasting a given state to
+    def assign_from_broadcasted_batch(self, config, n):
+        """ Assigns a SystemConfig's variables by broadcasting a given config to
         batch size n """
-        k = state.k
-        self.assign_state_from_tensors(position_nk2=tf.broadcast_to(state.position_nk2(), (n, k, 2)),
-                                       speed_nk1=tf.broadcast_to(state.speed_nk1(), (n, k, 1)),
-                                       acceleration_nk1=tf.broadcast_to(state.acceleration_nk1(), (n, k, 1)),
-                                       heading_nk1=tf.broadcast_to(state.heading_nk1(), (n, k, 1)),
-                                       angular_speed_nk1=tf.broadcast_to(state.angular_speed_nk1(), (n, k, 1)),
-                                       angular_acceleration_nk1=tf.broadcast_to(state.angular_acceleration_nk1(), (n, k, 1)))
+        k = config.k
+        self.assign_config_from_tensors(position_nk2=tf.broadcast_to(config.position_nk2(), (n, k, 2)),
+                                       speed_nk1=tf.broadcast_to(config.speed_nk1(), (n, k, 1)),
+                                       acceleration_nk1=tf.broadcast_to(config.acceleration_nk1(), (n, k, 1)),
+                                       heading_nk1=tf.broadcast_to(config.heading_nk1(), (n, k, 1)),
+                                       angular_speed_nk1=tf.broadcast_to(config.angular_speed_nk1(), (n, k, 1)),
+                                       angular_acceleration_nk1=tf.broadcast_to(config.angular_acceleration_nk1(), (n, k, 1)))
 
     @classmethod
-    def init_state_from_trajectory_time_index(cls, trajectory, t):
-        """ A utility method to initialize a state object
+    def init_config_from_trajectory_time_index(cls, trajectory, t):
+        """ A utility method to initialize a config object
         from a particular timestep of a given trajectory object"""
         position_nk2 = trajectory.position_nk2()
         speed_nk1 = trajectory.speed_nk1()
@@ -293,10 +293,10 @@ class State(Trajectory):
                    angular_speed_nk1=angular_speed_nk1[:, t:t+1],
                    angular_acceleration_nk1=angular_acceleration_nk1[:, t:t+1])
 
-    def assign_from_state_batch_idx(self, state, batch_idx):
-        super().assign_from_trajectory_batch_idx(state, batch_idx)
+    def assign_from_config_batch_idx(self, config, batch_idx):
+        super().assign_from_trajectory_batch_idx(config, batch_idx)
 
-    def assign_state_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1,
+    def assign_config_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1,
                                   heading_nk1, angular_speed_nk1, angular_acceleration_nk1):
         super().assign_trajectory_from_tensors(position_nk2, speed_nk1,
                                                acceleration_nk1, heading_nk1,

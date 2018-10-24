@@ -50,8 +50,8 @@ def test_lqr0(visualize=False):
     expected_cost = .5*goal_x**2*k
     assert((cost.numpy() == expected_cost).all())
 
-    start_state = db.init_egocentric_robot_state(dt=dt, n=n)
-    lqr_res = lqr_solver.lqr(start_state, trajectory, verbose=False)
+    start_config = db.init_egocentric_robot_config(dt=dt, n=n)
+    lqr_res = lqr_solver.lqr(start_config, trajectory, verbose=False)
     trajectory_opt = lqr_res['trajectory_opt']
     J_opt = lqr_res['J_hist'][-1]
     assert((J_opt.numpy() == 8.).all())
@@ -99,8 +99,8 @@ def test_lqr1(visualize=False):
 
     lqr_solver = LQRSolver(T=k-1, dynamics=db, cost=cost_fn)
 
-    start_state = db.init_egocentric_robot_state(dt=dt, n=n)
-    lqr_res = lqr_solver.lqr(start_state, trajectory, verbose=False)
+    start_config = db.init_egocentric_robot_config(dt=dt, n=n)
+    lqr_res = lqr_solver.lqr(start_config, trajectory, verbose=False)
     trajectory_opt = lqr_res['trajectory_opt']
     assert(np.abs(lqr_res['J_hist'][1][0] - .022867) < 1e-4)
     assert(np.abs(lqr_res['J_hist'][0][0] - 38.17334) < 1e-4)
@@ -164,8 +164,8 @@ def test_lqr2(visualize=False):
 
     lqr_solver = LQRSolver(T=k-1, dynamics=db, cost=cost_fn)
 
-    start_state = db.init_egocentric_robot_state(dt=dt, n=n)
-    lqr_res = lqr_solver.lqr(start_state, trajectory, verbose=False)
+    start_config = db.init_egocentric_robot_config(dt=dt, n=n)
+    lqr_res = lqr_solver.lqr(start_config, trajectory, verbose=False)
     trajectory_opt = lqr_res['trajectory_opt']
     assert(np.abs(lqr_res['J_hist'][1][0] - 8.0) < 1e-4)
     assert(np.abs(lqr_res['J_hist'][0][0] - 400.0) < 1e-4)

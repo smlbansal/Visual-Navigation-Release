@@ -7,7 +7,7 @@ from systems.dubins_v3 import Dubins_v3
 from systems.dubins_v2 import Dubins_v2
 from systems.dubins_v1 import Dubins_v1
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
-from trajectory.trajectory import State
+from trajectory.trajectory import SystemConfig
 from control_pipelines.control_pipeline_v0 import Control_Pipeline_v0
 from control_pipelines.control_pipeline_v1 import Control_Pipeline_v1
 from utils import utils
@@ -71,14 +71,14 @@ def visualize_control_pipeline(starts_n5, goals_n5):
     start_pos_nk2 = np.concatenate([start_x_n11, start_y_n11], axis=2)
     goal_pos_nk2 = np.concatenate([goal_x_n11, goal_y_n11], axis=2)
 
-    start_state = State(dt, n, 1, position_nk2=start_pos_nk2, heading_nk1=starts_n5[:, 2:3, None],
-                        speed_nk1=starts_n5[:, 3:4, None], variable=False)
-    goal_state = State(dt, n, 1, position_nk2=goal_pos_nk2,
-                       speed_nk1=goals_n5[:, 3:4, None], heading_nk1=goal_theta_n11,
-                       variable=True)
+    start_config = SystemConfig(dt, n, 1, position_nk2=start_pos_nk2, heading_nk1=starts_n5[:, 2:3, None],
+                               speed_nk1=starts_n5[:, 3:4, None], variable=False)
+    goal_config = SystemConfig(dt, n, 1, position_nk2=goal_pos_nk2,
+                              speed_nk1=goals_n5[:, 3:4, None], heading_nk1=goal_theta_n11,
+                              variable=True)
 
-    trajectory_lqr = control_pipeline.plan(start_state=start_state,
-                                           goal_state=goal_state)
+    trajectory_lqr = control_pipeline.plan(start_config=start_config,
+                                           goal_config=goal_config)
 
     traj_spline = control_pipeline.traj_spline
 

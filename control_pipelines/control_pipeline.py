@@ -1,26 +1,26 @@
 import tensorflow as tf
 import os
-from trajectory.trajectory import State
+from trajectory.trajectory import SystemConfig
 from trajectory.trajectory import Trajectory
 from optCtrl.lqr import LQRSolver
 import utils.utils as utils
 
 
-class Control_Pipeline_Base:
+class ControlPipelineBase:
     """A class representing an abstract control pipeline.
-    Used for planning trajectories between start and goal states.
+    Used for planning trajectories between start and goal configs.
     """
-    def plan(self, start_state, goal_state):
-        """Use the control pipeline to plan a trajectory from start_state to goal_state."""
+    def plan(self, start_config, goal_config):
+        """Use the control pipeline to plan a trajectory from start_config to goal_config."""
         raise NotImplementedError
 
 
-class Control_Pipeline(Control_Pipeline_Base):
-    """A class representing our control pipeline. Given a start and goal state,
+class ControlPipeline(ControlPipelineBase):
+    """A class representing our control pipeline. Given a start and goal config,
     fits a spline between the two, then tracks the spline with LQR.
 
     A control pipeline can be precomputed for a vixed v0 and k (planning horizon)
-    assuming start_state and goal_state are specified in egocentric coordinates.
+    assuming start_config and goal_config are specified in egocentric coordinates.
     """
 
     def __init__(self, system_dynamics, params, precompute=False,
@@ -55,46 +55,46 @@ class Control_Pipeline(Control_Pipeline_Base):
                                     cost=self.cost_fn)
         self.calculate_spline_speeds = False
 
-    def plan(self, start_state, goal_state):
+    def plan(self, start_config, goal_config):
         """ Use the control pipeline to plan
-        a trajectory from start_state to goal_state. The pipeline plans a trajectory by
-            1. Fitting a spline between start_state and goal_state
+        a trajectory from start_config to goal_config. The pipeline plans a trajectory by
+            1. Fitting a spline between start_config and goal_config
             2. Using LQR with a system dynamics model and cost function to track the spline
         """
         if self.precompute and self.computed:
-            if self.bin_velocity or self.params._spline.check_start_goal_equivalence(self.start_state,
-                                                                                     self.goal_state,
-                                                                                     start_state,
-                                                                                     goal_state):
+            if self.bin_velocity or self.params._spline.check_start_goal_equivalence(self.start_config,
+                                                                                     self.goal_config,
+                                                                                     start_config,
+                                                                                     goal_config):
                 self.traj_plot = self.traj_opt
                 return self.traj_opt
             else:
-                # apply the precomputed LQR feedback matrices on the current state
+                # apply the precomputed LQR feedback matrices on the current config
                 k_array = self.lqr_res['k_array_opt']
                 K_array = self.lqr_res['K_array_opt']
-                trajectory_new = self.lqr_solver.apply_control(start_state,
+                trajectory_new = self.lqr_solver.apply_control(start_config,
                                                                self.traj_spline,
                                                                k_array,
                                                                K_array)
                 self.traj_plot = trajectory_new
                 return trajectory_new
         else:
-            self.start_state, self.goal_state = start_state, goal_state
+            self.start_config, self.goal_config = start_config, goal_config
             p = self.params
             planning_horizon_s = self.k*p.dt
             ts_nk = tf.tile(tf.linspace(0., planning_horizon_s,
                                         self.k)[None], [p.n, 1])
-            self.traj_spline.fit(start_state=start_state, goal_state=goal_state,
+            self.traj_spline.fit(start_config=start_config, goal_config=goal_config,
                                  factors_n2=None)
             self.traj_spline.eval_spline(ts_nk, calculate_speeds=self.calculate_spline_speeds)
             self.valid_idxs = self._compute_valid_batch_idxs(horizon_s=planning_horizon_s)
-            self.lqr_res = self.lqr_solver.lqr(self.start_state, self.traj_spline,
+            self.lqr_res = self.lqr_solver.lqr(self.start_config, self.traj_spline,
                                                verbose=False)
             self.traj_opt = self.lqr_res['trajectory_opt']
             self.traj_plot = self.traj_opt
             self.computed = True
             if self.precompute and self.load_from_pickle_file:
-                self._save_control_pipeline_data(start_state, goal_state,
+                self._save_control_pipeline_data(start_config, goal_config,
                                                  self.traj_spline,
                                                  self.lqr_res,
                                                  self.valid_idxs)
@@ -150,8 +150,8 @@ class Control_Pipeline(Control_Pipeline_Base):
     def _load_control_pipeline_data(self):
         filename = self._data_file_name()
         data = utils.load_from_pickle_file(filename)
-        self.start_state = State.init_from_numpy_repr(**data['start_state'])
-        self.goal_state = State.init_from_numpy_repr(**data['goal_state'])
+        self.start_config = SystemConfig.init_from_numpy_repr(**data['start_config'])
+        self.goal_config = SystemConfig.init_from_numpy_repr(**data['goal_config'])
 
         self.traj_spline = Trajectory.init_from_numpy_repr(**data['traj_spline'])
         self.traj_opt = Trajectory.init_from_numpy_repr(**data['lqr_res']['traj_opt'])
@@ -168,28 +168,28 @@ class Control_Pipeline(Control_Pipeline_Base):
         self.valid_idxs = tf.constant(data['valid_idxs'], dtype=tf.int32)
         self.computed = True
 
-    def _save_control_pipeline_data(self, start_state, goal_state, traj_spline,
+    def _save_control_pipeline_data(self, start_config, goal_config, traj_spline,
                                     lqr_res, valid_idxs):
         filename = self._data_file_name()
-        data = self._prepare_control_pipeline_data_for_saving(start_state,
-                                                              goal_state,
+        data = self._prepare_control_pipeline_data_for_saving(start_config,
+                                                              goal_config,
                                                               traj_spline,
                                                               lqr_res, valid_idxs)
         utils.dump_to_pickle_file(filename=filename, data=data)
 
-    def _prepare_control_pipeline_data_for_saving(self, start_state,
-                                                  goal_state, traj_spline,
+    def _prepare_control_pipeline_data_for_saving(self, start_config,
+                                                  goal_config, traj_spline,
                                                   lqr_res, valid_idxs):
-        start_state_data = start_state.to_numpy_repr()
-        goal_state_data = goal_state.to_numpy_repr()
+        start_config_data = start_config.to_numpy_repr()
+        goal_config_data = goal_config.to_numpy_repr()
         traj_spline_data = traj_spline.to_numpy_repr()
         traj_opt_data = lqr_res['trajectory_opt'].to_numpy_repr()
         k_array_opt_data = [x.numpy() for x in lqr_res['k_array_opt']]
         K_array_opt_data = [x.numpy() for x in lqr_res['K_array_opt']]
         J_hist_data = [x.numpy() for x in lqr_res['J_hist']]
         valid_idxs_data = valid_idxs.numpy()
-        data = {'start_state': start_state_data,
-                'goal_state': goal_state_data,
+        data = {'start_config': start_config_data,
+                'goal_config': goal_config_data,
                 'traj_spline': traj_spline_data,
                 'lqr_res': {'traj_opt': traj_opt_data,
                             'k_array_opt': k_array_opt_data,

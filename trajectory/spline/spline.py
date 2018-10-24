@@ -4,9 +4,9 @@ from trajectory.trajectory import Trajectory
 
 class Spline(Trajectory):
 
-    def fit(self, start_state, goal_state, factors=None):
-        """ Fit spline coefficients based on start_state
-        and goal_state (State objects)"""
+    def fit(self, start_config, goal_config, factors=None):
+        """ Fit spline coefficients based on start_config
+        and goal_config (SystemConfig objects)"""
         raise NotImplementedError
 
     def eval_spline(self, ts_nk, calculate_speeds=True):

@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
-from trajectory.trajectory import State
+from trajectory.trajectory import SystemConfig
 tf.enable_eager_execution()
 
 
@@ -17,7 +17,7 @@ def test_spline_3rd_order(visualize=False):
     v0 = np.random.uniform(0., 0.5, 1)[0]  # Initial speed
     vf = 0.
 
-    # Initial State is [0, 0, 0, v0, 0]
+    # Initial SystemConfig is [0, 0, 0, v0, 0]
     start_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32)*v0
 
     goal_posx_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * target_state[0]
@@ -26,20 +26,20 @@ def test_spline_3rd_order(visualize=False):
     goal_heading_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * target_state[2]
     goal_speed_nk1 = tf.ones((n, 1, 1), dtype=tf.float32) * vf
 
-    start_state = State(dt, n, 1, speed_nk1=start_speed_nk1, variable=False)
-    goal_state = State(dt, n, 1, position_nk2=goal_pos_nk2,
-                       speed_nk1=goal_speed_nk1, heading_nk1=goal_heading_nk1,
-                       variable=True)
+    start_config = SystemConfig(dt, n, 1, speed_nk1=start_speed_nk1, variable=False)
+    goal_config = SystemConfig(dt, n, 1, position_nk2=goal_pos_nk2,
+                              speed_nk1=goal_speed_nk1, heading_nk1=goal_heading_nk1,
+                              variable=True)
 
-    start_nk5 = start_state.position_heading_speed_and_angular_speed_nk5()
+    start_nk5 = start_config.position_heading_speed_and_angular_speed_nk5()
     start_n5 = start_nk5[:, 0]
 
-    goal_nk5 = goal_state.position_heading_speed_and_angular_speed_nk5()
+    goal_nk5 = goal_config.position_heading_speed_and_angular_speed_nk5()
     goal_n5 = goal_nk5[:, 0]
 
     ts_nk = tf.tile(tf.linspace(0., dt*k, k)[None], [n, 1])
     spline_traj = Spline3rdOrder(dt=dt, k=k, n=n)
-    spline_traj.fit(start_state, goal_state, factors_n2=None)
+    spline_traj.fit(start_config, goal_config, factors_n2=None)
     spline_traj.eval_spline(ts_nk, calculate_speeds=True)
 
     pos_nk3 = spline_traj.position_and_heading_nk3()

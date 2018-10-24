@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from planners.planner import Planner
-from trajectory.trajectory import State
+from trajectory.trajectory import SystemConfig
 
 
 class GradientPlanner(Planner):
@@ -16,21 +16,21 @@ class GradientPlanner(Planner):
         self.optimizer = optimizer(learning_rate=learning_rate)
         self.num_opt_iters = num_opt_iters
 
-    def optimize(self, start_state, vf=0.):
+    def optimize(self, start_config, vf=0.):
         p = self.params
-        self.start_state_n.assign_from_broadcasted_batch(start_state, p.n)
-        waypt_state_n = self._sample_waypoints(vf=vf)
+        self.start_config_broadcast_n.assign_from_broadcasted_batch(start_config, p.n)
+        waypt_config_n = self._sample_waypoints(vf=vf)
 
         objs = []
         for i in range(self.num_opt_iters):
-            obj_val, grads, variables = self._compute_obj_val_and_grad(self.start_state_n,
-                                                                       waypt_state_n)
+            obj_val, grads, variables = self._compute_obj_val_and_grad(self.start_config_broadcast_n,
+                                                                       waypt_config_n)
             objs.append(obj_val)
             self.optimizer.apply_gradients(zip(grads, variables))
-        obj_vals, trajectory = self.eval_objective(self.start_state_n,
-                                                   waypt_state_n, mode='new')
+        obj_vals, trajectory = self.eval_objective(self.start_config_broadcast_n,
+                                                   waypt_config_n, mode='new')
         self.opt_traj.assign_from_trajectory_batch_idx(trajectory, batch_idx=0)
-        self.opt_waypt.assign_from_state_batch_idx(waypt_state_n, batch_idx=0)
+        self.opt_waypt.assign_from_config_batch_idx(waypt_config_n, batch_idx=0)
 
         min_cost = obj_vals[0]
         self.objs = objs
@@ -50,17 +50,17 @@ class GradientPlanner(Planner):
         vf = tf.ones((n, 1), dtype=tf.float32)*vf
 
         waypt_pos_n2 = tf.concat([wx, wy], axis=1)
-        waypt_egocentric_state_n = State(dt=self.params.dt, n=n, k=1,
-                                         position_nk2=waypt_pos_n2[:, None],
-                                         speed_nk1=vf[:, None],
-                                         heading_nk1=wt[:, None], variable=True)
-        return waypt_egocentric_state_n
+        waypt_egocentric_config_n = SystemConfig(dt=self.params.dt, n=n, k=1,
+                                                position_nk2=waypt_pos_n2[:, None],
+                                                speed_nk1=vf[:, None],
+                                                heading_nk1=wt[:, None], variable=True)
+        return waypt_egocentric_config_n
 
-    def _compute_obj_val_and_grad(self, start_state_n, waypt_state_n):
+    def _compute_obj_val_and_grad(self, start_config_n, waypt_config_n):
         p = self.params
         with tf.GradientTape() as tape:
-            trainable_vars = waypt_state_n.trainable_variables
-            obj_vals, _ = self.eval_objective(start_state_n, waypt_state_n, p.k, mode='new')
+            trainable_vars = waypt_config_n.trainable_variables
+            obj_vals, _ = self.eval_objective(start_config_n, waypt_config_n, p.k, mode='new')
             obj_val = tf.reduce_mean(obj_vals)
             grads = tape.gradient(obj_val, trainable_vars)
         return obj_val, grads, trainable_vars

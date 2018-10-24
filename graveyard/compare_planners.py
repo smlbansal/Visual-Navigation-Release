@@ -11,7 +11,7 @@ from planners.gradient_planner import GradientPlanner
 from dotmap import DotMap
 from utils import utils
 from utils.fmm_map import FmmMap
-from trajectory.trajectory import State
+from trajectory.trajectory import SystemConfig
 from objectives.obstacle_avoidance import ObstacleAvoidance
 from objectives.goal_distance import GoalDistance
 from objectives.angle_distance import AngleDistance
@@ -109,8 +109,8 @@ def build_planner(planner):
     start_5 = np.array([-2., -2., 0., v0, 0.])
     start_pos_112 = np.array([[start_5[0], start_5[1]]], dtype=np.float32)[:, None]
     start_speed_111 = np.ones((1, 1, 1), dtype=np.float32)*v0
-    start_state = State(dt=p.dt, n=1, k=1, position_nk2=start_pos_112,
-                        speed_nk1=start_speed_111, variable=False)
+    start_config = SystemConfig(dt=p.dt, n=1, k=1, position_nk2=start_pos_112,
+                               speed_nk1=start_speed_111, variable=False)
 
     map_origin_2 = (start_5[:2]/dx).astype(np.int32)
     goal_pos_12 = np.array([0., 0.])[None]
@@ -141,12 +141,12 @@ def build_planner(planner):
                              fmm_map=fmm_map))
 
     return p._planner(system_dynamics=system_dynamics,
-                      obj_fn=obj_fn, params=p, **p.planner_params), start_state, obstacle_map, fmm_map, p
+                      obj_fn=obj_fn, params=p, **p.planner_params), start_config, obstacle_map, fmm_map, p
 
 
 def test_sampling_planner(visualize=False):
-    planner, start_state, obstacle_map, fmm_map, params = build_planner(planner='sampling')
-    min_waypt, min_traj, min_cost = planner.optimize(start_state)
+    planner, start_config, obstacle_map, fmm_map, params = build_planner(planner='sampling')
+    min_waypt, min_traj, min_cost = planner.optimize(start_config)
     if visualize:
         waypt = min_waypt.position_and_heading_nk3()[0, 0]
         fig, _, axes = utils.subplot2(plt, (2, 2), (8, 8), (.4, .4))
@@ -154,7 +154,7 @@ def test_sampling_planner(visualize=False):
                      (params.n, min_cost, waypt[0], waypt[1], waypt[2]))
         axes = axes[::-1]
         axs = axes[:2]
-        planner.render(axs, start_state, min_waypt, obstacle_map=obstacle_map)
+        planner.render(axs, start_config, min_waypt, obstacle_map=obstacle_map)
         plt.show()
     else:
         print('rerun test_random_based_data_gen with '
@@ -162,8 +162,8 @@ def test_sampling_planner(visualize=False):
 
 
 def test_gradient_planner(visualize=False):
-    planner, start_state, obstacle_map, fmm_map, params = build_planner(planner='gradient')
-    min_waypt, min_traj, min_cost = planner.optimize(start_state)
+    planner, start_config, obstacle_map, fmm_map, params = build_planner(planner='gradient')
+    min_waypt, min_traj, min_cost = planner.optimize(start_config)
     if visualize:
         waypt = min_waypt.position_and_heading_nk3()[0, 0]
         fig, _, axes = utils.subplot2(plt, (2, 2), (8, 8), (.4, .4))
@@ -171,7 +171,7 @@ def test_gradient_planner(visualize=False):
                      (min_cost, waypt[0], waypt[1], waypt[2]))
         axes = axes[::-1]
         axs = axes[:3]
-        planner.render(axs, start_state, min_waypt, obstacle_map=obstacle_map)
+        planner.render(axs, start_config, min_waypt, obstacle_map=obstacle_map)
         plt.savefig('./tmp/gradient_planner.png')
     else:
         print('rerun test_gradient_based_data_gen with '

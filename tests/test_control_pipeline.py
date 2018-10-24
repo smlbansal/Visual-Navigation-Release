@@ -11,7 +11,7 @@ from objectives.obstacle_avoidance import ObstacleAvoidance
 from objectives.goal_distance import GoalDistance
 from objectives.angle_distance import AngleDistance
 from objectives.objective_function import ObjectiveFunction
-from trajectory.trajectory import State
+from trajectory.trajectory import SystemConfig
 from control_pipelines.control_pipeline import Control_Pipeline_v0
 from utils import utils
 from dotmap import DotMap
@@ -110,20 +110,20 @@ def test_control_pipeline(visualize=False):
                               [-2., -2.],
                               [-.3, 0.]], dtype=np.float32)[:, None]
     start_speed_nk1 = np.array([[v0], [v0], [0.]], dtype=np.float32)[:, None]
-    start_state = State(dt, n, 1, position_nk2=start_pos_nk2,
-                        speed_nk1=start_speed_nk1, variable=False)
+    start_config = SystemConfig(dt, n, 1, position_nk2=start_pos_nk2,
+                               speed_nk1=start_speed_nk1, variable=False)
 
     waypt_pos_nk2 = np.array([[-1, -.5], [-.5, -1.], [-.1, 0.]],
                              dtype=np.float32)[:, None]
     waypt_speed_nk1 = np.array([[vf], [vf], [0.]], dtype=np.float32)[:, None]
-    waypt_state = State(dt, n, 1, position_nk2=waypt_pos_nk2,
-                        speed_nk1=waypt_speed_nk1, variable=True)
+    waypt_config = SystemConfig(dt, n, 1, position_nk2=waypt_pos_nk2,
+                               speed_nk1=waypt_speed_nk1, variable=True)
 
     control_pipeline = p._control_pipeline(system_dynamics=plant,
                                            params=p,
                                            **p.control_pipeline_params)
-    trajectory_lqr = control_pipeline.plan(start_state=start_state,
-                                           goal_state=waypt_state)
+    trajectory_lqr = control_pipeline.plan(start_config=start_config,
+                                           goal_config=waypt_config)
 
     # Objective Value
     obj_val = obj_fn.evaluate_function(trajectory_lqr)
@@ -137,7 +137,7 @@ def test_control_pipeline(visualize=False):
 
     if visualize:
         traj_spline = control_pipeline.traj_spline
-        waypt_n5 = waypt_state.position_heading_speed_and_angular_speed_nk5()[:, 0]
+        waypt_n5 = waypt_config.position_heading_speed_and_angular_speed_nk5()[:, 0]
         fig, _, axes = utils.subplot2(plt, (4, 2), (8, 8), (.4, .4))
         axes = axes[::-1]
         ax = axes[0]

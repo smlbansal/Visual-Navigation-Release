@@ -61,10 +61,10 @@ class LQRSolver:
         _, J = self.cost.compute_trajectory_cost(trajectory)
         return J
 
-    def lqr(self, start_state, trajectory, verbose=True):
+    def lqr(self, start_config, trajectory, verbose=True):
         """
         Perform the iLQR iterations.
-        start_state:             Initial state
+        start_config:             Initial system configuration
         trajectory:     The trajectory around which to linearize
         verbose:        Whether to print the status or not
         """
@@ -80,7 +80,7 @@ class LQRSolver:
             # each element in k_array and K_array are tensors size
             # (n, u_dim, 1) and (n, u_dim, x_dim) respectively
             k_array_Tnf1, K_array_Tnfd = self.back_propagation(trajectory)
-            trajectory_new = self.apply_control(start_state, trajectory,
+            trajectory_new = self.apply_control(start_config, trajectory,
                                                 k_array_Tnf1, K_array_Tnfd)
 
             # evaluate the cost of this trial
@@ -97,7 +97,7 @@ class LQRSolver:
 
             return res_dict
 
-    def apply_control(self, start_state, trajectory,
+    def apply_control(self, start_config, trajectory,
                       k_array_Tnf1, K_array_Tnfd):
         """
         apply the derived control to the error system to derive a new
@@ -106,7 +106,7 @@ class LQRSolver:
         tensor of dimension (n, f, 1) and (n, f, d) respectively.
         """
         with tf.name_scope('apply_control'):
-            x0_n1d, _ = self.plant_dyn.parse_trajectory(start_state)
+            x0_n1d, _ = self.plant_dyn.parse_trajectory(start_config)
             assert(len(x0_n1d.shape) == 3)  # [n,1,x_dim]
             angle_dims = self.plant_dyn._angle_dims
             actions = []

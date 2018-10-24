@@ -1,5 +1,5 @@
 import numpy as np
-from trajectory.trajectory import Trajectory, State
+from trajectory.trajectory import Trajectory, SystemConfig
 from planners.sampling_planner import SamplingPlanner
 
 
@@ -19,40 +19,40 @@ class SamplingPlanner_v1(SamplingPlanner):
         self.kwargs = kwargs
         assert(precompute is True)
         self.precompute = precompute
-        self.waypt_egocentric_state_n = None
-        self.waypt_egocentric_state_n = self._sample_waypoints()
+        self.waypt_egocentric_config_n = None
+        self.waypt_egocentric_config_n = self._sample_waypoints()
 
         delta_v = system_dynamics.v_bounds[1] - system_dynamics.v_bounds[0]
         self.start_velocities = np.linspace(system_dynamics.v_bounds[0],
                                             system_dynamics.v_bounds[1],
                                             int(np.ceil(delta_v/velocity_disc)))
         self.control_pipelines = self.precompute_control_pipelines()
-        self.start_state_egocentric = State(dt=params.dt, n=params.n, k=1, variable=True)
+        self.start_config_egocentric = SystemConfig(dt=params.dt, n=params.n, k=1, variable=True)
         self.trajectory_world = Trajectory(dt=params.dt, n=params.n, k=params.k, variable=True)
 
-        self.start_state_n = State(dt=params.dt, n=params.n, k=1, variable=True)
-        self.opt_waypt = State(dt=params.dt, n=1, k=1, variable=True)
+        self.start_config_broadcast_n = SystemConfig(dt=params.dt, n=params.n, k=1, variable=True)
+        self.opt_waypt = SystemConfig(dt=params.dt, n=1, k=1, variable=True)
         self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.k, variable=True)
 
     def precompute_control_pipelines(self):
         p = self.params
         pipelines = []
         for velocity in self.start_velocities:
-            start_state = self.system_dynamics.init_egocentric_robot_state(dt=p.dt, n=p.n,
+            start_config = self.system_dynamics.init_egocentric_robot_config(dt=p.dt, n=p.n,
                                                                            v=velocity, w=0.0)
             pipeline = p._control_pipeline(
                                 system_dynamics=self.system_dynamics,
                                 params=p,
                                 v0=velocity,
                                 ** p.control_pipeline_params)
-            pipeline.plan(start_state, self.waypt_egocentric_state_n)
+            pipeline.plan(start_config, self.waypt_egocentric_config_n)
             pipelines.append(pipeline)
         return pipelines
 
-    def _choose_control_pipeline(self, start_state):
+    def _choose_control_pipeline(self, start_config):
         """ Choose the control pipeline with the closest starting velocity"""
         p = self.params
-        start_speed = start_state.speed_nk1()[0, 0, 0].numpy()
+        start_speed = start_config.speed_nk1()[0, 0, 0].numpy()
         diff = np.abs(start_speed - self.start_velocities)
         idx = np.argmin(diff)
         if self.control_pipelines[idx] is None:

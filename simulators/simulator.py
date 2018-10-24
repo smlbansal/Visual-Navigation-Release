@@ -4,7 +4,7 @@ from objectives.objective_function import ObjectiveFunction
 from objectives.angle_distance import AngleDistance
 from objectives.goal_distance import GoalDistance
 from objectives.obstacle_avoidance import ObstacleAvoidance
-from trajectory.trajectory import State, Trajectory
+from trajectory.trajectory import SystemConfig, Trajectory
 from utils.fmm_map import FmmMap
 
 
@@ -23,43 +23,43 @@ class Simulator:
         self.obstacle_map = self._init_obstacle_map()
         self.obj_fn = self._init_obj_fn()
         self.planner = self._init_planner()
-        self.rng = np.random.RandomState(params.simulator_seed)
+        self.rng = np.random.Randomconfig(params.simulator_seed)
 
     def simulate(self):
         """ A function that simulates an entire episode.
-        The agent starts at self.start_state, repeatedly calling _iterate to
+        The agent starts at self.start_config, repeatedly calling _iterate to
         generate subtrajectories. Generates a vehicle_trajectory for the
         episode, calculates its objective value, and sets the episode_type
         (timeout, collision, success)"""
-        state = self.start_state
+        config = self.start_config
         vehicle_trajectory = self.vehicle_trajectory
-        states = []
-        state_time_idxs = []
+        configs = []
+        config_time_idxs = []
         while vehicle_trajectory.k < self.params.episode_horizon:
-            waypt_trajectory, next_state = self._iterate(state)
+            waypt_trajectory, next_config = self._iterate(config)
             vehicle_trajectory.append_along_time_axis(waypt_trajectory)
-            states.append(next_state)
-            state_time_idxs.append(vehicle_trajectory.k)
-            state = next_state
+            configs.append(next_config)
+            config_time_idxs.append(vehicle_trajectory.k)
+            config = next_config
         self.min_obs_distances = self._calculate_min_obs_distances(vehicle_trajectory)
         self.collisions = self._calculate_trajectory_collisions(vehicle_trajectory)
         self.episode_type, end_time_idx = self._enforce_episode_termination_conditions(vehicle_trajectory)
 
-        # Only keep the states corresponding to unclipped parts of the trajectory
-        keep_idx = np.array(state_time_idxs) <= end_time_idx
-        self.states = np.array(states)[keep_idx]
+        # Only keep the configs corresponding to unclipped parts of the trajectory
+        keep_idx = np.array(config_time_idxs) <= end_time_idx
+        self.system_configs = np.array(configs)[keep_idx]
 
         self.obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
 
-    def _iterate(self, state):
-        """ Runs the planner for one step from state to generate an optimal
-        subtrajectory and the resulting robot state after the robot executes
+    def _iterate(self, config):
+        """ Runs the planner for one step from config to generate an optimal
+        subtrajectory and the resulting robot config after the robot executes
         the subtrajectory"""
-        min_waypt, min_traj, min_cost = self.planner.optimize(state)
+        min_waypt, min_traj, min_cost = self.planner.optimize(config)
         min_traj = Trajectory.new_traj_clip_along_time_axis(min_traj, self.params.control_horizon)
-        next_state = State.init_state_from_trajectory_time_index(min_traj, t=-1)
-        return min_traj, next_state
+        next_config = SystemConfig.init_config_from_trajectory_time_index(min_traj, t=-1)
+        return min_traj, next_config
 
     def _calculate_min_obs_distances(self, vehicle_trajectory):
         """Returns an array of dimension 1k where each element is the distance to the closest
@@ -100,7 +100,7 @@ class Simulator:
 
         # Check within goal radius
         dist_to_goal_1k = self._dist_to_goal(pos_1k2,
-                                             self.goal_state.position_nk2())
+                                             self.goal_config.position_nk2())
         successes = tf.where(tf.less(dist_to_goal_1k,
                                      self.goal_cutoff_dist))
         success_idxs = successes[:, 1]
@@ -139,7 +139,7 @@ class Simulator:
 
     def _init_obj_fn(self):
         p = self.params
-        self.goal_state = self.system_dynamics.init_egocentric_robot_state(dt=p.dt,
+        self.goal_config = self.system_dynamics.init_egocentric_robot_config(dt=p.dt,
                                                                            n=1)
         self.fmm_map = self._init_fmm_map()
         obj_fn = ObjectiveFunction()
@@ -168,7 +168,7 @@ class Simulator:
                                     tf.constant(xx, dtype=tf.float32),
                                     tf.constant(yy, dtype=tf.float32))
         return FmmMap.create_fmm_map_based_on_goal_position(
-                                    goal_positions_n2=self.goal_state.position_nk2()[0],
+                                    goal_positions_n2=self.goal_config.position_nk2()[0],
                                     map_size_2=np.array(p.map_size_2),
                                     dx=p.dx,
                                     map_origin_2=p.map_origin_2,
@@ -193,9 +193,9 @@ class Simulator:
         per episode.  Returns a structure, lists of which are passed to accumulate
         metrics static function to generate summary statistics."""
         final_dist = self._dist_to_goal(self.vehicle_trajectory.position_nk2()[:, -1],
-                                        self.goal_state.position_nk2())
+                                        self.goal_config.position_nk2())
         init_dist = self._dist_to_goal(self.vehicle_trajectory.position_nk2()[:, -1],
-                                       self.start_state.position_nk2())
+                                       self.start_config.position_nk2())
         collisions_mu = np.mean(self.collisions)
         return np.array([self.obj_val,
                          init_dist,
@@ -241,17 +241,17 @@ class Simulator:
         ax.clear()
         self._render_obstacle_map(ax)
         self.vehicle_trajectory.render(ax, freq=freq)
-        for waypt in self.states:
+        for waypt in self.system_configs:
             waypt.render(ax, batch_idx=0, marker='co')
 
         boundary_params = {'norm': self.goal_dist_norm, 'cutoff':
                            self.goal_cutoff_dist, 'color': 'g'}
-        self.start_state.render(ax, batch_idx=0, marker='bo')
-        self.goal_state.render_with_boundary(ax, batch_idx=0, marker='k*',
+        self.start_config.render(ax, batch_idx=0, marker='bo')
+        self.goal_config.render_with_boundary(ax, batch_idx=0, marker='k*',
                                              boundary_params=boundary_params)
 
-        goal = self.goal_state.position_nk2()[0, 0]
-        start = self.start_state.position_nk2()[0, 0]
+        goal = self.goal_config.position_nk2()[0, 0]
+        start = self.start_config.position_nk2()[0, 0]
         text_color = self.episode_termination_colors[self.episode_type]
         ax.set_title('Start: [{:.2f}, {:.2f}] '.format(*start) +
                      'Goal: [{:.2f}, {:.2f}]'.format(*goal), color=text_color)

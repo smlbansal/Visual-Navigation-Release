@@ -1,7 +1,7 @@
 import numpy as np
 from obstacles.circular_obstacle_map import CircularObstacleMap
 from trajectory.trajectory import Trajectory
-from trajectory.trajectory import State
+from trajectory.trajectory import SystemConfig
 from simulators.simulator import Simulator
 
 
@@ -23,7 +23,7 @@ class CircularObstacleMapSimulator(Simulator):
             self._update_obj_fn()
         else:
             self.sample_start_and_goal()
-            self.fmm_map.change_goal(goal_position_12=self.goal_state.position_nk2())
+            self.fmm_map.change_goal(goal_position_12=self.goal_config.position_nk2())
 
         self.vehicle_trajectory = Trajectory(dt=self.params.dt, n=1, k=0)
         self.obj_val = np.inf
@@ -34,10 +34,10 @@ class CircularObstacleMapSimulator(Simulator):
                                                                                goal_radius=self.goal_cutoff_dist,
                                                                                goal_norm=self.goal_dist_norm,
                                                                                obs_margin=p.avoid_obstacle_objective.obstacle_margin1)
-        self.start_state = State(dt=p.dt, n=1, k=1,
-                                 position_nk2=start_pos_12[None])
-        self.goal_state = State(dt=p.dt, n=1, k=1,
-                                position_nk2=goal_pos_12[None])
+        self.start_config = SystemConfig(dt=p.dt, n=1, k=1,
+                                        position_nk2=start_pos_12[None])
+        self.goal_config = SystemConfig(dt=p.dt, n=1, k=1,
+                                       position_nk2=goal_pos_12[None])
 
     def _init_obstacle_map(self, obstacle_params=None):
         """ Initializes a new circular obstacle map."""
@@ -62,17 +62,17 @@ class CircularObstacleMapSimulator(Simulator):
         ax.clear()
         self._render_obstacle_map(ax)
         self.vehicle_trajectory.render(ax, freq=freq)
-        for waypt in self.states:
+        for waypt in self.system_configs:
             waypt.render(ax, batch_idx=0, marker='co')
 
         boundary_params = {'norm': self.goal_dist_norm, 'cutoff':
                            self.goal_cutoff_dist, 'color': 'g'}
-        self.start_state.render(ax, batch_idx=0, marker='bo')
-        self.goal_state.render_with_boundary(ax, batch_idx=0, marker='k*',
+        self.start_config.render(ax, batch_idx=0, marker='bo')
+        self.goal_config.render_with_boundary(ax, batch_idx=0, marker='k*',
                                              boundary_params=boundary_params)
 
-        goal = self.goal_state.position_nk2()[0, 0]
-        start = self.start_state.position_nk2()[0, 0]
+        goal = self.goal_config.position_nk2()[0, 0]
+        start = self.start_config.position_nk2()[0, 0]
         text_color = self.episode_termination_colors[self.episode_type]
         ax.set_title('Start: [{:.2f}, {:.2f}] '.format(*start) +
                      'Goal: [{:.2f}, {:.2f}]'.format(*goal), color=text_color)

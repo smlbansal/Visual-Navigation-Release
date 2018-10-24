@@ -10,12 +10,12 @@ class Spline3rdOrder(Spline):
 
     """ A class representing a 3rd order spline for a mobile ground robot
     (in a 2d cartesian plane). The 3rd order spline allows for constraints
-    on the start state, [x0, y0, theta0, v0], and goal state,
+    on the start config, [x0, y0, theta0, v0], and goal config,
     [xg, yg, thetag,vg]. Angular speeds w0 and wg are not constrainable.
     """
 
-    def fit(self, start_state, goal_state, factors_n2=None):
-        """Fit a 3rd order spline between start state and goal state.
+    def fit(self, start_config, goal_config, factors_n2=None):
+        """Fit a 3rd order spline between start config and goal config.
         Factors_n2 represent 2 degrees of freedom in fitting the spline.
         If factors_n2=None it is set heuristically below.
         The spline is of the form:
@@ -24,31 +24,31 @@ class Spline3rdOrder(Spline):
             y(p) = a2p^2+b2p^2+c2p+d2
         """
 
-        self.start_state = start_state
-        self.goal_state = goal_state
+        self.start_config = start_config
+        self.goal_config = goal_config
 
         if factors_n2 is None:  # Compute them heuristically
-            factor1_n1 = self.start_state.speed_nk1()[:, :, 0] + \
-                         tf.norm(goal_state.position_nk2()-start_state.position_nk2(), axis=2)
+            factor1_n1 = self.start_config.speed_nk1()[:, :, 0] + \
+                         tf.norm(goal_config.position_nk2()-start_config.position_nk2(), axis=2)
             factor2_n1 = factor1_n1
             factors_n2 = tf.concat([factor1_n1, factor2_n1], axis=1)
 
         with tf.name_scope('fit_spline'):
             f1_n1, f2_n1 = factors_n2[:, 0:1], factors_n2[:, 1:]
 
-            start_pos_n12 = self.start_state.position_nk2()
-            goal_pos_n12 = self.goal_state.position_nk2()
+            start_pos_n12 = self.start_config.position_nk2()
+            goal_pos_n12 = self.goal_config.position_nk2()
 
             # Multiple solutions if start and goal are the same x,y coordinates
             assert(tf.reduce_all(tf.norm(goal_pos_n12-start_pos_n12, axis=2) >= self.epsilon))
 
             x0_n1, y0_n1 = start_pos_n12[:, :, 0], start_pos_n12[:, :, 1]
-            t0_n1 = self.start_state.heading_nk1()[:, :, 0]
-            v0_n1 = self.start_state.speed_nk1()[:, :, 0]
+            t0_n1 = self.start_config.heading_nk1()[:, :, 0]
+            v0_n1 = self.start_config.speed_nk1()[:, :, 0]
 
             xg_n1, yg_n1 = goal_pos_n12[:, :, 0], goal_pos_n12[:, :, 1]
-            tg_n1 = self.goal_state.heading_nk1()[:, :, 0]
-            vg_n1 = self.goal_state.speed_nk1()[:, :, 0]
+            tg_n1 = self.goal_config.heading_nk1()[:, :, 0]
+            vg_n1 = self.goal_config.speed_nk1()[:, :, 0]
 
             d1_n1 = x0_n1
             c1_n1 = f1_n1*tf.cos(t0_n1)
@@ -136,20 +136,20 @@ class Spline3rdOrder(Spline):
         return tf.cast(valid_idxs, tf.int32)
 
     @staticmethod
-    def check_start_goal_equivalence(start_state_old, goal_state_old,
-                                     start_state_new, goal_state_new):
-        """ A utility function that checks whether start_state_old,
-        goal_state_old imply the same spline constraints as those implied by
-        start_state_new, goal_state_new. Useful for checking that a
+    def check_start_goal_equivalence(start_config_old, goal_config_old,
+                                     start_config_new, goal_config_new):
+        """ A utility function that checks whether start_config_old,
+        goal_config_old imply the same spline constraints as those implied by
+        start_config_new, goal_config_new. Useful for checking that a
         precomputed spline on the old start and goal will work on new start
         and goal."""
-        start_old_pos_nk2 = start_state_old.position_nk2()
-        start_old_heading_nk1 = start_state_old.heading_nk1()
-        start_old_speed_nk1 = start_state_old.speed_nk1()
+        start_old_pos_nk2 = start_config_old.position_nk2()
+        start_old_heading_nk1 = start_config_old.heading_nk1()
+        start_old_speed_nk1 = start_config_old.speed_nk1()
 
-        start_new_pos_nk2 = start_state_new.position_nk2()
-        start_new_heading_nk1 = start_state_new.heading_nk1()
-        start_new_speed_nk1 = start_state_new.speed_nk1()
+        start_new_pos_nk2 = start_config_new.position_nk2()
+        start_new_heading_nk1 = start_config_new.heading_nk1()
+        start_new_speed_nk1 = start_config_new.speed_nk1()
 
         start_pos_match = (tf.norm(start_old_pos_nk2-start_new_pos_nk2).numpy() == 0.0)
         start_heading_match = (tf.norm(start_old_heading_nk1-start_new_heading_nk1).numpy() == 0.0)
@@ -159,16 +159,16 @@ class Spline3rdOrder(Spline):
                        start_speed_match)
 
         # Check whether they are the same object
-        if goal_state_old is goal_state_new:
+        if goal_config_old is goal_config_new:
             return start_match
         else:
-            goal_old_pos_nk2 = goal_state_old.position_nk2()
-            goal_old_heading_nk1 = goal_state_old.heading_nk1()
-            goal_old_speed_nk1 = goal_state_old.speed_nk1()
+            goal_old_pos_nk2 = goal_config_old.position_nk2()
+            goal_old_heading_nk1 = goal_config_old.heading_nk1()
+            goal_old_speed_nk1 = goal_config_old.speed_nk1()
 
-            goal_new_pos_nk2 = goal_state_new.position_nk2()
-            goal_new_heading_nk1 = goal_state_new.heading_nk1()
-            goal_new_speed_nk1 = goal_state_new.speed_nk1()
+            goal_new_pos_nk2 = goal_config_new.position_nk2()
+            goal_new_heading_nk1 = goal_config_new.heading_nk1()
+            goal_new_speed_nk1 = goal_config_new.speed_nk1()
 
             goal_pos_match = (tf.norm(goal_old_pos_nk2-goal_new_pos_nk2).numpy() == 0.0)
             goal_heading_match = (tf.norm(goal_old_heading_nk1-goal_new_heading_nk1).numpy() == 0.0)
