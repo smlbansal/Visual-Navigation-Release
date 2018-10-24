@@ -132,6 +132,9 @@ class Spline3rdOrder(Spline):
         horizon_opt_angular_speed = max_angular_speed/angular_speed_max_system
         horizons = tf.concat([horizon_opt_speed, horizon_opt_angular_speed], axis=1)
         cutoff_horizon = tf.reduce_max(horizons, axis=1)
+        #import pdb; pdb.set_trace()
+        self._speed_nk1 = self._speed_nk1/horizon_s
+        self._angular_speed_nk1 = self._angular_speed_nk1/horizon_s
         valid_idxs = tf.squeeze(tf.where(cutoff_horizon <= horizon_s), axis=1)
         return tf.cast(valid_idxs, tf.int32)
 

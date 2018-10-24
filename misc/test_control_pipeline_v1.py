@@ -25,7 +25,7 @@ def load_params():
     # [[min_x, min_y], [max_x, max_y]]
     p.map_bounds = [[0.0, 0.0], [8.0, 8.0]]
     # in egocentric coordinates
-    p.waypoint_bounds = [[-1., 0.0], [1., 1.]]
+    p.waypoint_bounds = [[0.0, -1.0], [1., 1.]]
 
     # Map Origin and size
     origin_x = int(p.map_bounds[0][0]/p.dx)
@@ -39,7 +39,7 @@ def load_params():
 
     # Horizons in seconds
     p.episode_horizon_s = 20
-    p.planning_horizons_s = [1.5]
+    p.planning_horizons_s = [3.0]
     p.control_horizon_s = 20.0
 
     # Horizons in timesteps
@@ -156,12 +156,13 @@ def plot_pipeline(pipeline, axess, fig, v0):
         axs = axess[3:]
         pipeline.traj_opt.render(axs, batch_idx=idx, freq=4, plot_control=True)
         axs[0].set_title('LQR Trajectory')
-        filename = os.path.join(logdir, 'idx_{:d}.png'.format(idx))
         goal_pos = pipeline.goal_state.position_nk2()[idx, 0].numpy()
         goal_heading = pipeline.goal_state.heading_nk1()[idx, 0, 0].numpy() 
         fig.suptitle('Control Pipeline for Waypt: [{:e}, {:e}, {:.3f}]'.format(*goal_pos,
                                                                                goal_heading))
+        filename = os.path.join(logdir, 'idx_{:d}.png'.format(idx))
         fig.savefig(filename)
+        import pdb; pdb.set_trace()
 
 
 def main():
@@ -189,7 +190,6 @@ def main():
             percent_good_waypt = num_good_waypts/p.n
             print('k: {:d}, v0: {:.3f}, # Good Waypts: {:d}, % Good waypoints: {:.3f}'.format(k, velocity,
                                                                          num_good_waypts, percent_good_waypt))
-
 
 if __name__ == '__main__':
     main()
