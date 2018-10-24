@@ -41,7 +41,8 @@ class Control_Pipeline_v1(Control_Pipeline_v0):
         else:
             self.start_state, self.goal_state = start_state, goal_state
             p = self.params
-            ts_nk = tf.tile(tf.linspace(0., self.k*p.dt,
+            t_max = self.k*p.dt
+            ts_nk = tf.tile(tf.linspace(0., t_max,
                                         self.k)[None], [p.n, 1])
             self.traj_spline.fit(start_state=start_state, goal_state=goal_state,
                                  factors_n2=None)

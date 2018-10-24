@@ -210,7 +210,8 @@ class Trajectory(object):
                    angular_speed_nk1=trajectory.angular_speed_nk1()[:, :horizon],
                    angular_acceleration_nk1=trajectory.angular_acceleration_nk1()[:, :horizon])
 
-    def render(self, axs, batch_idx=0, freq=4, plot_control=False):
+    def render(self, axs, batch_idx=0, freq=4, plot_control=False, label_start_and_end=False,
+               name=''):
         [ax.clear() for ax in axs]
         ax = axs[0]
         xs = self._position_nk2[batch_idx, :, 0]
@@ -219,6 +220,14 @@ class Trajectory(object):
         ax.plot(xs, ys, 'r-')
         ax.quiver(xs[::freq], ys[::freq],
                   tf.cos(thetas[::freq]), tf.sin(thetas[::freq]))
+
+        title_str = '{:s} Trajectory'.format(name)
+        if label_start_and_end:
+            start_5 = self.position_heading_speed_and_angular_speed_nk5()[batch_idx, 0]
+            end_5 = self.position_heading_speed_and_angular_speed_nk5()[batch_idx, -1]
+            title_str += ('\nStart: [{:.3e}, {:.3e}, {:.3f}, {:.3f}, {:.3f}]\n'.format(*start_5) +
+                        'End: [{:.3e}, {:.3e}, {:.3f}, {:.3f}, {:.3f}]'.format(*end_5))
+        ax.set_title(title_str)
 
         if plot_control:
             ax = axs[1]

@@ -120,21 +120,18 @@ class Spline3rdOrder(Spline):
                 self._angular_speed_nk1 = angular_speed_nk[:, :, None]
 
     def check_dynamic_feasability(self, speed_max_system, angular_speed_max_system, horizon_s):
-        """Checks whether the current computed spline (on time points in [0, 1])
+        """Checks whether the current computed spline (on time points in [0, horizon_s])
         can be executed in time <= horizon_s (specified in seconds) while respecting max speed and
         angular speed constraints. Returns the batch indices of all valid splines."""
         # Speed assumed to be in [0, speed_max_system]
         # Angular speed assumed to be in [-angular_speed_max_system, angular_speed_max_system]
-        max_speed = tf.reduce_max(self.speed_nk1(), axis=1)
-        max_angular_speed = tf.reduce_max(tf.abs(self.angular_speed_nk1()), axis=1)
+        max_speed = tf.reduce_max(self.speed_nk1()*horizon_s, axis=1)
+        max_angular_speed = tf.reduce_max(tf.abs(self.angular_speed_nk1()*horizon_s), axis=1)
 
-        horizon_opt_speed = max_speed/speed_max_system
-        horizon_opt_angular_speed = max_angular_speed/angular_speed_max_system
-        horizons = tf.concat([horizon_opt_speed, horizon_opt_angular_speed], axis=1)
+        horizon_speed = max_speed/speed_max_system
+        horizon_angular_speed = max_angular_speed/angular_speed_max_system
+        horizons = tf.concat([horizon_speed, horizon_angular_speed], axis=1)
         cutoff_horizon = tf.reduce_max(horizons, axis=1)
-        #import pdb; pdb.set_trace()
-        self._speed_nk1 = self._speed_nk1/horizon_s
-        self._angular_speed_nk1 = self._angular_speed_nk1/horizon_s
         valid_idxs = tf.squeeze(tf.where(cutoff_horizon <= horizon_s), axis=1)
         return tf.cast(valid_idxs, tf.int32)
 
@@ -194,13 +191,5 @@ class Spline3rdOrder(Spline):
         return goal_x_nk1, goal_y_nk1, goal_theta_nk1
 
     def render(self, axs, batch_idx=0, freq=4, plot_control=False):
-        """Render the spline trajectory from batch_idx
-        including goal position."""
-        super().render(axs, batch_idx, freq, plot_control=plot_control)
-        goal_n15 = self.goal_state.position_heading_speed_and_angular_speed_nk5()
-        target_state = goal_n15[batch_idx, 0]
-        ax = axs[0]
-        ax.quiver([target_state[0]], [target_state[1]],
-                  [tf.cos(target_state[2])],
-                  [tf.sin(target_state[2])], units='width')
-        ax.set_title('Spline Trajectory')
+        super().render(axs, batch_idx, freq, plot_control=plot_control,
+                       label_start_and_end=True, name='Spline')
