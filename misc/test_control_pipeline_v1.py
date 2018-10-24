@@ -146,23 +146,15 @@ def sample_waypoints(p, vf=0.):
 
 
 def plot_pipeline(pipeline, axess, fig, v0):
-    n = pipeline.valid_idxs.shape[0].value
     logdir = '/'.join(pipeline._data_file_name().split('/')[:-1])
     logdir = os.path.join(logdir, 'plots', 'v0_{:.3f}'.format(v0))
     utils.mkdir_if_missing(logdir)
     for idx in pipeline.valid_idxs:
-        axs = axess[:3]
-        pipeline.traj_spline.render(axs, batch_idx=idx, freq=4, plot_control=True)
-        axs = axess[3:]
-        pipeline.traj_opt.render(axs, batch_idx=idx, freq=4, plot_control=True)
-        axs[0].set_title('LQR Trajectory')
-        goal_pos = pipeline.goal_state.position_nk2()[idx, 0].numpy()
-        goal_heading = pipeline.goal_state.heading_nk1()[idx, 0, 0].numpy() 
-        fig.suptitle('Control Pipeline for Waypt: [{:e}, {:e}, {:.3f}]'.format(*goal_pos,
-                                                                               goal_heading))
+        pipeline.traj_spline.render(axess[:3], batch_idx=idx, freq=4, plot_control=True)
+        pipeline.traj_opt.render(axess[3:], batch_idx=idx, freq=4, plot_control=True,
+                                 label_start_and_end=True, name='LQR')
         filename = os.path.join(logdir, 'idx_{:d}.png'.format(idx))
         fig.savefig(filename)
-        import pdb; pdb.set_trace()
 
 
 def main():
@@ -173,7 +165,7 @@ def main():
     start_velocities = np.linspace(system_dynamics.v_bounds[0],
                                    system_dynamics.v_bounds[1],
                                    int(np.ceil(delta_v/p.planner_params['velocity_disc'])))
-   
+
     waypt_egocentric_state_n = sample_waypoints(p)
     print('Control_Pipeline: {:s}'.format(p._control_pipeline.pipeline_name))
     fig, _, axs = utils.subplot2(plt, (2, 3), (8, 8), (.4, .4))
@@ -190,6 +182,7 @@ def main():
             percent_good_waypt = num_good_waypts/p.n
             print('k: {:d}, v0: {:.3f}, # Good Waypts: {:d}, % Good waypoints: {:.3f}'.format(k, velocity,
                                                                          num_good_waypts, percent_good_waypt))
+
 
 if __name__ == '__main__':
     main()
