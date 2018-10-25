@@ -261,7 +261,7 @@ class Simulator:
                          self.episode_type])
 
     @staticmethod
-    def collect_metrics(ms):
+    def collect_metrics(ms, termination_reasons=['Timeout', 'Collision', 'Success']):
         ms = np.array(ms)
         obj_vals, init_dists, final_dists, episode_length, collisions, min_obs_distances, episode_types = ms.T
         keys = ['Objective Value', 'Initial Distance', 'Final Distance',
@@ -280,13 +280,9 @@ class Simulator:
                 out_vals.append(_)
         num_episodes = len(episode_types)
 
-        # Follow the indexing order of Simulator.episode_terimination_reasons
-        out_keys.append('Percent Timeout')
-        out_vals.append(np.sum(episode_types == 0)/num_episodes)
-        out_keys.append('Percent Collision')
-        out_vals.append(np.sum(episode_types == 1)/num_episodes)
-        out_keys.append('Percent Success')
-        out_vals.append(np.sum(episode_types == 2)/num_episodes)
+        for i, reason in enumerate(termination_reasons):
+            out_keys.append('Percent {:s}'.format(reason))
+            out_vals.append(np.sum(episode_types == i)/num_episodes)
         return out_keys, out_vals
 
     def _render_obstacle_map(self, ax):
@@ -303,7 +299,7 @@ class Simulator:
                            p.goal_cutoff_dist, 'color': 'g'}
         self.start_config.render(ax, batch_idx=0, marker='bo')
         self.goal_config.render_with_boundary(ax, batch_idx=0, marker='k*',
-                                             boundary_params=boundary_params)
+                                              boundary_params=boundary_params)
 
         goal = self.goal_config.position_nk2()[0, 0]
         start = self.start_config.position_nk2()[0, 0]

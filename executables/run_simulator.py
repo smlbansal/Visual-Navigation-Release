@@ -37,7 +37,8 @@ def simulate(params):
         axs[i].clear()
         sim.render(axs[i], freq=render_angle_freq)
         axs[i].set_title('#{:d}, {:s}'.format(i, axs[i].get_title()))
-    metrics_keys, metrics_vals = sim.collect_metrics(metrics)
+    metrics_keys, metrics_vals = sim.collect_metrics(metrics,
+                                                     termination_reasons=p.simulator_params.episode_termination_reasons)
     fig.suptitle('Circular Obstacle Map Simulator')
     figname = os.path.join(logdir, 'circular_obstacle_map.png')
     fig.savefig(figname, bbox_inches='tight')

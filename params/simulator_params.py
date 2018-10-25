@@ -24,9 +24,9 @@ def load_params():
     p.waypoint_bounds = [[-1., 0.0], [1., 1.]]
 
     # Horizons in seconds
-    p.episode_horizon_s = 20
+    p.episode_horizon_s = 20.0
     p.planning_horizons_s = [1.5]
-    p.control_horizon_s = 20.0
+    p.control_horizon_s = 1.5
 
     # Obstacle Avoidance Objective
     p.avoid_obstacle_objective = DotMap(obstacle_margin0=0.3,
@@ -46,13 +46,13 @@ def load_params():
     p._obstacle_map = CircularObstacleMap
     p._system_dynamics = DubinsV2
     p._planner = SamplingPlanner
-    p._control_pipeline = Control_Pipeline_v0
+    p._control_pipeline = Control_Pipeline_v1
     p._simulator = CircularObstacleMapSimulator
 
-    # Store params as dictionaries so they can be used with **kwargs
     p.lqr_quad_coeffs = np.array([1.0, 1.0, 1.0, 1e-10, 1e-10], dtype=np.float32)
     p.lqr_linear_coeffs = np.zeros((5), dtype=np.float32)
 
+    # Store params as dictionaries so they can be used with **kwargs
     p.spline_params = {'epsilon': 1e-10}
 
     centers_m2 = [[2.0, 2.0]]
