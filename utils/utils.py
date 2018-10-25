@@ -20,25 +20,10 @@ def ensure_odd(integer):
     return integer
 
 
-def load_params(version):
-    module_name = 'params.params_{}'.format(version)
+def load_params(module_name):
+    module_name = 'params.{:s}'.format(module_name)
     params = importlib.import_module(module_name)
     p = params.load_params()
-    return p
-
-
-def load_params_json(version):
-    """Load parameters from
-    ./params/params_version.json
-    into a dotmap object
-    """
-    import commentjson
-    base_dir = './params'
-    filename = '{}/params_{}.json'.format(base_dir, version)
-    assert(os.path.exists(filename))
-    with open(filename) as f:
-        params = commentjson.load(f)
-        p = dotmap.DotMap(params)
     return p
 
 

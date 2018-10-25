@@ -7,32 +7,31 @@ from simulators.simulator import Simulator
 
 class CircularObstacleMapSimulator(Simulator):
 
-    def __init__(self, params, goal_cutoff_dist=0.0, goal_dist_norm=2,
-                 end_episode_on_collision=True, end_episode_on_success=True):
+    def __init__(self, params):
         assert(params._obstacle_map is CircularObstacleMap)
-        super().__init__(params=params, goal_cutoff_dist=goal_cutoff_dist,
-                         goal_dist_norm=goal_dist_norm,
-                         end_episode_on_collision=end_episode_on_collision,
-                         end_episode_on_success=end_episode_on_success)
+        super().__init__(params=params)
 
-    def reset(self, obstacle_params=None):
-        if obstacle_params is not None:
+    def _reset_obstacle_map(self, rng):
+        #USE THE RNG
+        if True:#new obstacle map:
             self.obstacle_map = self._init_obstacle_map(obstacle_params=obstacle_params)
-            self.sample_start_and_goal()
             self.fmm_map = self._init_fmm_map()
             self._update_obj_fn()
         else:
-            self.sample_start_and_goal()
             self.fmm_map.change_goal(goal_position_12=self.goal_config.position_nk2())
 
-        self.vehicle_trajectory = Trajectory(dt=self.params.dt, n=1, k=0)
-        self.obj_val = np.inf
+    def _reset_vehicle_start(self, rng):
+        self.sample_start_and_goal()
+
+    def _reset_vehicle_goal(self, rng):
+        pass
 
     def sample_start_and_goal(self):
         p = self.params
+        sp = p.simulator_params
         start_pos_12, goal_pos_12 = self.obstacle_map.sample_start_and_goal_12(self.rng,
-                                                                               goal_radius=self.goal_cutoff_dist,
-                                                                               goal_norm=self.goal_dist_norm,
+                                                                               goal_radius=sp.goal_cutoff_dist,
+                                                                               goal_norm=sp.goal_dist_norm,
                                                                                obs_margin=p.avoid_obstacle_objective.obstacle_margin1)
         self.start_config = SystemConfig(dt=p.dt, n=1, k=1,
                                         position_nk2=start_pos_12[None])
@@ -57,26 +56,3 @@ class CircularObstacleMapSimulator(Simulator):
         self.obstacle_map.render_with_obstacle_margins(ax,
                                                        margin0=p.avoid_obstacle_objective.obstacle_margin0,
                                                        margin1=p.avoid_obstacle_objective.obstacle_margin1)
-
-    def render(self, ax, freq=4):
-        ax.clear()
-        self._render_obstacle_map(ax)
-        self.vehicle_trajectory.render(ax, freq=freq)
-        for waypt in self.system_configs:
-            waypt.render(ax, batch_idx=0, marker='co')
-
-        boundary_params = {'norm': self.goal_dist_norm, 'cutoff':
-                           self.goal_cutoff_dist, 'color': 'g'}
-        self.start_config.render(ax, batch_idx=0, marker='bo')
-        self.goal_config.render_with_boundary(ax, batch_idx=0, marker='k*',
-                                             boundary_params=boundary_params)
-
-        goal = self.goal_config.position_nk2()[0, 0]
-        start = self.start_config.position_nk2()[0, 0]
-        text_color = self.episode_termination_colors[self.episode_type]
-        ax.set_title('Start: [{:.2f}, {:.2f}] '.format(*start) +
-                     'Goal: [{:.2f}, {:.2f}]'.format(*goal), color=text_color)
-
-        final_pos = self.vehicle_trajectory.position_nk2()[0, -1]
-        ax.set_xlabel('Cost: {cost:.3f} '.format(cost=self.obj_val) +
-                      'End: [{:.2f}, {:.2f}]'.format(*final_pos), color=text_color)

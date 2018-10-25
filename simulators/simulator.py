@@ -12,18 +12,13 @@ class Simulator:
     episode_termination_reasons = ['Timeout', 'Collision', 'Success']
     episode_termination_colors = ['b', 'r', 'g']
 
-    def __init__(self, params, goal_cutoff_dist=0.0, goal_dist_norm=2,
-                 end_episode_on_collision=True, end_episode_on_success=True):
+    def __init__(self, params):
         self.params = params
-        self.goal_cutoff_dist = goal_cutoff_dist
-        self.goal_dist_norm = goal_dist_norm  # Default- L2 norm
-        self.end_episode_on_collision = end_episode_on_collision
-        self.end_episode_on_success = end_episode_on_success
         self.system_dynamics = self._init_system_dynamics()
         self.obstacle_map = self._init_obstacle_map()
         self.obj_fn = self._init_obj_fn()
         self.planner = self._init_planner()
-        self.rng = np.random.Randomconfig(params.simulator_seed)
+        self.rng = np.random.RandomState(params.simulator_seed)
 
     def simulate(self):
         """ A function that simulates an entire episode.
@@ -45,12 +40,24 @@ class Simulator:
         self.collisions = self._calculate_trajectory_collisions(vehicle_trajectory)
         self.episode_type, end_time_idx = self._enforce_episode_termination_conditions(vehicle_trajectory)
 
-        # Only keep the configs corresponding to unclipped parts of the trajectory
+        # Only keep the system configurations corresponding to
+        # unclipped parts of the trajectory
         keep_idx = np.array(config_time_idxs) <= end_time_idx
         self.system_configs = np.array(configs)[keep_idx]
 
         self.obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
+
+    def reset(self, seed=-1):
+        if seed != -1:
+            self.rng.set_state(seed)
+
+        self._reset_obstacle_map(rng)
+        self._reset_vehicle_start(rng)
+        self._reset_vehicle_goal(rng)
+
+        self.vehicle_trajectory = Trajectory(dt=self.params.dt, n=1, k=0)
+        self.obj_val = np.inf
 
     def _iterate(self, config):
         """ Runs the planner for one step from config to generate an optimal
@@ -82,6 +89,8 @@ class Simulator:
             2. There is no collision with an obstacle along the trajectory
             3. Moving within goal_cutoff_dist of the goal is considered a
             success """
+
+        p = self.params.simulator_params
         # Same order as Simulator.episode_termination_reasons
         time_idxs = [self.params.episode_horizon]
         pos_1k2 = vehicle_trajectory.position_nk2()
@@ -102,15 +111,15 @@ class Simulator:
         dist_to_goal_1k = self._dist_to_goal(pos_1k2,
                                              self.goal_config.position_nk2())
         successes = tf.where(tf.less(dist_to_goal_1k,
-                                     self.goal_cutoff_dist))
+                                     p.ngoal_cutoff_dist))
         success_idxs = successes[:, 1]
         if tf.size(success_idxs).numpy() != 0:
             success_idx = success_idxs[0]
         time_idxs.append(success_idx)
 
         idx = np.argmin(time_idxs)
-        if idx == 0 or (idx == 1 and self.end_episode_on_collision) or \
-           (idx == 2 and self.end_episode_on_success):
+        if idx == 0 or (idx == 1 and p.end_episode_on_collision) or \
+           (idx == 2 and p.end_episode_on_success):
             vehicle_trajectory.clip_along_time_axis(time_idxs[idx])
         return idx, time_idxs[idx]
 
@@ -176,6 +185,7 @@ class Simulator:
 
     def _init_planner(self):
         p = self.params
+        import pdb; pdb.set_trace()
         return p._planner(system_dynamics=self.system_dynamics,
                           obj_fn=self.obj_fn, params=p,
                           **p.planner_params)
@@ -183,7 +193,7 @@ class Simulator:
     def _dist_to_goal(self, pos_nk2, goal_12):
         """Calculate the distance between
         each point in pos_nk2 and the given goal, goal_12"""
-        if self.goal_dist_norm == 2:
+        if self.params.simulator_params.goal_dist_norm == 2:
             return tf.norm(pos_nk2-goal_12, axis=2)
         else:
             assert(False)
@@ -238,14 +248,15 @@ class Simulator:
         raise NotImplementedError
 
     def render(self, ax, freq=4):
+        p = self.params.simulator_params
         ax.clear()
         self._render_obstacle_map(ax)
         self.vehicle_trajectory.render(ax, freq=freq)
         for waypt in self.system_configs:
             waypt.render(ax, batch_idx=0, marker='co')
 
-        boundary_params = {'norm': self.goal_dist_norm, 'cutoff':
-                           self.goal_cutoff_dist, 'color': 'g'}
+        boundary_params = {'norm': p.goal_dist_norm, 'cutoff':
+                           p.goal_cutoff_dist, 'color': 'g'}
         self.start_config.render(ax, batch_idx=0, marker='bo')
         self.goal_config.render_with_boundary(ax, batch_idx=0, marker='k*',
                                              boundary_params=boundary_params)

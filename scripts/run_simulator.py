@@ -13,7 +13,7 @@ def simulate(params):
 
     print(logdir)
     utils.mkdir_if_missing(logdir)
-    utils.log_dict_as_json(p, os.path.join(logdir, 'params.json'))
+    utils.log_dict_as_json(p, os.path.join(logdir, 'simulator_params.json'))
 
     num_tests_per_map = p.control_validation_params.num_tests_per_map
     num_maps = p.control_validation_params.num_maps
@@ -25,8 +25,8 @@ def simulate(params):
 
     tf.set_random_seed(p.seed)
     np.random.seed(p.seed)
-    obstacle_params = {'min_n': 4, 'max_n': 7, 'min_r': .3, 'max_r': .8}
-    sim = p._simulator(params=p, **p.simulator_params)
+    import pdb; pdb.set_trace()
+    sim = p._simulator(params=p)
 
     k = 0
     metrics = []
@@ -55,7 +55,7 @@ def main():
     tf.enable_eager_execution(config=utils.gpu_config())
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--params', help='parameter version number', default='v1')
+    parser.add_argument('--params', help='parameter version number', default='simulator_params')
     args = parser.parse_args()
     simulate(params=args.params)
 

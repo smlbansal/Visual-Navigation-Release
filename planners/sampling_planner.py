@@ -12,6 +12,7 @@ class SamplingPlanner(Planner):
     def __init__(self, system_dynamics,
                  obj_fn, params, mode='random', precompute=True,
                  velocity_disc=.1, bin_velocity=True, **kwargs):
+        import pdb; pdb.set_trace()
 
         delta_v = system_dynamics.v_bounds[1] - system_dynamics.v_bounds[0]
         self.start_velocities = np.linspace(system_dynamics.v_bounds[0],

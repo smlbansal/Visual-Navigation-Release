@@ -6,6 +6,7 @@ class Planner:
     through an environment. """
 
     def __init__(self, system_dynamics, obj_fn, params):
+        import pdb; pdb.set_trace()
         self.system_dynamics = system_dynamics
         self.obj_fn = obj_fn
         self.params = params

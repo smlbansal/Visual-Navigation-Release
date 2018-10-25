@@ -61,7 +61,7 @@ def load_params():
     p._spline = Spline3rdOrder
     p._obstacle_map = CircularObstacleMap
     p._system_dynamics = DubinsV2
-    p._planner = SamplingPlanner_v2
+    p._planner = SamplingPlanner
     p._control_pipeline = Control_Pipeline_v1
     p._simulator = CircularObstacleMapSimulator
 
@@ -108,10 +108,21 @@ def load_params():
     p.control_pipeline_params = {'precompute': precompute,
                                  'load_from_pickle_file': True,
                                  'bin_velocity': True}
-    p.simulator_params = {'goal_cutoff_dist': p.goal_distance_objective.goal_margin,
-                          'goal_dist_norm': 2,  # Default is l2 norm
-                          'end_episode_on_collision': False,
-                          'end_episode_on_success': True}
+
+    # Simulator Reset Params
+    obstacle_map_reset_params = DotMap(reset_type='random',
+                                       params={'min_n': 4, 'max_n': 7, 'min_r': .3, 'max_r': .8})
+    start_config_reset_params = DotMap(reset_type='random')
+    goal_config_reset_params = DotMap(reset_type='random')
+    reset_params = DotMap(obstacle_map=obstacle_map_reset_params,
+                          start_config=start_config_reset_params,
+                          goal_config=goal_config_reset_params)
+
+    p.simulator_params = DotMap(goal_cutoff_dist=p.goal_distance_objective.goal_margin,
+                          goal_dist_norm=2,  # Default is l2 norm
+                          end_episode_on_collision=False,
+                          end_episode_on_success=True,
+                          reset_params=reset_params)
 
     p.control_validation_params = DotMap(num_tests_per_map=1,
                                          num_maps=50)
