@@ -4,7 +4,7 @@ import numpy as np
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from obstacles.circular_obstacle_map import CircularObstacleMap
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
-from planners.sampling_planner_v2 import SamplingPlanner_v2
+from planners.sampling_planner import SamplingPlanner
 from systems.dubins_v2 import Dubins_v2
 from control_pipelines.control_pipeline_v1 import Control_Pipeline_v1
 from control_pipelines.control_pipeline_v0 import Control_Pipeline_v0

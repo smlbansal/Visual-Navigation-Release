@@ -14,7 +14,7 @@ class Spline3rdOrder(Spline):
     [xg, yg, thetag,vg]. Angular speeds w0 and wg are not constrainable.
     """
 
-    def fit(self, start_config, goal_config, factors_n2=None):
+    def fit(self, start_config, goal_config, factors=None):
         """Fit a 3rd order spline between start config and goal config.
         Factors_n2 represent 2 degrees of freedom in fitting the spline.
         If factors_n2=None it is set heuristically below.
@@ -27,11 +27,13 @@ class Spline3rdOrder(Spline):
         self.start_config = start_config
         self.goal_config = goal_config
 
-        if factors_n2 is None:  # Compute them heuristically
+        if factors is None:  # Compute them heuristically
             factor1_n1 = self.start_config.speed_nk1()[:, :, 0] + \
                          tf.norm(goal_config.position_nk2()-start_config.position_nk2(), axis=2)
             factor2_n1 = factor1_n1
             factors_n2 = tf.concat([factor1_n1, factor2_n1], axis=1)
+        else:
+            factors_n2 = factors
 
         with tf.name_scope('fit_spline'):
             f1_n1, f2_n1 = factors_n2[:, 0:1], factors_n2[:, 1:]

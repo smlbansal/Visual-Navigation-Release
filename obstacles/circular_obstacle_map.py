@@ -77,7 +77,7 @@ class CircularObstacleMap(ObstacleMap):
         ax.set_ylim([y_min, y_max])
         ax.set_title('Obstacle Map')
 
-    def render_with_obstacle_margins(self, ax, margin0, margin1):
+    def render_with_obstacle_margins(self, ax, margin0=.3, margin1=.5):
         """ Render the map with different opacity circles indicating the intensity of the cost
         function around obstacles"""
         for i in range(self.num_obstacles):
