@@ -10,8 +10,8 @@ class Dubins5D(DubinsCar):
     x(t+1) = x(t) + v(t)*cos(theta_t)*delta_t
     y(t+1) = y(t) + v(t)*sin(theta_t)*delta_t
     theta(t+1) = theta(t) + w(t)*delta_t
-    v(t+1) = saturate_linear_velocity(a(t) + v(t))
-    w(t+1) = saturate_angular_velocity(alpha(t) + w(t)). """
+    v(t+1) = saturate_linear_velocity(a(t)*dt + v(t))
+    w(t+1) = saturate_angular_velocity(alpha(t)*dt + w(t)). """
 
     def __init__(self, dt):
         super().__init__(dt, x_dim=5, u_dim=2)
