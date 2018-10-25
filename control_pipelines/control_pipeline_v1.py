@@ -9,6 +9,6 @@ class Control_Pipeline_v1(ControlPipeline):
 
     def _compute_valid_batch_idxs(self, horizon_s):
         """ Computes the batch indices of the valid splines."""
-        self.valid_idxs = self.traj_spline.check_dynamic_feasability(self.system_dynamics.v_bounds[1],
-                                                                     self.system_dynamics.w_bounds[1],
-                                                                     horizon_s=horizon_s)
+        return self.traj_spline.check_dynamic_feasability(self.system_dynamics.v_bounds[1],
+                                                          self.system_dynamics.w_bounds[1],
+                                                          horizon_s=horizon_s)

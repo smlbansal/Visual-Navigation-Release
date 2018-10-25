@@ -6,7 +6,6 @@ class Planner:
     through an environment. """
 
     def __init__(self, system_dynamics, obj_fn, params):
-        import pdb; pdb.set_trace()
         self.system_dynamics = system_dynamics
         self.obj_fn = obj_fn
         self.params = params
@@ -16,10 +15,10 @@ class Planner:
         # In Egocentric Coordinates
         self.start_config_egocentric = SystemConfig(dt=params.dt, n=params.n, k=1, variable=True)
         self.opt_waypt = SystemConfig(dt=params.dt, n=1, k=1, variable=True)
-        self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.k, variable=True)
 
-        # In World Coordinates
-        self.trajectory_world = Trajectory(dt=params.dt, n=params.n, k=params.k, variable=True)
+        if not params.k.empty():
+            self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.k, variable=True)
+            self.trajectory_world = Trajectory(dt=params.dt, n=params.n, k=params.k, variable=True)
 
         self.control_pipelines = self._init_control_pipelines()
 

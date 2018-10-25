@@ -10,4 +10,4 @@ class Control_Pipeline_v0(ControlPipeline):
     def _compute_valid_batch_idxs(self, horizon_s):
         """ All trajectories in the control pipeline are valid
         for pipeline v0"""
-        self.valid_idxs = tf.range(self.params.n)
+        return tf.range(self.params.n)

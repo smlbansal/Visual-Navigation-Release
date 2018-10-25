@@ -12,13 +12,11 @@ class SamplingPlanner(Planner):
     def __init__(self, system_dynamics,
                  obj_fn, params, mode='random', precompute=True,
                  velocity_disc=.1, bin_velocity=True, **kwargs):
-        import pdb; pdb.set_trace()
-
+        self.params = params
         delta_v = system_dynamics.v_bounds[1] - system_dynamics.v_bounds[0]
         self.start_velocities = np.linspace(system_dynamics.v_bounds[0],
                                             system_dynamics.v_bounds[1],
                                             int(np.ceil(delta_v/velocity_disc)))
-        super().__init__(system_dynamics, obj_fn, params)
         self.bin_velocity = bin_velocity
         self.mode = mode
         self.kwargs = kwargs
@@ -26,10 +24,13 @@ class SamplingPlanner(Planner):
         self.precompute = precompute
         self.waypt_egocentric_config_n = None
         self.waypt_egocentric_config_n = self._sample_initial_waypoints()
+
         self.trajectories_world = [Trajectory(dt=params.dt, n=params.n, k=k, variable=True) for k
                                    in params.ks]
         self.opt_trajs = [Trajectory(dt=params.dt, n=1, k=k, variable=True) for k in
                           params.ks]
+
+        super().__init__(system_dynamics, obj_fn, params)
 
     def optimize(self, start_config, vf=0.):
         """ Optimize the objective over a trajectory

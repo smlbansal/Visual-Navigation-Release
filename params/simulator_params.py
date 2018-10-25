@@ -88,7 +88,7 @@ def load_params():
     dx = .1
     num_theta_bins = utils.ensure_odd(21)
     precompute = True
-    velocity_disc = .01  # discretization of velocity for control pipeline
+    velocity_disc = .5  # discretization of velocity for control pipeline
     p.planner_params = {'mode': 'uniform',
                         'precompute': precompute,
                         'velocity_disc': velocity_disc}
@@ -124,6 +124,5 @@ def load_params():
                           end_episode_on_success=True,
                           reset_params=reset_params)
 
-    p.control_validation_params = DotMap(num_tests_per_map=1,
-                                         num_maps=50)
+    p.num_validation_goals = 5
     return p

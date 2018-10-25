@@ -15,10 +15,12 @@ class Simulator:
     def __init__(self, params):
         self.params = params
         self.system_dynamics = self._init_system_dynamics()
-        self.obstacle_map = self._init_obstacle_map()
+        self.rng = np.random.RandomState(params.simulator_seed)
+        self.obstacle_map = self._init_obstacle_map(self.rng,
+                                                    self.params.simulator_params.reset_params.obstacle_map.params)
         self.obj_fn = self._init_obj_fn()
         self.planner = self._init_planner()
-        self.rng = np.random.RandomState(params.simulator_seed)
+        
 
     def simulate(self):
         """ A function that simulates an entire episode.
@@ -50,11 +52,11 @@ class Simulator:
 
     def reset(self, seed=-1):
         if seed != -1:
-            self.rng.set_state(seed)
+            self.rng.seed(seed)
 
-        self._reset_obstacle_map(rng)
-        self._reset_vehicle_start(rng)
-        self._reset_vehicle_goal(rng)
+        self._reset_obstacle_map(self.rng)
+        self._reset_start_configuration(self.rng)
+        self._reset_goal_configuration(self.rng)
 
         self.vehicle_trajectory = Trajectory(dt=self.params.dt, n=1, k=0)
         self.obj_val = np.inf
@@ -68,19 +70,37 @@ class Simulator:
         next_config = SystemConfig.init_config_from_trajectory_time_index(min_traj, t=-1)
         return min_traj, next_config
 
-    def _calculate_min_obs_distances(self, vehicle_trajectory):
-        """Returns an array of dimension 1k where each element is the distance to the closest
-        obstacle at each time step."""
-        pos_1k2 = vehicle_trajectory.position_nk2()
-        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
-        return obstacle_dists_1k
+    def _reset_start_configuration(self, rng):
+        p = self.params.simulator_params.reset_params.start_config
+        assert(p.reset_type == 'random')
+        obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
 
-    def _calculate_trajectory_collisions(self, vehicle_trajectory):
-        """Returns an array of dimension 1k where each element is a 1 if the robot collided with an
-        obstacle at that time step or 0 otherwise. """
-        pos_1k2 = vehicle_trajectory.position_nk2()
-        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
-        return tf.cast(obstacle_dists_1k < 0.0, tf.float32)
+        start_112 = self.obstacle_map.sample_point_112(self.rng)
+        dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(start_112))
+        while dist_to_obs <= obs_margin:
+            start_112 = self.obstacle_map.sample_point_112(self.rng)
+            dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(start_112))
+        self.start_config = SystemConfig(dt=p.dt, n=1, k=1,
+                                        position_nk2=start_112)
+
+    def _reset_goal_configuration(self, rng):
+        p = self.params.simulator_params.reset_params.goal_config
+        assert(p.reset_type == 'random')
+        obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
+        goal_norm = self.params.simulator_params.goal_dist_norm
+        goal_radius = self.params.simulator_params.goal_cutoff_dist
+        start_112 = self.start_config.position_nk2()
+
+        goal_112 = self.obstacle_map.sample_point_112(self.rng)
+        dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
+        dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
+        while dist_to_obs <= obs_margin or dist_to_goal <= goal_radius:
+            goal_112 = self.obstacle_map.sample_point_112(self.rng)
+            dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
+            dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
+
+        self.goal_config = SystemConfig(dt=p.dt, n=1, k=1,
+                                        position_nk2=goal_112)
 
     def _enforce_episode_termination_conditions(self, vehicle_trajectory):
         """ A utility function to enforce episode termination conditions.
@@ -111,7 +131,7 @@ class Simulator:
         dist_to_goal_1k = self._dist_to_goal(pos_1k2,
                                              self.goal_config.position_nk2())
         successes = tf.where(tf.less(dist_to_goal_1k,
-                                     p.ngoal_cutoff_dist))
+                                     p.goal_cutoff_dist))
         success_idxs = successes[:, 1]
         if tf.size(success_idxs).numpy() != 0:
             success_idx = success_idxs[0]
@@ -185,11 +205,11 @@ class Simulator:
 
     def _init_planner(self):
         p = self.params
-        import pdb; pdb.set_trace()
         return p._planner(system_dynamics=self.system_dynamics,
                           obj_fn=self.obj_fn, params=p,
                           **p.planner_params)
 
+    # Functions for generating metrics
     def _dist_to_goal(self, pos_nk2, goal_12):
         """Calculate the distance between
         each point in pos_nk2 and the given goal, goal_12"""
@@ -197,6 +217,20 @@ class Simulator:
             return tf.norm(pos_nk2-goal_12, axis=2)
         else:
             assert(False)
+
+    def _calculate_min_obs_distances(self, vehicle_trajectory):
+        """Returns an array of dimension 1k where each element is the distance to the closest
+        obstacle at each time step."""
+        pos_1k2 = vehicle_trajectory.position_nk2()
+        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
+        return obstacle_dists_1k
+
+    def _calculate_trajectory_collisions(self, vehicle_trajectory):
+        """Returns an array of dimension 1k where each element is a 1 if the robot collided with an
+        obstacle at that time step or 0 otherwise. """
+        pos_1k2 = vehicle_trajectory.position_nk2()
+        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
+        return tf.cast(obstacle_dists_1k < 0.0, tf.float32)
 
     def get_metrics(self):
         """After the episode is over, call the get_metrics function to get metrics
@@ -251,7 +285,7 @@ class Simulator:
         p = self.params.simulator_params
         ax.clear()
         self._render_obstacle_map(ax)
-        self.vehicle_trajectory.render(ax, freq=freq)
+        self.vehicle_trajectory.render([ax], freq=freq)
         for waypt in self.system_configs:
             waypt.render(ax, batch_idx=0, marker='co')
 
