@@ -7,6 +7,34 @@ import tensorflow as tf
 class DubinsCar(Dynamics):
     """ An abstract class with utility functions for all Dubins Cars"""
 
+    def saturate_linear_velocity(self, vtilde_nk):
+        """ Saturation function for linear velocity"""
+        return vtilde_nk
+
+    def saturate_angular_velocity(self, wtilde_nk):
+        """ Saturation function for angular velocity"""
+        return wtilde_nk
+
+    def _pad_control_vector(self, u_nkf, pad_mode=None):
+        n = u_nkf.shape[0].value
+        k = u_nkf.shape[1].value
+        if pad_mode == 'zero':  # the last action is 0
+            if u_nkf.shape[1]+1 == k:
+                u_nkf = tf.concat([u_nkf, tf.zeros((n, 1, self._u_dim))],
+                                  axis=1)
+            else:
+                assert(u_nkf.shape[1] == k)
+        # the last action is the same as the second to last action
+        elif pad_mode == 'repeat':
+            if u_nkf.shape[1]+1 == k:
+                u_end_n12 = tf.zeros((n, 1, self._u_dim)) + u_nkf[:, -1:]
+                u_nkf = tf.concat([u_nkf, u_end_n12], axis=1)
+            else:
+                assert(u_nkf.shape[1] == k)
+        else:
+            assert(pad_mode is None)
+        return u_nkf
+
     @staticmethod
     def init_egocentric_robot_config(dt, n, v=0.0, w=0.0, dtype=tf.float32):
         """ A utility function initializing the robot at
@@ -76,6 +104,9 @@ class DubinsCar(Dynamics):
         position_nk2 = position_nk2 + ref_position_1k2
         heading_nk1 = angle_normalize(heading_nk1 + ref_heading_1k1)
 
+        # Either assign the results to tfe.Variables or
+        # create a new trajectory object (use this mode to
+        # track gradients as assign will not track them)
         if mode == 'assign':
             traj_world.assign_trajectory_from_tensors(position_nk2=position_nk2,
                                                       speed_nk1=traj_egocentric.speed_nk1(),
@@ -103,7 +134,7 @@ class DubinsCar(Dynamics):
 
 
 class Dubins_3d(DubinsCar):
-    """ A discrete time dubins car with config
+    """ A discrete time dubins car with configuration
     [x, y, theta] and actions [v, w]."""
 
     def __init__(self, dt):
@@ -119,24 +150,10 @@ class Dubins_3d(DubinsCar):
     def assemble_trajectory(self, x_nkd, u_nkf, pad_mode=None):
         """ A utility function for assembling a trajectory object
         from x_nkd, u_nkf, a list of configs and actions for the system.
-        Here d=5=config dimension and u=2=action dimension. """
+        Here d=3=config dimension and u=2=action dimension. """
         n = x_nkd.shape[0].value
         k = x_nkd.shape[1].value
-        if pad_mode == 'zero':  # the last action is 0
-            if u_nkf.shape[1]+1 == k:
-                u_nkf = tf.concat([u_nkf, tf.zeros((n, 1, self._u_dim))],
-                                  axis=1)
-            else:
-                assert(u_nkf.shape[1] == k)
-        # the last action is the same as the second to last action
-        elif pad_mode == 'repeat':
-            if u_nkf.shape[1]+1 == k:
-                u_end_n12 = tf.zeros((n, 1, self._u_dim)) + u_nkf[:, -1:]
-                u_nkf = tf.concat([u_nkf, u_end_n12], axis=1)
-            else:
-                assert(u_nkf.shape[1] == k)
-        else:
-            assert(pad_mode is None)
+        u_nkf = self._pad_control_vector(u_nkf, pad_mode=pad_mode)
         position_nk2, heading_nk1 = x_nkd[:, :, :2], x_nkd[:, :, 2:3]
         speed_nk1, angular_speed_nk1 = u_nkf[:, :, 0:1], u_nkf[:, :, 1:2]
         speed_nk1 = self.s1(speed_nk1)
@@ -144,18 +161,10 @@ class Dubins_3d(DubinsCar):
         return Trajectory(dt=self._dt, n=n, k=k, position_nk2=position_nk2,
                           heading_nk1=heading_nk1, speed_nk1=speed_nk1,
                           angular_speed_nk1=angular_speed_nk1, variable=False)
-
-    def s1(self, vtilde_nk):
-        """ Saturation function for linear velocity"""
-        return vtilde_nk
-
-    def s2(self, wtilde_nk):
-        """ Saturation function for angular velocity"""
-        return wtilde_nk
-
+ 
 
 class Dubins_5d(Dynamics):
-    """ A discrete time dubins car with config
+    """ A discrete time dubins car with configuration
     [x, y, theta, v, w] and actions [a, alpha]
     (linear and angular acceleration)."""
 
@@ -177,21 +186,7 @@ class Dubins_5d(Dynamics):
         Here d=5=config dimension and u=2=action dimension. """
         n = x_nkd.shape[0].value
         k = x_nkd.shape[1].value
-        if pad_mode == 'zero':  # the last action is 0
-            if u_nkf.shape[1]+1 == k:
-                u_nkf = tf.concat([u_nkf, tf.zeros((n, 1, self._u_dim))],
-                                  axis=1)
-            else:
-                assert(u_nkf.shape[1] == k)
-        # the last action is the same as the second to last action
-        elif pad_mode == 'repeat':
-            if u_nkf.shape[1]+1 == k:
-                u_end_n12 = tf.zeros((n, 1, self._u_dim)) + u_nkf[:, -1:]
-                u_nkf = tf.concat([u_nkf, u_end_n12], axis=1)
-            else:
-                assert(u_nkf.shape[1] == k)
-        else:
-            assert(pad_mode is None)
+        u_nkf = self._pad_control_vector(u_nkf, pad_mode=pad_mode)
         position_nk2, heading_nk1 = x_nkd[:, :, :2], x_nkd[:, :, 2:3]
         speed_nk1, angular_speed_nk1 = x_nkd[:, :, 3:4], x_nkd[:, :, 4:]
         acceleration_nk1, angular_acceleration_nk1 = u_nkf[:, :, 0:1], u_nkf[:, :, 1:2]
@@ -200,10 +195,3 @@ class Dubins_5d(Dynamics):
                           angular_speed_nk1=angular_speed_nk1, acceleration_nk1=acceleration_nk1,
                           angular_acceleration_nk1=angular_acceleration_nk1, variable=False)
 
-    def s1(self, vtilde_nk):
-        """ Saturation function for linear velocity"""
-        return vtilde_nk
-
-    def s2(self, wtilde_nk):
-        """ Saturation function for angular velocity"""
-        return wtilde_nk
