@@ -29,10 +29,12 @@ def simulate(params):
     render_angle_freq = int(p.episode_horizon/25)  # heuristic- this looks good
     sim.reset(seed=p.seed)
     for i in range(p.num_validation_goals):
+        print(i)
         if i != 0:
             sim.reset(seed=-1)
         sim.simulate()
         metrics.append(sim.get_metrics())
+        axs[i].clear()
         sim.render(axs[i], freq=render_angle_freq)
         axs[i].set_title('#{:d}, {:s}'.format(i, axs[i].get_title()))
     metrics_keys, metrics_vals = sim.collect_metrics(metrics)

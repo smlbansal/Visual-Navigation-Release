@@ -10,18 +10,17 @@ class SamplingPlanner(Planner):
     once in egocentric coordinates for speed."""
 
     def __init__(self, system_dynamics,
-                 obj_fn, params, mode='random', precompute=True,
-                 velocity_disc=.1, bin_velocity=True, **kwargs):
+                 obj_fn, params):
+   # , mode='random', precompute=True,
+   #              velocity_disc=.1, bin_velocity=True, **kwargs):
         self.params = params
         delta_v = system_dynamics.v_bounds[1] - system_dynamics.v_bounds[0]
+        velocity_disc = params.planner_params.velocity_disc
         self.start_velocities = np.linspace(system_dynamics.v_bounds[0],
                                             system_dynamics.v_bounds[1],
                                             int(np.ceil(delta_v/velocity_disc)))
-        self.bin_velocity = bin_velocity
-        self.mode = mode
-        self.kwargs = kwargs
-        assert(precompute is True)
-        self.precompute = precompute
+        
+        assert(params.planner_params.precompute)
         self.waypt_egocentric_config_n = None
         self.waypt_egocentric_config_n = self._sample_initial_waypoints()
 
@@ -99,22 +98,23 @@ class SamplingPlanner(Planner):
     def _sample_initial_waypoints(self, vf=0.):
         """ Samples waypoints to be used by the control pipeline plan function.
          Waypoint_bounds is assumed to be specified in egocentric coordinates."""
-        if self.precompute and self.waypt_egocentric_config_n is not None:
+        p = self.params.planner_params
+        if p.precompute and self.waypt_egocentric_config_n is not None:
             return self.waypt_egocentric_config_n
         else:
             n = self.params.n
             # Randomly samples waypoints in x, y, theta space
-            if self.mode == 'random':
+            if p.mode == 'random':
                 waypoint_bounds = self.params.waypoint_bounds
                 x0, y0 = waypoint_bounds[0]
                 xf, yf = waypoint_bounds[1]
                 wx_n11 = np.random.uniform(x0, xf, size=n).astype(np.float32)[:, None, None]
                 wy_n11 = np.random.uniform(y0, yf, size=n).astype(np.float32)[:, None, None]
                 wt_n11 = np.random.uniform(-np.pi, np.pi, size=n).astype(np.float32)[:, None, None]
-            elif self.mode == 'uniform':  # Uniformly samples waypoints in x, y, theta space
-                wx = np.linspace(*self.kwargs['waypt_x_params'], dtype=np.float32)
-                wy = np.linspace(*self.kwargs['waypt_y_params'], dtype=np.float32)
-                wt = np.linspace(*self.kwargs['waypt_theta_params'], dtype=np.float32)
+            elif p.mode == 'uniform':  # Uniformly samples waypoints in x, y, theta space
+                wx = np.linspace(*p.waypt_x_params, dtype=np.float32)
+                wy = np.linspace(*p.waypt_y_params, dtype=np.float32)
+                wt = np.linspace(*p.waypt_theta_params, dtype=np.float32)
                 wx_n, wy_n, wt_n = np.meshgrid(wx, wy, wt)
                 wx_n11 = wx_n.ravel()[:, None, None]
                 wy_n11 = wy_n.ravel()[:, None, None]

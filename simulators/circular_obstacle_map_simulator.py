@@ -1,8 +1,4 @@
-import tensorflow as tf
-import numpy as np
 from obstacles.circular_obstacle_map import CircularObstacleMap
-from trajectory.trajectory import Trajectory
-from trajectory.trajectory import SystemConfig
 from simulators.simulator import Simulator
 
 
@@ -16,6 +12,8 @@ class CircularObstacleMapSimulator(Simulator):
         p = self.params.simulator_params.reset_params.obstacle_map
         assert(p.reset_type == 'random')
         self.obstacle_map = self._init_obstacle_map(rng, p.params)
+
+    def _update_fmm_map(self):
         self.fmm_map = self._init_fmm_map()
         self._update_obj_fn()
 

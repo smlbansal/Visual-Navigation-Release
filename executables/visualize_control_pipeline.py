@@ -72,10 +72,10 @@ def visualize_control_pipeline(starts_n5, goals_n5):
     goal_pos_nk2 = np.concatenate([goal_x_n11, goal_y_n11], axis=2)
 
     start_config = SystemConfig(dt, n, 1, position_nk2=start_pos_nk2, heading_nk1=starts_n5[:, 2:3, None],
-                               speed_nk1=starts_n5[:, 3:4, None], variable=False)
+                                speed_nk1=starts_n5[:, 3:4, None], variable=False)
     goal_config = SystemConfig(dt, n, 1, position_nk2=goal_pos_nk2,
-                              speed_nk1=goals_n5[:, 3:4, None], heading_nk1=goal_theta_n11,
-                              variable=True)
+                               speed_nk1=goals_n5[:, 3:4, None], heading_nk1=goal_theta_n11,
+                               variable=True)
 
     trajectory_lqr = control_pipeline.plan(start_config=start_config,
                                            goal_config=goal_config)

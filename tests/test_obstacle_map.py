@@ -15,7 +15,8 @@ def test_random_circular_obstacle_map(visualize=False):
     map_bounds = [(-2., -2.), (2., 2.)]  # [(min_x, min_y), (max_x, max_y)]
     min_n, max_n = 2, 4
     min_r, max_r = .25, .5
-    grid = CircularObstacleMap.init_random_map(map_bounds,
+    rng = np.random.RandomState(0)
+    grid = CircularObstacleMap.init_random_map(map_bounds, rng,
                                                min_n, max_n, min_r, max_r)
 
     # Trajectory

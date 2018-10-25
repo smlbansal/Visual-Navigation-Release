@@ -49,15 +49,25 @@ class Simulator:
         self.vehicle_trajectory = vehicle_trajectory
 
     def reset(self, seed=-1):
+        """Reset the simulator. Optionally takes a seed to reset
+        the simulators random state."""
         if seed != -1:
             self.rng.seed(seed)
 
+        # Note: Obstacle map must be reset independently of
+        # the fmm map. Sampling start and goal may depend
+        # on the updated state of the obstacle map. Updating the fmm
+        # map depends on the newly sampled goal
         self._reset_obstacle_map(self.rng)
         self._reset_start_configuration(self.rng)
         self._reset_goal_configuration(self.rng)
+        self._update_fmm_map()
 
         self.vehicle_trajectory = Trajectory(dt=self.params.dt, n=1, k=0)
         self.obj_val = np.inf
+
+    def _update_fmm_map(self):
+        raise NotImplementedError
 
     def _iterate(self, config):
         """ Runs the planner for one step from config to generate an optimal
@@ -284,7 +294,6 @@ class Simulator:
 
     def render(self, ax, freq=4):
         p = self.params.simulator_params
-        ax.clear()
         self._render_obstacle_map(ax)
         self.vehicle_trajectory.render([ax], freq=freq)
         for waypt in self.system_configs:

@@ -212,7 +212,6 @@ class Trajectory(object):
 
     def render(self, axs, batch_idx=0, freq=4, plot_control=False, label_start_and_end=False,
                name=''):
-        [ax.clear() for ax in axs]
         ax = axs[0]
         xs = self._position_nk2[batch_idx, :, 0]
         ys = self._position_nk2[batch_idx, :, 1]
