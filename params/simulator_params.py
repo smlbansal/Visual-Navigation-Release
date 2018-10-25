@@ -109,7 +109,7 @@ def load_params():
                                  'load_from_pickle_file': True,
                                  'bin_velocity': True}
 
-    # Simulator Reset Params
+    # Simulator Params
     obstacle_map_reset_params = DotMap(reset_type='random',
                                        params={'min_n': 4, 'max_n': 7, 'min_r': .3, 'max_r': .8})
     start_config_reset_params = DotMap(reset_type='random')
@@ -120,9 +120,9 @@ def load_params():
 
     p.simulator_params = DotMap(goal_cutoff_dist=p.goal_distance_objective.goal_margin,
                           goal_dist_norm=2,  # Default is l2 norm
-                          end_episode_on_collision=False,
-                          end_episode_on_success=True,
-                          reset_params=reset_params)
+                          reset_params=reset_params,
+                          episode_termination_reasons=['Timeout', 'Collision', 'Success'],
+                          episode_termination_colors=['b', 'r', 'g'])
 
     p.num_validation_goals = 5
     return p

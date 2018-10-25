@@ -9,8 +9,6 @@ from utils.fmm_map import FmmMap
 
 
 class Simulator:
-    episode_termination_reasons = ['Timeout', 'Collision', 'Success']
-    episode_termination_colors = ['b', 'r', 'g']
 
     def __init__(self, params):
         self.params = params
@@ -104,44 +102,46 @@ class Simulator:
 
     def _enforce_episode_termination_conditions(self, vehicle_trajectory):
         """ A utility function to enforce episode termination conditions.
-        Clips a trajectory along the time axis checking the following:
-            1. Total trajectory length < episode_horizon
-            2. There is no collision with an obstacle along the trajectory
-            3. Moving within goal_cutoff_dist of the goal is considered a
-            success """
-
+        Clips the vehicle trajectory along the time axis."""
         p = self.params.simulator_params
-        # Same order as Simulator.episode_termination_reasons
-        time_idxs = [self.params.episode_horizon]
-        pos_1k2 = vehicle_trajectory.position_nk2()
-
-        collision_idx = self.params.episode_horizon + 1
-
-        # Check for collision
-        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
-        collisions = tf.where(tf.less(obstacle_dists_1k, 0.0))
-        collision_idxs = collisions[:, 1]
-        if tf.size(collision_idxs).numpy() != 0:
-            collision_idx = collision_idxs[0]
-        time_idxs.append(collision_idx)
-
-        success_idx = self.params.episode_horizon + 1
-
-        # Check within goal radius
-        dist_to_goal_1k = self._dist_to_goal(pos_1k2,
-                                             self.goal_config.position_nk2())
-        successes = tf.where(tf.less(dist_to_goal_1k,
-                                     p.goal_cutoff_dist))
-        success_idxs = successes[:, 1]
-        if tf.size(success_idxs).numpy() != 0:
-            success_idx = success_idxs[0]
-        time_idxs.append(success_idx)
-
+        time_idxs = []
+        for condition in p.episode_termination_reasons:
+            time_idxs.append(self._compute_time_idx_for_termination_condition(vehicle_trajectory,
+                                                                              condition))
         idx = np.argmin(time_idxs)
-        if idx == 0 or (idx == 1 and p.end_episode_on_collision) or \
-           (idx == 2 and p.end_episode_on_success):
-            vehicle_trajectory.clip_along_time_axis(time_idxs[idx])
+        vehicle_trajectory.clip_along_time_axis(time_idxs[idx])
         return idx, time_idxs[idx]
+
+    def _compute_time_idx_for_termination_condition(self, vehicle_trajectory, condition):
+        """ For a given trajectory termination condition (i.e. timeout, collision, etc.)
+        computes the earliest time index at which this condition is met. Returns
+        episode_horizon+1 otherwise."""
+        time_idx = self.params.episode_horizon
+        if condition == 'Timeout':
+            pass
+        elif condition == 'Collision':
+            time_idx += 1
+
+            pos_1k2 = vehicle_trajectory.position_nk2()
+            obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
+            collisions = tf.where(tf.less(obstacle_dists_1k, 0.0))
+            collision_idxs = collisions[:, 1]
+            if tf.size(collision_idxs).numpy() != 0:
+                time_idx = collision_idxs[0]
+        elif condition == 'Success':
+            time_idx += 1
+
+            pos_1k2 = vehicle_trajectory.position_nk2()
+            dist_to_goal_1k = self._dist_to_goal(pos_1k2, self.goal_config.position_nk2())
+            successes = tf.where(tf.less(dist_to_goal_1k,
+                                         self.params.simulator_params.goal_cutoff_dist))
+            success_idxs = successes[:, 1]
+            if tf.size(success_idxs).numpy() != 0:
+                time_idx = success_idxs[0]
+        else:
+            raise NotImplementedError
+
+        return time_idx
 
     def _update_obj_fn(self):
         """ Update the objective function to use a new
@@ -209,7 +209,8 @@ class Simulator:
                           obj_fn=self.obj_fn, params=p,
                           **p.planner_params)
 
-    # Functions for generating metrics
+    # Functions for computing relevant metrics
+    # on robot trajectories
     def _dist_to_goal(self, pos_nk2, goal_12):
         """Calculate the distance between
         each point in pos_nk2 and the given goal, goal_12"""
@@ -297,7 +298,7 @@ class Simulator:
 
         goal = self.goal_config.position_nk2()[0, 0]
         start = self.start_config.position_nk2()[0, 0]
-        text_color = self.episode_termination_colors[self.episode_type]
+        text_color = p.episode_termination_colors[self.episode_type]
         ax.set_title('Start: [{:.2f}, {:.2f}] '.format(*start) +
                      'Goal: [{:.2f}, {:.2f}]'.format(*goal), color=text_color)
 
