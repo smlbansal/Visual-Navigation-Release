@@ -3,9 +3,9 @@ import tensorflow as tf
 tf.enable_eager_execution()
 import matplotlib.pyplot as plt
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
-from systems.dubins_v3 import Dubins_v3
-from systems.dubins_v2 import Dubins_v2
-from systems.dubins_v1 import Dubins_v1
+from systems.dubins_v3 import DubinsV3
+from systems.dubins_v2 import DubinsV2
+from systems.dubins_v1 import DubinsV1
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from trajectory.trajectory import SystemConfig
 from control_pipelines.control_pipeline_v0 import Control_Pipeline_v0
@@ -23,8 +23,8 @@ def create_params():
     p.dx, p.dt = .05, .1
     p.k = int(np.ceil(p.planning_horizon_s/p.dt))
 
-    p._plant = Dubins_v2
-    if p._plant is Dubins_v3:
+    p._plant = DubinsV2
+    if p._plant is DubinsV3:
         p.lqr_coeffs = DotMap({'quad': [1.0, 1.0, 1.0, 1e-5, 1e-5, 1e-5, 1e-5],
                                'linear': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]})
     else:

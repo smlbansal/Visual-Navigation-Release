@@ -2,9 +2,9 @@ import numpy as np
 import tensorflow as tf
 tf.enable_eager_execution()
 import matplotlib.pyplot as plt
-from systems.dubins_v1 import Dubins_v1
-from systems.dubins_v2 import Dubins_v2
-from systems.dubins_v3 import Dubins_v3
+from systems.dubins_v1 import DubinsV1
+from systems.dubins_v2 import DubinsV2
+from systems.dubins_v3 import DubinsV3
 
 
 def test_dubins_v1(visualize=False):
@@ -14,7 +14,7 @@ def test_dubins_v1(visualize=False):
     x_dim, u_dim = 3, 2
 
     # Test that All Dimensions Work
-    db = Dubins_v1(dt)
+    db = DubinsV1(dt)
 
     state_nk3 = tf.constant(np.zeros((n, k, x_dim), dtype=np.float32))
     ctrl_nk2 = tf.constant(np.random.randn(n, k, u_dim), dtype=np.float32)
@@ -95,7 +95,7 @@ def test_dubins_v2(visualize=False):
     ctrl = 1
 
     # Test that computation is occurring correctly
-    db = Dubins_v2(dt, v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1])
+    db = DubinsV2(dt, v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1])
     state_n13 = tf.constant(np.zeros((n, 1, x_dim)), dtype=tf.float32)
     ctrl_nk2 = tf.constant(np.ones((n, k, u_dim))*ctrl, dtype=tf.float32)
     trajectory = db.simulate_T(state_n13, ctrl_nk2, T=k)
@@ -158,7 +158,7 @@ def test_dubins_v3():
     ctrl = 1
 
     # Test that computation is occurring correctly
-    db = Dubins_v3(dt, v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1])
+    db = DubinsV3(dt, v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1])
     state_n15 = tf.constant(np.zeros((n, 1, x_dim)), dtype=tf.float32)
     ctrl_nk2 = tf.constant(np.ones((n, k, u_dim))*ctrl, dtype=tf.float32)
     trajectory = db.simulate_T(state_n15, ctrl_nk2, T=k)

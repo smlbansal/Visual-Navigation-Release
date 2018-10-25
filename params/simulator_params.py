@@ -5,7 +5,7 @@ from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from obstacles.circular_obstacle_map import CircularObstacleMap
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from planners.sampling_planner import SamplingPlanner
-from systems.dubins_v2 import Dubins_v2
+from systems.dubins_v2 import DubinsV2
 from control_pipelines.control_pipeline_v1 import Control_Pipeline_v1
 from control_pipelines.control_pipeline_v0 import Control_Pipeline_v0
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
@@ -60,7 +60,7 @@ def load_params():
     p._cost = QuadraticRegulatorRef
     p._spline = Spline3rdOrder
     p._obstacle_map = CircularObstacleMap
-    p._system_dynamics = Dubins_v2
+    p._system_dynamics = DubinsV2
     p._planner = SamplingPlanner_v2
     p._control_pipeline = Control_Pipeline_v1
     p._simulator = CircularObstacleMapSimulator

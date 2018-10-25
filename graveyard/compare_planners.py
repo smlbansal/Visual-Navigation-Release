@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from obstacles.circular_obstacle_map import CircularObstacleMap
-from systems.dubins_v1 import Dubins_v1
+from systems.dubins_v1 import DubinsV1
 from planners.sampling_planner import SamplingPlanner
 from planners.gradient_planner import GradientPlanner
 from dotmap import DotMap
@@ -55,7 +55,7 @@ def create_params(planner):
     p._cost = QuadraticRegulatorRef
     p._spline = Spline3rdOrder
     p._obstacle_map = CircularObstacleMap
-    p._system_dynamics = Dubins_v1
+    p._system_dynamics = DubinsV1
     p._control_pipeline = Control_Pipeline_v0
 
     if planner == 'sampling':

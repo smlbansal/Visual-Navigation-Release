@@ -3,7 +3,7 @@ import tensorflow as tf
 tf.enable_eager_execution()
 import matplotlib.pyplot as plt
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
-from systems.dubins_v1 import Dubins_v1
+from systems.dubins_v1 import DubinsV1
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from utils.fmm_map import FmmMap
 from obstacles.circular_obstacle_map import CircularObstacleMap
@@ -12,7 +12,7 @@ from objectives.goal_distance import GoalDistance
 from objectives.angle_distance import AngleDistance
 from objectives.objective_function import ObjectiveFunction
 from trajectory.trajectory import SystemConfig
-from control_pipelines.control_pipeline import Control_Pipeline_v0
+from control_pipelines.control_pipeline_v0 import Control_Pipeline_v0
 from utils import utils
 from dotmap import DotMap
 
@@ -55,7 +55,7 @@ def create_params(cs, rs):
     p._cost = QuadraticRegulatorRef
     p._spline = Spline3rdOrder
     p._obstacle_map = CircularObstacleMap
-    p._plant = Dubins_v1
+    p._plant = DubinsV1
     p._control_pipeline = Control_Pipeline_v0
     return p
 

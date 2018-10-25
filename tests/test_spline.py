@@ -39,7 +39,7 @@ def test_spline_3rd_order(visualize=False):
 
     ts_nk = tf.tile(tf.linspace(0., dt*k, k)[None], [n, 1])
     spline_traj = Spline3rdOrder(dt=dt, k=k, n=n)
-    spline_traj.fit(start_config, goal_config, factors_n2=None)
+    spline_traj.fit(start_config, goal_config, factors=None)
     spline_traj.eval_spline(ts_nk, calculate_speeds=True)
 
     pos_nk3 = spline_traj.position_and_heading_nk3()

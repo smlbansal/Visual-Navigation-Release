@@ -4,7 +4,7 @@ tf.enable_eager_execution()
 import matplotlib.pyplot as plt
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from optCtrl.lqr import LQRSolver
-from systems.dubins_v1 import Dubins_v1
+from systems.dubins_v1 import DubinsV1
 import dotmap
 
 
@@ -28,7 +28,7 @@ def test_lqr0(visualize=False):
     n, k = p.n, p.k
     dt = p.dt
 
-    db = Dubins_v1(dt)
+    db = DubinsV1(dt)
     x_dim, u_dim = db._x_dim, db._u_dim
 
     goal_x, goal_y = 4.0, 0.0
@@ -76,7 +76,7 @@ def test_lqr1(visualize=False):
     n, k = p.n, 50
     dt = p.dt
 
-    db = Dubins_v1(dt)
+    db = DubinsV1(dt)
     x_dim, u_dim = db._x_dim, db._u_dim
 
     x_n13 = tf.constant(np.zeros((n, 1, x_dim)), dtype=tf.float32)
@@ -131,7 +131,7 @@ def test_lqr2(visualize=False):
     n, k = 2, 50
     dt = p.dt
 
-    db = Dubins_v1(dt)
+    db = DubinsV1(dt)
     x_dim, u_dim = db._x_dim, db._u_dim
 
     x_n13 = tf.constant(np.zeros((n, 1, x_dim)), dtype=tf.float32)

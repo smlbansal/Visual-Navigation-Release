@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('tkAgg')
 import matplotlib.pyplot as plt
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
-from systems.dubins_v1 import Dubins_v1
+from systems.dubins_v1 import DubinsV1
 
 def test_quad_cost_with_wrapping():
     # Note(Somil): Style guide.
@@ -22,7 +22,7 @@ def test_quad_cost_with_wrapping():
                 [0., 0., 0., 0., b]], dtype=np.float32)
     c = np.zeros(5, dtype=np.float32)
     C, c = tf.constant(C), tf.constant(c)
-    db = Dubins_v1(dt)
+    db = DubinsV1(dt)
     
     goal = np.array([goal_x, goal_y,0.], dtype=np.float32)
     x_ref_nk3 = tf.constant(np.tile(goal, (n,k,1))) 

@@ -38,14 +38,17 @@ class Dynamics:
         return A, B, c
 
     def jac_x(self, trajectory):
+        """ Compute the Jacobian of the sytem dynamics
+        with respect to the states in a trajectory. """
         raise NotImplementedError
 
     def jac_u(self, trajectory):
+        """ Compute the Jacobian of the sytem dynamics
+        with respect to the controls in a trajectory. """
         raise NotImplementedError
 
     def parse_trajectory(self, trajectory):
-        """ Parse a trajectory object
-        returning x_nkd, u_nkf
+        """ Parse a trajectory object returning x_nkd, u_nkf
         the state and actions of the trajectory
         """
         raise NotImplementedError
@@ -54,6 +57,27 @@ class Dynamics:
         """ Assembles a trajectory object from
         states x_nkd and actions u_nkf """
         raise NotImplementedError
+
+    def _pad_control_vector(self, u_nkf, k, pad_mode=None):
+        """Pads the control vector if needed by either
+        zero padding or repeating the last control sequence."""
+        n = u_nkf.shape[0].value
+        if pad_mode == 'zero':  # the last action is 0
+            if u_nkf.shape[1]+1 == k:
+                u_nkf = tf.concat([u_nkf, tf.zeros((n, 1, self._u_dim))],
+                                  axis=1)
+            else:
+                assert(u_nkf.shape[1] == k)
+        # the last action is the same as the second to last action
+        elif pad_mode == 'repeat':
+            if u_nkf.shape[1]+1 == k:
+                u_end_n12 = tf.zeros((n, 1, self._u_dim)) + u_nkf[:, -1:]
+                u_nkf = tf.concat([u_nkf, u_end_n12], axis=1)
+            else:
+                assert(u_nkf.shape[1] == k)
+        else:
+            assert(pad_mode is None)
+        return u_nkf
 
     @staticmethod
     def init_egocentric_robot_config(dt, n, dtype):

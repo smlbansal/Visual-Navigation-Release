@@ -2,7 +2,7 @@ import tensorflow as tf
 tf.enable_eager_execution()
 import numpy as np
 from utils.angle_utils import rotate_pos_nk2
-from systems.dubins_v1 import Dubins_v1
+from systems.dubins_v1 import DubinsV1
 from trajectory.trajectory import Trajectory, SystemConfig
 
 
@@ -22,7 +22,7 @@ def test_rotate():
 def test_coordinate_transform():
     n, k = 1, 30
     dt = .1
-    dubins_car = Dubins_v1(dt=dt)
+    dubins_car = DubinsV1(dt=dt)
     ref_config = dubins_car.init_egocentric_robot_config(dt=dt, n=n)
 
     pos_nk2 = np.ones((n, k, 2), dtype=np.float32) * np.random.rand()

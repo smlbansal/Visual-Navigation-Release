@@ -85,7 +85,7 @@ class ControlPipeline(ControlPipelineBase):
             ts_nk = tf.tile(tf.linspace(0., planning_horizon_s,
                                         self.k)[None], [p.n, 1])
             self.traj_spline.fit(start_config=start_config, goal_config=goal_config,
-                                 factors_n2=None)
+                                 factors=None)
             self.traj_spline.eval_spline(ts_nk, calculate_speeds=self.calculate_spline_speeds)
             self.valid_idxs = self._compute_valid_batch_idxs(horizon_s=planning_horizon_s)
             self.lqr_res = self.lqr_solver.lqr(self.start_config, self.traj_spline,
