@@ -6,8 +6,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from optCtrl.lqr import LQRSolver
-from systems.dubins_v1 import Dubins_v1
-from trajectory.spline.db_3rd_order_spline import DB3rdOrderSpline
+from systems.dubins_v1 import DubinsV1
+from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from data_gen.data_gen import Data_Generator
 from obstacles.circular_obstacle_map import CircularObstacleMap
 from dotmap import DotMap
@@ -49,9 +49,9 @@ def create_obj_params(p, cs, rs):
     params.spline_params = {}
      
     params._cost = QuadraticRegulatorRef
-    params._spline = DB3rdOrderSpline
+    params._spline = Spline3rdOrder
     params._obstacle_map = CircularObstacleMap
-    params._plant = Dubins_v1 
+    params._plant = DubinsV1 
     return params
 
 def _problem_params(problem, n):

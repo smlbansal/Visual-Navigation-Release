@@ -1,107 +1,197 @@
-from trajectory.spline.spline  import Spline
+from trajectory.spline.spline import Spline
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe
+import numpy as np
+
 
 class Spline3rdOrder(Spline):
-    """ A class representing a 3rd order spline for a mobile ground robot (in a 2d cartesian plane).
-    The 3rd order spline allows for constraints on the start state, [x0, y0, theta0, v0], 
-    and goal state, [xg, yg, thetag, vg]. Angular speeds w0 and wg are not constrainable.
-    """
-    def __init__(self, dt, n, k, start_n5):
+    def __init__(self, dt, n, k, epsilon=1e-10):
         super().__init__(dt=dt, n=n, k=k)
-        self.k = k
-        self.start_n5 = tf.constant(start_n5, name='spline_start', dtype=tf.float32)
- 
-    def fit(self, goal_n5, factors_n2=None):
-        # Note(Somil):
-        # 1. Let's add some description to the functions.
-        # 2. Start_n5 probably should not be an input to init, but rather to this function. If start_n5 is None, then
-        # we just use zeros.
-        # 3. Match the signature of the function between the child and the parent class.
-        # 4. Style guide.
-        assert(isinstance(goal_n5, tfe.Variable))
-        self.goal_n5 = goal_n5
-        if factors_n2 is None: #compute them heuristically based on dist to goal
-            factors = tf.norm(goal_n5[:,:2], axis=1)
-            factors_n2 = tf.stack([factors, factors],axis=1)
-        start_n5 = self.start_n5
+        self.epsilon = epsilon
+
+    """ A class representing a 3rd order spline for a mobile ground robot
+    (in a 2d cartesian plane). The 3rd order spline allows for constraints
+    on the start config, [x0, y0, theta0, v0], and goal config,
+    [xg, yg, thetag,vg]. Angular speeds w0 and wg are not constrainable.
+    """
+
+    def fit(self, start_config, goal_config, factors=None):
+        """Fit a 3rd order spline between start config and goal config.
+        Factors_n2 represent 2 degrees of freedom in fitting the spline.
+        If factors_n2=None it is set heuristically below.
+        The spline is of the form:
+            p(t) = a3t^3+b3t^2+c3t+d3
+            x(p) = a1p^3+b1p^2+c1p+d1
+            y(p) = a2p^2+b2p^2+c2p+d2
+        """
+
+        self.start_config = start_config
+        self.goal_config = goal_config
+
+        if factors is None:  # Compute them heuristically
+            factor1_n1 = self.start_config.speed_nk1()[:, :, 0] + \
+                         tf.norm(goal_config.position_nk2()-start_config.position_nk2(), axis=2)
+            factor2_n1 = factor1_n1
+            factors_n2 = tf.concat([factor1_n1, factor2_n1], axis=1)
+        else:
+            factors_n2 = factors
+
         with tf.name_scope('fit_spline'):
-            f1, f2 = factors_n2[:,0:1], factors_n2[:,1:]
-            x0, y0, t0 = self.start_n5[:,0:1], self.start_n5[:,1:2], self.start_n5[:,2:3]
-            xg, yg, tg = goal_n5[:,0:1], goal_n5[:,1:2], goal_n5[:,2:3]
-            v0, vf = start_n5[:,3:4], goal_n5[:,3:4]
+            f1_n1, f2_n1 = factors_n2[:, 0:1], factors_n2[:, 1:]
 
-            d1 = x0
-            c1 = f1*tf.cos(t0)
-            a1 = f2*tf.cos(tg)-2*xg+c1+2*d1
-            b1 = 3*xg-f2*tf.cos(tg)-2*c1-3*d1
-            
-            d2 = y0
-            c2 = f1*tf.sin(t0)
-            a2 = f2*tf.sin(tg)-2*yg+c2+2*d2
-            b2 = 3*yg-f2*tf.sin(tg)-2*c2-3*d2
+            start_pos_n12 = self.start_config.position_nk2()
+            goal_pos_n12 = self.goal_config.position_nk2()
 
-            c3 = v0 / f1
-            a3 = (vf/f2) + c3 - 2.
-            b3 = 1. - c3 - a3
+            # Multiple solutions if start and goal are the same x,y coordinates
+            assert(tf.reduce_all(tf.norm(goal_pos_n12-start_pos_n12, axis=2) >= self.epsilon))
 
-            self.x_coeffs = [a1,b1,c1,d1]
-            self.y_coeffs = [a2,b2,c2,d2]
-            self.p_coeffs = [a3,b3,c3]
+            x0_n1, y0_n1 = start_pos_n12[:, :, 0], start_pos_n12[:, :, 1]
+            t0_n1 = self.start_config.heading_nk1()[:, :, 0]
+            v0_n1 = self.start_config.speed_nk1()[:, :, 0]
 
-    def eval_spline(self, ts, calculate_speeds=True):
-        """ Evaluates the spline on points in ts
-        where ts is unnormalized time"""
-        ts = ts / tf.reduce_max(ts,axis=1,keep_dims=1)
-        return self._eval_spline(ts, calculate_speeds)
+            xg_n1, yg_n1 = goal_pos_n12[:, :, 0], goal_pos_n12[:, :, 1]
+            tg_n1 = self.goal_config.heading_nk1()[:, :, 0]
+            vg_n1 = self.goal_config.speed_nk1()[:, :, 0]
 
-    def _eval_spline(self, ts, calculate_speeds=True):
-        """ Evaluates the spline on points in ts
+            d1_n1 = x0_n1
+            c1_n1 = f1_n1*tf.cos(t0_n1)
+            a1_n1 = f2_n1*tf.cos(tg_n1)-2*xg_n1+c1_n1+2*d1_n1
+            b1_n1 = 3*xg_n1-f2_n1*tf.cos(tg_n1)-2*c1_n1-3*d1_n1
+
+            d2_n1 = y0_n1
+            c2_n1 = f1_n1*tf.sin(t0_n1)
+            a2_n1 = f2_n1*tf.sin(tg_n1)-2*yg_n1+c2_n1+2*d2_n1
+            b2_n1 = 3*yg_n1-f2_n1*tf.sin(tg_n1)-2*c2_n1-3*d2_n1
+
+            c3_n1 = v0_n1 / f1_n1
+            a3_n1 = (vg_n1/f2_n1) + c3_n1 - 2.
+            b3_n1 = 1. - c3_n1 - a3_n1
+
+            self.x_coeffs_n14 = tf.stack([a1_n1, b1_n1, c1_n1, d1_n1], axis=2)
+            self.y_coeffs_n14 = tf.stack([a2_n1, b2_n1, c2_n1, d2_n1], axis=2)
+            self.p_coeffs_n14 = tf.stack([a3_n1, b3_n1, c3_n1, 0.0*c3_n1],
+                                         axis=2)
+
+    def _eval_spline(self, ts_nk, calculate_speeds=True):
+        """ Evaluates the spline on points in ts_nk
         Assumes ts is normalized to be in [0, 1.]
         """
-        # Note(Somil): These computations should be done in a vector format. That way, they will be much faster.
-        a1,b1,c1,d1 = self.x_coeffs
-        a2,b2,c2,d2 = self.y_coeffs
-        a3,b3,c3 = self.p_coeffs
+        x_coeffs_n14 = self.x_coeffs_n14
+        y_coeffs_n14 = self.y_coeffs_n14
+        p_coeffs_n14 = self.p_coeffs_n14
 
         with tf.name_scope('eval_spline'):
-            t2, t3 = ts*ts, ts*ts*ts
-            ps = a3*t3+b3*t2+c3*ts
-            p2, p3 = ps*ps, ps*ps*ps
-            xs = a1*p3+b1*p2+c1*ps+d1
-            ys = a2*p3+b2*p2+d2
+            ts_n4k = tf.stack([tf.pow(ts_nk, 3), tf.pow(ts_nk, 2),
+                               ts_nk, tf.ones_like(ts_nk)], axis=1)
+            ps_nk = tf.squeeze(tf.matmul(p_coeffs_n14, ts_n4k), axis=1)
 
-            ps_dot = 3*a3*t2+2*b3*ts+c3
-            xs_dot = 3*a1*p2+2*b1*ps+c1
-            ys_dot = 3*a2*p2+2*b2*ps+c2
+            ps_n4k = tf.stack([tf.pow(ps_nk, 3), tf.pow(ps_nk, 2),
+                               ps_nk, tf.ones_like(ps_nk)], axis=1)
+            ps_dot_n4k = tf.stack([3.0*tf.pow(ps_nk, 2), 2.0*ps_nk,
+                                   tf.ones_like(ps_nk), tf.zeros_like(ps_nk)],
+                                  axis=1)
 
-            ps_ddot = 6*a3*ts+2*b3
-            xs_ddot = 6*a1*ps+2*b1
-            ys_ddot = 6*a2*ps+2*b2
+            xs_nk = tf.squeeze(tf.matmul(x_coeffs_n14, ps_n4k), axis=1)
+            ys_nk = tf.squeeze(tf.matmul(y_coeffs_n14, ps_n4k), axis=1)
 
-            self._position_nk2 = tf.stack([xs,ys],axis=2)
-            heading_nk = tf.atan2(ys_dot, xs_dot)
-            self._heading_nk1 = heading_nk[:,:,None]
-           
-            # Note(Somil): Let's add a todo note for checking for NaNs. Also, why are we encountering NaNs?
-            if calculate_speeds: ####CHECK FOR NANS if calculating speeds!!!!
-                speed_ps_nk = tf.sqrt(xs_dot**2 + ys_dot**2)
-                speed_nk = (speed_ps_nk*ps_dot)
-                with tf.name_scope('omega'):
-                    ps_sq = tf.square(ps_dot)
-                    num_l = tf.multiply(ys_ddot, ps_sq) + tf.multiply(ys_dot, ps_ddot)
-                    num_l = tf.multiply(num_l, tf.multiply(xs_dot, ps_dot))
-                    num_r = tf.multiply(xs_ddot, ps_sq) + tf.multiply(xs_dot, ps_ddot)
-                    num_r = tf.multiply(num_r, tf.multiply(ys_dot, ps_dot))
-                    angular_speed_nk = (num_l + num_r) / tf.square(speed_nk)
-                self._speed_ps_nk1 = speed_ps_nk[:,:,None] 
-                self._speed_nk1 = speed_nk[:,:,None]
-                self._angular_speed_nk1 = angular_speed_nk[:,:,None]
+            xs_dot_nk = tf.squeeze(tf.matmul(x_coeffs_n14, ps_dot_n4k), axis=1)
+            ys_dot_nk = tf.squeeze(tf.matmul(y_coeffs_n14, ps_dot_n4k), axis=1)
 
-    def render(self, ax, batch_idx=0, freq=4):
-        # Note(Somil): Function description. Style guide.
-        super().render(ax, batch_idx, freq) 
-        target_state = self.goal_n5[batch_idx]
-        ax.quiver([target_state[0]], [target_state[1]], [tf.cos(target_state[2])], [tf.sin(target_state[2])], units='width')
-        ax.set_title('3rd Order Spline')
+            self._position_nk2 = tf.stack([xs_nk, ys_nk], axis=2)
+            self._heading_nk1 = tf.atan2(ys_dot_nk, xs_dot_nk)[:, :, None]
 
+            if calculate_speeds:
+                ts_dot_n4k = tf.stack([3.0*tf.pow(ts_nk, 2), 2.0*ts_nk,
+                                       tf.ones_like(ts_nk), tf.zeros_like(ts_nk)],
+                                      axis=1)
+                ps_ddot_n4k = tf.stack([6.0*ps_nk, 2.0*tf.ones_like(ps_nk),
+                                        tf.zeros_like(ps_nk),
+                                        tf.zeros_like(ps_nk)], axis=1)
+
+                ps_dot_nk = tf.squeeze(tf.matmul(p_coeffs_n14, ts_dot_n4k), axis=1)
+
+                xs_ddot_nk = tf.squeeze(tf.matmul(x_coeffs_n14, ps_ddot_n4k), axis=1)
+                ys_ddot_nk = tf.squeeze(tf.matmul(y_coeffs_n14, ps_ddot_n4k), axis=1)
+
+                speed_ps_nk = tf.sqrt(xs_dot_nk**2 + ys_dot_nk**2)
+                speed_nk = (speed_ps_nk*ps_dot_nk)
+
+                numerator_nk = xs_dot_nk*ys_ddot_nk-ys_dot_nk*xs_ddot_nk
+                angular_speed_nk = numerator_nk/(speed_ps_nk**2) * ps_dot_nk
+
+                self._speed_nk1 = speed_nk[:, :, None]
+                self._angular_speed_nk1 = angular_speed_nk[:, :, None]
+
+    def check_dynamic_feasability(self, speed_max_system, angular_speed_max_system, horizon_s):
+        """Checks whether the current computed spline (on time points in [0, horizon_s])
+        can be executed in time <= horizon_s (specified in seconds) while respecting max speed and
+        angular speed constraints. Returns the batch indices of all valid splines."""
+        # Speed assumed to be in [0, speed_max_system]
+        # Angular speed assumed to be in [-angular_speed_max_system, angular_speed_max_system]
+        max_speed = tf.reduce_max(self.speed_nk1()*horizon_s, axis=1)
+        max_angular_speed = tf.reduce_max(tf.abs(self.angular_speed_nk1()*horizon_s), axis=1)
+
+        horizon_speed = max_speed/speed_max_system
+        horizon_angular_speed = max_angular_speed/angular_speed_max_system
+        horizons = tf.concat([horizon_speed, horizon_angular_speed], axis=1)
+        cutoff_horizon = tf.reduce_max(horizons, axis=1)
+        valid_idxs = tf.squeeze(tf.where(cutoff_horizon <= horizon_s), axis=1)
+        return tf.cast(valid_idxs, tf.int32)
+
+    @staticmethod
+    def check_start_goal_equivalence(start_config_old, goal_config_old,
+                                     start_config_new, goal_config_new):
+        """ A utility function that checks whether start_config_old,
+        goal_config_old imply the same spline constraints as those implied by
+        start_config_new, goal_config_new. Useful for checking that a
+        precomputed spline on the old start and goal will work on new start
+        and goal."""
+        start_old_pos_nk2 = start_config_old.position_nk2()
+        start_old_heading_nk1 = start_config_old.heading_nk1()
+        start_old_speed_nk1 = start_config_old.speed_nk1()
+
+        start_new_pos_nk2 = start_config_new.position_nk2()
+        start_new_heading_nk1 = start_config_new.heading_nk1()
+        start_new_speed_nk1 = start_config_new.speed_nk1()
+
+        start_pos_match = (tf.norm(start_old_pos_nk2-start_new_pos_nk2).numpy() == 0.0)
+        start_heading_match = (tf.norm(start_old_heading_nk1-start_new_heading_nk1).numpy() == 0.0)
+        start_speed_match = (tf.norm(start_old_speed_nk1-start_new_speed_nk1).numpy() == 0.0)
+
+        start_match = (start_pos_match and start_heading_match and
+                       start_speed_match)
+
+        # Check whether they are the same object
+        if goal_config_old is goal_config_new:
+            return start_match
+        else:
+            goal_old_pos_nk2 = goal_config_old.position_nk2()
+            goal_old_heading_nk1 = goal_config_old.heading_nk1()
+            goal_old_speed_nk1 = goal_config_old.speed_nk1()
+
+            goal_new_pos_nk2 = goal_config_new.position_nk2()
+            goal_new_heading_nk1 = goal_config_new.heading_nk1()
+            goal_new_speed_nk1 = goal_config_new.speed_nk1()
+
+            goal_pos_match = (tf.norm(goal_old_pos_nk2-goal_new_pos_nk2).numpy() == 0.0)
+            goal_heading_match = (tf.norm(goal_old_heading_nk1-goal_new_heading_nk1).numpy() == 0.0)
+            goal_speed_match = (tf.norm(goal_old_speed_nk1-goal_new_speed_nk1).numpy() == 0.0)
+
+            goal_match = (goal_pos_match and goal_heading_match and
+                          goal_speed_match)
+            return start_match and goal_match
+
+    @staticmethod
+    def ensure_goals_valid(start_x, start_y, goal_x_nk1, goal_y_nk1, goal_theta_nk1, epsilon):
+        """ Perturbs goal_x and goal_y by epsilon if needed ensuring that a unique spline exists.
+        Assumes that all goal angles are within [-pi/2., pi/2]."""
+        assert((goal_theta_nk1 >= -np.pi/2.).all() and (goal_theta_nk1 <= np.pi/2.).all())
+        norms = np.linalg.norm(np.concatenate([goal_x_nk1-start_x, goal_y_nk1-start_y], axis=2),
+                               axis=2)
+        invalid_idxs = (norms == 0.0)
+        goal_x_nk1[invalid_idxs] += epsilon
+        goal_y_nk1[invalid_idxs] += np.sign(np.sin(goal_theta_nk1[invalid_idxs]))*epsilon
+        return goal_x_nk1, goal_y_nk1, goal_theta_nk1
+
+    def render(self, axs, batch_idx=0, freq=4, plot_control=False):
+        super().render(axs, batch_idx, freq, plot_control=plot_control,
+                       label_start_and_end=True, name='Spline')

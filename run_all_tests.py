@@ -6,9 +6,12 @@ import time
 
 
 def run_all_tests():
+    # Suppress the tensorflow logs so test output is easier to read
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
     files_to_test = [os.path.join(os.path.abspath(os.getcwd()), 'tests', f) for f in os.listdir('./tests')
                      if f.startswith('test')]
-    
+
     for file in files_to_test:
         exit_code = run_test(file)
         if exit_code != 0:

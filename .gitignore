@@ -4,3 +4,9 @@
 *.lprof
 *.png
 /tmp
+/data
+*.prof
+*.txt
+/logs
+*.DS_Store
+/.idea

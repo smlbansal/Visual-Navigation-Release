@@ -16,41 +16,35 @@ class VoxelMap(object):
         """
         self.map_scale = tf.constant(scale, dtype=tf.float32)
         self.map_origin_2 = origin_2
-        self.map_size_2 = map_size_2
+        self.map_size_int32_2 = tf.cast(map_size_2, dtype=tf.int32)
+        self.map_size_float32_2 = tf.cast(map_size_2, dtype=tf.float32)
         self.voxel_function_mn = function_array_mn
 
     def compute_voxel_function(self, position_nk2, invalid_value=100.):
         """
-        Compute the voxel function at the specified positions. 
+        Compute the voxel function at the specified positions.
         """
         # Compute the position in the voxel space.
         voxel_space_position_nk2 = self.grid_world_to_voxel_world(position_nk2) - self.map_origin_2
 
         # Define the lower and upper voxels. Mod is done to make sure that the invalid voxels have been
         # assigned a valid voxel. However, these invalid voxels will be discarded later.
-        lower_voxel_float_nk2 = tf.mod(tf.floor(voxel_space_position_nk2), self.map_size_2)
-        upper_voxel_float_nk2 = tf.mod(lower_voxel_float_nk2 + 1., self.map_size_2)
+        lower_voxel_indices_nk2_xy = tf.mod(tf.cast(tf.floor(voxel_space_position_nk2), tf.int32), self.map_size_int32_2)
+        upper_voxel_indices_nk2_xy = tf.mod(lower_voxel_indices_nk2_xy + 1, self.map_size_int32_2)
 
-        lower_voxel_indices_nk2_xy = tf.cast(lower_voxel_float_nk2, dtype=tf.int32)
-        upper_voxel_indices_nk2_xy = tf.cast(upper_voxel_float_nk2, dtype=tf.int32)
-        
+        lower_voxel_float_nk2 = tf.cast(lower_voxel_indices_nk2_xy, dtype=tf.float32)
+        upper_voxel_float_nk2 = tf.cast(upper_voxel_indices_nk2_xy, dtype=tf.float32)
+
         # Voxel indices for 4 corner voxels. Note that indices are stacked out of order for voxel_indices11 to make
         # sure that the first element along axis2 represents y-value (since the voxel map's first dimension is y and
         # not x).
-        voxel_indices11_nk2_yx = tf.stack([lower_voxel_indices_nk2_xy[:, :, 1], lower_voxel_indices_nk2_xy[:, :, 0]],
-                                          axis=2)
-        voxel_indices21_nk2_yx = tf.stack([lower_voxel_indices_nk2_xy[:, :, 1], upper_voxel_indices_nk2_xy[:, :, 0]],
-                                          axis=2)
-        voxel_indices12_nk2_yx = tf.stack([upper_voxel_indices_nk2_xy[:, :, 1], lower_voxel_indices_nk2_xy[:, :, 0]],
-                                          axis=2)
-        voxel_indices22_nk2_yx = tf.stack([upper_voxel_indices_nk2_xy[:, :, 1], upper_voxel_indices_nk2_xy[:, :, 0]],
-                                          axis=2)
+        voxel_indices_nk4 = tf.concat([lower_voxel_indices_nk2_xy, upper_voxel_indices_nk2_xy], axis=2)
 
         # Voxel function values at corner points
-        data11_nk = tf.gather_nd(self.voxel_function_mn, voxel_indices11_nk2_yx)
-        data21_nk = tf.gather_nd(self.voxel_function_mn, voxel_indices21_nk2_yx)
-        data12_nk = tf.gather_nd(self.voxel_function_mn, voxel_indices12_nk2_yx)
-        data22_nk = tf.gather_nd(self.voxel_function_mn, voxel_indices22_nk2_yx)
+        data11_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [1, 0], axis=2))
+        data21_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [1, 2], axis=2))
+        data12_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [3, 0], axis=2))
+        data22_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [3, 2], axis=2))
 
         # Define gammas for x interpolation
         gamma1 = upper_voxel_float_nk2[:, :, 0] - voxel_space_position_nk2[:, :, 0]
@@ -85,4 +79,4 @@ class VoxelMap(object):
         """
         voxel_space_position_nk2 = self.grid_world_to_voxel_world(position_nk2) - self.map_origin_2
         return tf.logical_and(tf.keras.backend.all(voxel_space_position_nk2 >= 0., axis=2),
-                              tf.keras.backend.all(voxel_space_position_nk2 < (self.map_size_2-1.), axis=2))
+                              tf.keras.backend.all(voxel_space_position_nk2 < (self.map_size_float32_2-1.), axis=2))
