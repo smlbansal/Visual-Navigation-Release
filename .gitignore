@@ -9,4 +9,4 @@
 *.txt
 /logs
 *.DS_Store
-.idea/*
+/.idea
