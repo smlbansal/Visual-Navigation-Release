@@ -11,8 +11,6 @@ class SamplingPlanner(Planner):
 
     def __init__(self, system_dynamics,
                  obj_fn, params):
-   # , mode='random', precompute=True,
-   #              velocity_disc=.1, bin_velocity=True, **kwargs):
         self.params = params
         delta_v = system_dynamics.v_bounds[1] - system_dynamics.v_bounds[0]
         velocity_disc = params.planner_params.velocity_disc
@@ -72,7 +70,7 @@ class SamplingPlanner(Planner):
             pipeline_k = []
             for velocity in self.start_velocities:
                 start_config = self.system_dynamics.init_egocentric_robot_config(dt=p.dt, n=p.n,
-                                                                               v=velocity, w=0.0)
+                                                                                 v=velocity, w=0.0)
                 pipeline = p._control_pipeline(
                                     system_dynamics=self.system_dynamics,
                                     params=p,

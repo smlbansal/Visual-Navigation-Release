@@ -20,8 +20,8 @@ class CircularObstacleMap(ObstacleMap):
         assert(min_r > 0 and max_r > 0)
         num_obstacles = rng.randint(min_n, max_n+1)
         return cls(map_bounds=map_bounds,
-                   centers_m2=np.random.uniform(map_bounds[0], map_bounds[1], (num_obstacles, 2)),
-                   radii_m1=np.random.uniform(min_r, max_r, (num_obstacles, 1)))
+                   centers_m2=rng.uniform(map_bounds[0], map_bounds[1], (num_obstacles, 2)),
+                   radii_m1=rng.uniform(min_r, max_r, (num_obstacles, 1)))
 
     def dist_to_nearest_obs(self, pos_nk2):
         with tf.name_scope('dist_to_obs'):

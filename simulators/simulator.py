@@ -66,6 +66,9 @@ class Simulator:
         self.vehicle_trajectory = Trajectory(dt=self.params.dt, n=1, k=0)
         self.obj_val = np.inf
 
+    def _reset_obstacle_map(self, rng):
+        raise NotImplementedError
+
     def _update_fmm_map(self):
         raise NotImplementedError
 
