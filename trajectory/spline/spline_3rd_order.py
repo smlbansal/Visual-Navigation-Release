@@ -121,6 +121,17 @@ class Spline3rdOrder(Spline):
                 self._speed_nk1 = speed_nk[:, :, None]
                 self._angular_speed_nk1 = angular_speed_nk[:, :, None]
 
+    def free_memory(self):
+        """Assumes that a spline has already been fit and evaluated and
+        that the user will not need to fit or evaluate it again (as is the case
+        when precomputing splines in egocentric coordinates). Set's irrelevant
+        instance variables to None to be garbage collected."""
+        self.start_config = None
+        self.goal_config = None
+        self.x_coeffs_n14 = None
+        self.y_coeffs_n14 = None
+        self.p_coeffs_n14 = None
+
     def check_dynamic_feasability(self, speed_max_system, angular_speed_max_system, horizon_s):
         """Checks whether the current computed spline (on time points in [0, horizon_s])
         can be executed in time <= horizon_s (specified in seconds) while respecting max speed and
@@ -192,6 +203,8 @@ class Spline3rdOrder(Spline):
         goal_y_nk1[invalid_idxs] += np.sign(np.sin(goal_theta_nk1[invalid_idxs]))*epsilon
         return goal_x_nk1, goal_y_nk1, goal_theta_nk1
 
-    def render(self, axs, batch_idx=0, freq=4, plot_control=False):
-        super().render(axs, batch_idx, freq, plot_control=plot_control,
-                       label_start_and_end=True, name='Spline')
+    def render(self, axs, batch_idx=0, freq=4, plot_heading=False,
+               plot_velocity=False, label_start_and_end=True):
+        super().render(axs, batch_idx, freq, plot_heading=plot_heading,
+                       plot_velocity=plot_velocity,
+                       label_start_and_end=label_start_and_end, name='Spline')

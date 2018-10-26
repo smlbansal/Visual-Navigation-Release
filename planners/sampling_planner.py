@@ -118,6 +118,12 @@ class SamplingPlanner(Planner):
                 wy_n11 = wy_n.ravel()[:, None, None]
                 wt_n11 = wt_n.ravel()[:, None, None]
 
+                # Remove the waypoint [0, 0, 0]
+                origin_idx = np.argmax(np.logical_and(np.logical_and(wx_n11 == 0.0, wy_n11 == 0.0), wt_n11==0.0))
+                wx_n11 = np.delete(wx_n11, origin_idx, axis=0)
+                wy_n11 = np.delete(wy_n11, origin_idx, axis=0)
+                wt_n11 = np.delete(wt_n11, origin_idx, axis=0)
+
                 # Ensure that a unique spline exists between start_x, start_y
                 # goal_x, goal_y, goal_theta. If a unique spline does not exist
                 # i.e. (robot starts and ends at the same (x, y) position)

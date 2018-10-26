@@ -38,7 +38,7 @@ def create_params():
                     dtype=tf.float32)
     p.cost_params = {'C_gg': C, 'c_g': c}
     p.plant_params = {'dt': p.dt}
-    p.spline_params = {'epsilon': 1e-10}
+    p.spline_params = {'epsilon': 1e-5}
     p.control_pipeline_params = {}
 
     p._cost = QuadraticRegulatorRef
@@ -77,18 +77,14 @@ def visualize_control_pipeline(starts_n5, goals_n5):
                                speed_nk1=goals_n5[:, 3:4, None], heading_nk1=goal_theta_n11,
                                variable=True)
 
-    trajectory_lqr = control_pipeline.plan(start_config=start_config,
-                                           goal_config=goal_config)
+    control_pipeline.plan(start_config=start_config,
+                          goal_config=goal_config)
 
-    traj_spline = control_pipeline.traj_spline
-
-    fig, _, axes = utils.subplot2(plt, (p.n, 6), (8, 8), (.4, .4))
+    fig, _, axes = utils.subplot2(plt, (p.n*2, 4), (8, 8), (.4, .4))
     axes = axes[::-1]
     for i in range(p.n):
-        axs = axes[6*i:6*(i+1)]
-        traj_spline.render(axs[:3], batch_idx=i, freq=4, plot_control=True)
-        trajectory_lqr.render(axs[3:], batch_idx=i, freq=4, plot_control=True,
-                              label_start_and_end=True, name='LQR')
+        axs = axes[8*i:8*(i+1)]
+        control_pipeline.render(axs, batch_idx=i, freq=4, plot_heading=True, plot_velocity=True)
     fig.suptitle('Control Pipeline Trajectories')
     plt.savefig('./tmp/control_pipeline.png')
 
@@ -97,8 +93,8 @@ if __name__ == '__main__':
     plt.style.use('ggplot')
 
     # [x, y, theta, v, omega]
-    starts_n5 = np.array([[0.0, 0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-    goals_n5 = np.array([[0.5, -.8, -np.pi/2., 0., 0.]], dtype=np.float32)
+    starts_n5 = np.array([[0.0, 0.0, 0.0, 0.1, 0.0]], dtype=np.float32)
+    goals_n5 = np.array([[0.0, 0.0, 1e-10, 0., 0.]], dtype=np.float32)
     assert(len(starts_n5) == len(goals_n5))
 
     visualize_control_pipeline(starts_n5, goals_n5)

@@ -28,22 +28,33 @@ class Simulator:
         (timeout, collision, success)"""
         config = self.start_config
         vehicle_trajectory = self.vehicle_trajectory
-        configs = []
+        vehicle_configs = []
+        waypt_configs = []
         config_time_idxs = []
         while vehicle_trajectory.k < self.params.episode_horizon:
-            waypt_trajectory, next_config = self._iterate(config)
+            waypt_trajectory, next_config, waypt_config = self._iterate(config)
             vehicle_trajectory.append_along_time_axis(waypt_trajectory)
-            configs.append(next_config)
+            vehicle_configs.append(next_config)
+            waypt_configs.append(waypt_config)
             config_time_idxs.append(vehicle_trajectory.k)
             config = next_config
         self.min_obs_distances = self._calculate_min_obs_distances(vehicle_trajectory)
         self.collisions = self._calculate_trajectory_collisions(vehicle_trajectory)
         self.episode_type, end_time_idx = self._enforce_episode_termination_conditions(vehicle_trajectory)
 
-        # Only keep the system configurations corresponding to
-        # unclipped parts of the trajectory
+        # Only keep the system and waypoint configurations
+        # corresponding to unclipped parts of the trajectory
         keep_idx = np.array(config_time_idxs) <= end_time_idx
-        self.system_configs = np.array(configs)[keep_idx]
+        self.system_configs = np.array([self.start_config] + vehicle_configs)[keep_idx+1]
+        self.waypt_configs = np.array(waypt_configs)[keep_idx]
+        
+        
+        # For Debugging- Remove this
+        system_configs = np.concatenate([config.position_heading_speed_and_angular_speed_nk5()[:, 0]
+                                         for config in self.system_configs])
+        waypt_configs = np.concatenate([config.position_heading_speed_and_angular_speed_nk5()[:, 0]
+                                        for config in self.waypt_configs])
+        import pdb; pdb.set_trace()
 
         self.obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
@@ -79,7 +90,7 @@ class Simulator:
         min_waypt, min_traj, min_cost = self.planner.optimize(config)
         min_traj = Trajectory.new_traj_clip_along_time_axis(min_traj, self.params.control_horizon)
         next_config = SystemConfig.init_config_from_trajectory_time_index(min_traj, t=-1)
-        return min_traj, next_config
+        return min_traj, next_config, min_waypt.copy()
 
     def _reset_start_configuration(self, rng):
         p = self.params.simulator_params.reset_params.start_config
@@ -295,8 +306,10 @@ class Simulator:
         p = self.params.simulator_params
         self._render_obstacle_map(ax)
         self.vehicle_trajectory.render([ax], freq=freq)
-        for waypt in self.system_configs:
-            waypt.render(ax, batch_idx=0, marker='co')
+        # The system configurations at which waypoints were
+        # produced
+        for system_config in self.system_configs:
+            system_config.render(ax, batch_idx=0, marker='co')
 
         boundary_params = {'norm': p.goal_dist_norm, 'cutoff':
                            p.goal_cutoff_dist, 'color': 'g'}

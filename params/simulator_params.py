@@ -21,12 +21,12 @@ def load_params():
     # [[min_x, min_y], [max_x, max_y]]
     p.map_bounds = [[0.0, 0.0], [8.0, 8.0]]
     # in egocentric coordinates
-    p.waypoint_bounds = [[-1., 0.0], [1., 1.]]
+    p.waypoint_bounds = [[0., -1.0], [1., 1.]]
 
     # Horizons in seconds
     p.episode_horizon_s = 20.0
     p.planning_horizons_s = [1.5]
-    p.control_horizon_s = 1.5
+    p.control_horizon_s = 20.0
 
     # Obstacle Avoidance Objective
     p.avoid_obstacle_objective = DotMap(obstacle_margin0=0.3,
@@ -46,14 +46,15 @@ def load_params():
     p._obstacle_map = CircularObstacleMap
     p._system_dynamics = DubinsV2
     p._planner = SamplingPlanner
-    p._control_pipeline = Control_Pipeline_v1
+    p._control_pipeline = Control_Pipeline_v0
     p._simulator = CircularObstacleMapSimulator
 
     p.lqr_quad_coeffs = np.array([1.0, 1.0, 1.0, 1e-10, 1e-10], dtype=np.float32)
     p.lqr_linear_coeffs = np.zeros((5), dtype=np.float32)
 
     # Store params as dictionaries so they can be used with **kwargs
-    p.spline_params = {'epsilon': 1e-10}
+
+    p.spline_params = {'epsilon': 1e-5}
 
     centers_m2 = [[2.0, 2.0]]
     radii_m1 = [[.5]]
@@ -66,8 +67,8 @@ def load_params():
 
     precompute = True
     p.planner_params = DotMap(mode='uniform', precompute=precompute,
-                              velocity_disc=.01, dx=.1,
-                              num_theta_bins=11)
+                              velocity_disc=.05, dx=.1,
+                              num_theta_bins=21)
 
     p.control_pipeline_params = {'precompute': precompute,
                                  'load_from_pickle_file': True,

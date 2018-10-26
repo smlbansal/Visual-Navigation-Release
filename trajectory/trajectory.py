@@ -210,8 +210,8 @@ class Trajectory(object):
                    angular_speed_nk1=trajectory.angular_speed_nk1()[:, :horizon],
                    angular_acceleration_nk1=trajectory.angular_acceleration_nk1()[:, :horizon])
 
-    def render(self, axs, batch_idx=0, freq=4, plot_control=False, label_start_and_end=False,
-               name=''):
+    def render(self, axs, batch_idx=0, freq=4, plot_heading=False,
+               plot_velocity=False, label_start_and_end=False, name=''):
         ax = axs[0]
         xs = self._position_nk2[batch_idx, :, 0]
         ys = self._position_nk2[batch_idx, :, 1]
@@ -225,15 +225,22 @@ class Trajectory(object):
             start_5 = self.position_heading_speed_and_angular_speed_nk5()[batch_idx, 0]
             end_5 = self.position_heading_speed_and_angular_speed_nk5()[batch_idx, -1]
             title_str += ('\nStart: [{:.3e}, {:.3e}, {:.3f}, {:.3f}, {:.3f}]\n'.format(*start_5) +
-                        'End: [{:.3e}, {:.3e}, {:.3f}, {:.3f}, {:.3f}]'.format(*end_5))
+                          'End: [{:.3e}, {:.3e}, {:.3f}, {:.3f}, {:.3f}]'.format(*end_5))
         ax.set_title(title_str)
 
-        if plot_control:
-            ax = axs[1]
+        i = 1
+        if plot_heading:
+            ax = axs[i]
+            ax.plot(self._heading_nk1[batch_idx, :, 0].numpy(), 'r-')
+            ax.set_title('Theta')
+            i += 1
+
+        if plot_velocity:
+            ax = axs[i]
             ax.plot(self._speed_nk1[batch_idx, :, 0].numpy(), 'r-')
             ax.set_title('Linear Velocity')
 
-            ax = axs[2]
+            ax = axs[i+1]
             ax.plot(self._angular_speed_nk1[batch_idx, :, 0].numpy(), 'r-')
             ax.set_title('Angular Velocity')
 
@@ -252,6 +259,16 @@ class SystemConfig(Trajectory):
                          heading_nk1, angular_speed_nk1,
                          angular_acceleration_nk1, dtype=tf.float32,
                          variable=variable, direct_init=direct_init)
+
+    def copy(self):
+        return SystemConfig(dt=self.dt, n=self.n, k=self.k,
+                            position_nk2=self.position_nk2()*1.,
+                            speed_nk1=self.speed_nk1()*1.,
+                            acceleration_nk1=self.acceleration_nk1()*1.,
+                            heading_nk1=self.heading_nk1()*1.,
+                            angular_speed_nk1=self.angular_speed_nk1()*1.,
+                            angular_acceleration_nk1=self.angular_acceleration_nk1()*1.,
+                            variable=False, direct_init=True)
 
     def assign_from_broadcasted_batch(self, config, n):
         """ Assigns a SystemConfig's variables by broadcasting a given config to

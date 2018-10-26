@@ -63,7 +63,8 @@ def parse_params(p):
         p.planner_params.waypt_x_params = [x0, xf, nx]
         p.planner_params.waypt_y_params = [y0, yf, ny]
         p.planner_params.waypt_theta_params = [-np.pi/2, np.pi/2, num_theta_bins]
-        p.n = int(nx*ny*num_theta_bins)
+        # subtract one since the [0, 0, 0] point will be ignored
+        p.n = int(nx*ny*num_theta_bins-1)
 
     return p
 

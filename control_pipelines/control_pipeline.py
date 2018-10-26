@@ -98,22 +98,27 @@ class ControlPipeline(ControlPipelineBase):
                                                  self.traj_spline,
                                                  self.lqr_res,
                                                  self.valid_idxs)
+                # Free up memory for more efficient computation
+                self._free_memory()
             return self.traj_opt
 
-    def render(self, axs, batch_idx=0, freq=4, plot_control=True):
-        if plot_control:
-            assert(len(axs) == 6)
-            ax0 = axs[:3]
-            ax1 = axs[3:]
-        else:
-            assert(len(axs) == 2)
-            ax0 = axs[0]
-            ax1 = axs[1]
+    def render(self, axs, batch_idx=0, freq=4, plot_heading=True, plot_velocity=True):
+        num_plots = 2
+        if plot_heading:
+            num_plots += 2
 
-        self.traj_spline.render(ax0, batch_idx=batch_idx, freq=freq, plot_control=plot_control,
-                                label_start_and_end=True)
-        self.traj_opt.render(ax1, batch_idx=batch_idx, freq=freq, plot_control=plot_control,
-                             label_start_and_end=True, name='LQR')
+        if plot_velocity:
+            num_plots += 4
+
+        assert(len(axs) == num_plots)
+        idx = int(num_plots/2)
+        ax0 = axs[:idx]
+        ax1 = axs[idx:]
+
+        self.traj_spline.render(ax0, batch_idx=batch_idx, freq=freq, plot_heading=plot_heading,
+                                plot_velocity=plot_velocity, label_start_and_end=True)
+        self.traj_opt.render(ax1, batch_idx=batch_idx, freq=freq, plot_heading=plot_heading,
+                             plot_velocity=plot_velocity, label_start_and_end=True, name='LQR')
 
     def _compute_valid_batch_idxs(self, horizon_s):
         """Computes the batch indices corresponding to valid
@@ -198,4 +203,10 @@ class ControlPipeline(ControlPipelineBase):
                 'valid_idxs': valid_idxs_data}
         return data
 
-    
+    def _free_memory(self):
+        """After precomputing a spline sets unneeded objects to
+        None to be garbage collected."""
+        self.cost_fn = None
+        self.traj_spline.free_memory()
+        if self.bin_velocity:
+            self.lqr_solver = None
