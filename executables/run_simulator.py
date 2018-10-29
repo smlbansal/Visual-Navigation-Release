@@ -32,8 +32,6 @@ def simulate(params):
         print(i)
         if i != 0:
             sim.reset(seed=-1)
-        if i != 1:
-            continue
         sim.simulate()
         metrics.append(sim.get_metrics())
         axs[i].clear()

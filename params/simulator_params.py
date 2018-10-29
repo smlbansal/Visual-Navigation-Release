@@ -15,7 +15,7 @@ def load_params():
     p.seed = 1  # for tf and numpy seeding
     p.simulator_seed = 1
     p.n = int(1e3)  # batch size
-    p.dx = 0.05  # grid discretization
+    p.dx = 0.05  # grid discretization for FmmMap and Obstacle Occupancy Grid
     p.dt = .05  # time discretization
 
     # [[min_x, min_y], [max_x, max_y]]
@@ -25,8 +25,8 @@ def load_params():
 
     # Horizons in seconds
     p.episode_horizon_s = 20.0
-    p.planning_horizons_s = [1.5]
-    p.control_horizon_s = 20.0
+    p.planning_horizons_s = [3.0]
+    p.control_horizon_s = .3
 
     # Obstacle Avoidance Objective
     p.avoid_obstacle_objective = DotMap(obstacle_margin0=0.3,
@@ -46,7 +46,7 @@ def load_params():
     p._obstacle_map = CircularObstacleMap
     p._system_dynamics = DubinsV2
     p._planner = SamplingPlanner
-    p._control_pipeline = Control_Pipeline_v0
+    p._control_pipeline = Control_Pipeline_v1
     p._simulator = CircularObstacleMapSimulator
 
     p.lqr_quad_coeffs = np.array([1.0, 1.0, 1.0, 1e-10, 1e-10], dtype=np.float32)
@@ -66,8 +66,10 @@ def load_params():
                                 'w_bounds': [-1.1, 1.1]}
 
     precompute = True
+    # The grid discretization for waypoint sampling
+    waypt_sample_dx = .1
     p.planner_params = DotMap(mode='uniform', precompute=precompute,
-                              velocity_disc=.05, dx=.1,
+                              velocity_disc=.01, dx=waypt_sample_dx,
                               num_theta_bins=21)
 
     p.control_pipeline_params = {'precompute': precompute,
@@ -89,5 +91,5 @@ def load_params():
                                 episode_termination_reasons=['Timeout', 'Collision', 'Success'],
                                 episode_termination_colors=['b', 'r', 'g'])
 
-    p.num_validation_goals = 50
+    p.num_validation_goals = 4
     return p

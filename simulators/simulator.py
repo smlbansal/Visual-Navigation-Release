@@ -28,9 +28,9 @@ class Simulator:
         (timeout, collision, success)"""
         config = self.start_config
         vehicle_trajectory = self.vehicle_trajectory
-        vehicle_configs = []
+        vehicle_configs = [self.start_config]
         waypt_configs = []
-        config_time_idxs = []
+        config_time_idxs = [0]
         while vehicle_trajectory.k < self.params.episode_horizon:
             waypt_trajectory, next_config, waypt_config = self._iterate(config)
             vehicle_trajectory.append_along_time_axis(waypt_trajectory)
@@ -45,16 +45,16 @@ class Simulator:
         # Only keep the system and waypoint configurations
         # corresponding to unclipped parts of the trajectory
         keep_idx = np.array(config_time_idxs) <= end_time_idx
-        self.system_configs = np.array([self.start_config] + vehicle_configs)[keep_idx+1]
-        self.waypt_configs = np.array(waypt_configs)[keep_idx]
+        self.system_configs = np.array(vehicle_configs)[keep_idx]
+        self.waypt_configs = np.array(waypt_configs)[keep_idx[1:]]
         
         
-        # For Debugging- Remove this
-        system_configs = np.concatenate([config.position_heading_speed_and_angular_speed_nk5()[:, 0]
-                                         for config in self.system_configs])
-        waypt_configs = np.concatenate([config.position_heading_speed_and_angular_speed_nk5()[:, 0]
-                                        for config in self.waypt_configs])
-        import pdb; pdb.set_trace()
+        # Waypoints in World Coordinates
+        waypt_world_configs = [self.system_dynamics.to_world_coordinates(sys_config, wpt_config,
+                                                                         self.start_config, mode='new') for
+                               sys_config, wpt_config in zip(self.system_configs[:-1],
+                                                             self.waypt_configs)]
+        #import pdb; pdb.set_trace()
 
         self.obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
@@ -103,7 +103,7 @@ class Simulator:
             start_112 = self.obstacle_map.sample_point_112(self.rng)
             dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(start_112))
         self.start_config = SystemConfig(dt=p.dt, n=1, k=1,
-                                        position_nk2=start_112)
+                                         position_nk2=start_112)
 
     def _reset_goal_configuration(self, rng):
         p = self.params.simulator_params.reset_params.goal_config

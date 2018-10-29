@@ -94,6 +94,7 @@ class ControlPipeline(ControlPipelineBase):
             self.traj_plot = self.traj_opt
             self.computed = True
             if self.precompute and self.load_from_pickle_file:
+                self._log_on_load()
                 self._save_control_pipeline_data(start_config, goal_config,
                                                  self.traj_spline,
                                                  self.lqr_res,
@@ -171,7 +172,16 @@ class ControlPipeline(ControlPipelineBase):
                         'K_array_opt': K_array_opt,
                         'J_hist': J_hist}
         self.valid_idxs = tf.constant(data['valid_idxs'], dtype=tf.int32)
+        self._log_on_load()
         self.computed = True
+
+    def _log_on_load(self):
+        """Log useful control pipeline information upon initializing
+        or loading the pipline."""
+        percentage = 100.*len(self.valid_idxs.numpy())/self.traj_spline.n
+        print('Control Pipeline k={:d}, v0={:.3f}, {:.3f}% valid Trajectories'.format(self.k,
+                                                                                      self.v0,
+                                                                                      percentage))
 
     def _save_control_pipeline_data(self, start_config, goal_config, traj_spline,
                                     lqr_res, valid_idxs):
@@ -204,8 +214,9 @@ class ControlPipeline(ControlPipelineBase):
         return data
 
     def _free_memory(self):
-        """After precomputing a spline sets unneeded objects to
-        None to be garbage collected."""
+        """After precomputing a control pipeline
+        sets unneeded objects to None to be
+        garbage collected."""
         self.cost_fn = None
         self.traj_spline.free_memory()
         if self.bin_velocity:

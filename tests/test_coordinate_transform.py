@@ -61,6 +61,7 @@ def test_coordinate_transform():
     assert(np.allclose(traj_global.position_nk2().numpy(),
                        traj_global_new.position_nk2().numpy()))
 
+
 def visualize_coordinate_transform():
     """Visual sanity check that coordinate transforms
     are working. """
@@ -76,8 +77,8 @@ def visualize_coordinate_transform():
 
     # Form a trajectory in global frame
     # convert to egocentric and back
-    start_pos_global_n12 = tf.constant([[[1.0, 0.0]]], dtype=tf.float32)
-    start_heading_global_n11 = tf.constant([[[np.pi/6.]]], dtype=tf.float32)
+    start_pos_global_n12 = tf.constant([[[1.0, 1.0]]], dtype=tf.float32)
+    start_heading_global_n11 = tf.constant([[[np.pi/2.]]], dtype=tf.float32)
     start_config_global = SystemConfig(dt=dt, n=n, k=1, position_nk2=start_pos_global_n12,
                                        heading_nk1=start_heading_global_n11)
 
@@ -91,7 +92,9 @@ def visualize_coordinate_transform():
     dubins_car.to_egocentric_coordinates(start_config_global, trajectory_world, traj_egocentric)
     traj_egocentric.render([axs[1]], batch_idx=0, freq=4, name='Egocentric')
 
-    plt.show()
+    dubins_car.to_world_coordinates(start_config_global, traj_egocentric, traj_world)
+    traj_world.render([axs[2]], batch_idx=0, freq=4, name='World #2')
+    plt.savefig('./tmp/coordinate_transform.png', bbox_inches='tight')
 
 
 if __name__ == '__main__':
