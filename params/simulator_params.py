@@ -21,12 +21,12 @@ def load_params():
     # [[min_x, min_y], [max_x, max_y]]
     p.map_bounds = [[0.0, 0.0], [8.0, 8.0]]
     # in egocentric coordinates
-    p.waypoint_bounds = [[0., -1.0], [1., 1.]]
+    p.waypoint_bounds = [[0., -2.5], [2.5, 2.5]]
 
     # Horizons in seconds
     p.episode_horizon_s = 20.0
-    p.planning_horizons_s = [3.0]
-    p.control_horizon_s = .3
+    p.planning_horizons_s = [6]
+    p.control_horizon_s = 1.5
 
     # Obstacle Avoidance Objective
     p.avoid_obstacle_objective = DotMap(obstacle_margin0=0.3,
