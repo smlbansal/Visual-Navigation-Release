@@ -4,9 +4,9 @@ import numpy as np
 
 
 class Spline3rdOrder(Spline):
-    def __init__(self, dt, n, k, epsilon=1e-10):
+    def __init__(self, dt, n, k, params):
         super().__init__(dt=dt, n=n, k=k)
-        self.epsilon = epsilon
+        self.params = params
 
     """ A class representing a 3rd order spline for a mobile ground robot
     (in a 2d cartesian plane). The 3rd order spline allows for constraints
@@ -42,7 +42,8 @@ class Spline3rdOrder(Spline):
             goal_pos_n12 = self.goal_config.position_nk2()
 
             # Multiple solutions if start and goal are the same x,y coordinates
-            assert(tf.reduce_all(tf.norm(goal_pos_n12-start_pos_n12, axis=2) >= self.epsilon))
+            assert(tf.reduce_all(tf.norm(goal_pos_n12-start_pos_n12, axis=2) >=
+                                 self.params.spline_params.epsilon))
 
             x0_n1, y0_n1 = start_pos_n12[:, :, 0], start_pos_n12[:, :, 1]
             t0_n1 = self.start_config.heading_nk1()[:, :, 0]
@@ -144,8 +145,20 @@ class Spline3rdOrder(Spline):
         horizon_speed = max_speed/speed_max_system
         horizon_angular_speed = max_angular_speed/angular_speed_max_system
         horizons = tf.concat([horizon_speed, horizon_angular_speed], axis=1)
-        cutoff_horizon = tf.reduce_max(horizons, axis=1)
-        valid_idxs = tf.squeeze(tf.where(cutoff_horizon <= horizon_s), axis=1)
+        cutoff_horizon_n = tf.reduce_max(horizons, axis=1)
+        valid_idxs = tf.squeeze(tf.where(cutoff_horizon_n <= horizon_s), axis=1)
+
+        # If vary_horizon is true the spline is dynamically recomputed with
+        # time horizon min(cutoff_horizon_n, horizon_s) along the batch dimension
+        if self.params.spline_params.vary_horizon:
+            ts_nk = tf.tile(tf.linspace(0., horizon_s, self.k)[None], [self.n, 1])
+            valid_mask_nk = (ts_nk <= cutoff_horizon_n[:, None])
+            valid_mask_inv_nk = tf.cast(tf.logical_not(valid_mask_nk), dtype=tf.float32)
+            valid_mask_nk = tf.cast(valid_mask_nk, dtype=tf.float32)
+
+            ts_nk = ts_nk*valid_mask_nk + valid_mask_inv_nk*cutoff_horizon_n[:,None]
+            self.eval_spline(ts_nk, calculate_speeds=True)
+
         return tf.cast(valid_idxs, tf.int32)
 
     @staticmethod

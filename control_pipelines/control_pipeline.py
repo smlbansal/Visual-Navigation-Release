@@ -46,7 +46,7 @@ class ControlPipeline(ControlPipelineBase):
         if init_pipeline:
             self.traj_spline = params._spline(dt=params.dt,
                                               n=params.n, k=self.k,
-                                              **params.spline_params)
+                                              params=params)
             self.cost_fn = params._cost(trajectory_ref=self.traj_spline,
                                         system=self.system_dynamics,
                                         **params.cost_params)
@@ -131,9 +131,10 @@ class ControlPipeline(ControlPipelineBase):
     # from pickle files. Useful for precomputing a control pipeline in egocentric
     # coordinates that can then be reused across different trajectories.
     def _data_file_name(self):
-        base_dir = './data/control_pipelines/{:s}/k_{:d}_dt_{:.02f}'.format(self.pipeline_name,
-                                                                            self.k,
-                                                                            self.params.dt)
+        base_dir = './data/control_pipelines/{:s}/k_{:d}_dt_{:.02f}_vary_horizon_{:s}'.format(self.pipeline_name,
+                                                                                              self.k,
+                                                                                              self.params.dt,
+                                                                                              str(self.params.spline_params.vary_horizon))
         utils.mkdir_if_missing(base_dir)
         p = self.params
         waypt_bounds = p.waypoint_bounds

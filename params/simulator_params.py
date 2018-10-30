@@ -54,7 +54,7 @@ def load_params():
 
     # Store params as dictionaries so they can be used with **kwargs
 
-    p.spline_params = {'epsilon': 1e-5}
+    p.spline_params = DotMap(epsilon=1e-5, vary_horizon=True)
 
     centers_m2 = [[2.0, 2.0]]
     radii_m1 = [[.5]]
@@ -89,7 +89,8 @@ def load_params():
                                 goal_dist_norm=2,  # Default is l2 norm
                                 reset_params=reset_params,
                                 episode_termination_reasons=['Timeout', 'Collision', 'Success'],
-                                episode_termination_colors=['b', 'r', 'g'])
+                                episode_termination_colors=['b', 'r', 'g'],
+                                waypt_cmap='winter')
 
-    p.num_validation_goals = 4
+    p.num_validation_goals = 50
     return p

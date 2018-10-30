@@ -318,19 +318,17 @@ class SystemConfig(Trajectory):
                                                acceleration_nk1, heading_nk1,
                                                angular_speed_nk1, angular_acceleration_nk1)
 
-    def render(self, ax, batch_idx=0, marker='bo'):
+    def render(self, ax, batch_idx=0, **kwargs):
         pos_n12 = self.position_nk2()
         pos_2 = pos_n12[batch_idx, 0]
-        ax.plot(pos_2[0], pos_2[1], marker)
+        ax.plot(pos_2[0], pos_2[1], **kwargs)
 
-    def render_with_boundary(self, ax, batch_idx, marker='bo',
-                             boundary_params=None):
-        self.render(ax, batch_idx, marker)
-        if boundary_params is not None:
-            if boundary_params['norm'] == 2:
-                center = self.position_nk2()[batch_idx, 0].numpy()
-                radius = boundary_params['cutoff']
-                c = plt.Circle(center, radius, color=boundary_params['color'])
-                ax.add_artist(c)
-            else:
-                assert(False)
+    def render_with_boundary(self, ax, batch_idx, boundary_params, **kwargs):
+        self.render(ax, batch_idx, **kwargs)
+        if boundary_params['norm'] == 2:
+            center = self.position_nk2()[batch_idx, 0].numpy()
+            radius = boundary_params['cutoff']
+            c = plt.Circle(center, radius, color=boundary_params['color'])
+            ax.add_artist(c)
+        else:
+            assert(False)

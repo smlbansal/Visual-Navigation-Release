@@ -6,6 +6,8 @@ from objectives.goal_distance import GoalDistance
 from objectives.obstacle_avoidance import ObstacleAvoidance
 from trajectory.trajectory import SystemConfig, Trajectory
 from utils.fmm_map import FmmMap
+import matplotlib
+import itertools
 
 
 class Simulator:
@@ -18,7 +20,6 @@ class Simulator:
                                                     self.params.simulator_params.reset_params.obstacle_map.params)
         self.obj_fn = self._init_obj_fn()
         self.planner = self._init_planner()
-        
 
     def simulate(self):
         """ A function that simulates an entire episode.
@@ -29,13 +30,13 @@ class Simulator:
         config = self.start_config
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_configs = [self.start_config]
-        waypt_configs = []
+        waypt_egocentric_configs = []
         config_time_idxs = [0]
         while vehicle_trajectory.k < self.params.episode_horizon:
-            waypt_trajectory, next_config, waypt_config = self._iterate(config)
+            waypt_trajectory, next_config, waypt_egocentric_config = self._iterate(config)
             vehicle_trajectory.append_along_time_axis(waypt_trajectory)
             vehicle_configs.append(next_config)
-            waypt_configs.append(waypt_config)
+            waypt_egocentric_configs.append(waypt_egocentric_config)
             config_time_idxs.append(vehicle_trajectory.k)
             config = next_config
         self.min_obs_distances = self._calculate_min_obs_distances(vehicle_trajectory)
@@ -46,22 +47,21 @@ class Simulator:
         # corresponding to unclipped parts of the trajectory
         keep_idx = np.array(config_time_idxs) <= end_time_idx
         self.system_configs = np.array(vehicle_configs)[keep_idx]
-        self.waypt_configs = np.array(waypt_configs)[keep_idx[1:]]
-        
-        
-        # Waypoints in World Coordinates
-        waypt_world_configs = [self.system_dynamics.to_world_coordinates(sys_config, wpt_config,
-                                                                         self.start_config, mode='new') for
-                               sys_config, wpt_config in zip(self.system_configs[:-1],
-                                                             self.waypt_configs)]
-        import ipdb; ipdb.set_trace()
+        self.waypt_egocentric_configs = np.array(waypt_egocentric_configs)[keep_idx[1:]]
 
+
+        self.waypt_world_configs = [self.system_dynamics.to_world_coordinates(sys_config, wpt_config,
+                                                                              self.start_config, mode='new') for
+                                    sys_config, wpt_config in zip(self.system_configs[:-1],
+                                                                  self.waypt_egocentric_configs)]
+
+        import ipdb; ipdb.set_trace()
         self.obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
 
     def reset(self, seed=-1):
         """Reset the simulator. Optionally takes a seed to reset
-        the simulators random state."""
+        the simulator's random state."""
         if seed != -1:
             self.rng.seed(seed)
 
@@ -306,15 +306,21 @@ class Simulator:
         p = self.params.simulator_params
         self._render_obstacle_map(ax)
         self.vehicle_trajectory.render([ax], freq=freq)
-        # The system configurations at which waypoints were
-        # produced
-        for system_config in self.system_configs:
-            system_config.render(ax, batch_idx=0, marker='co')
 
+        # Plot the system configuration and corresponding
+        # waypoint produced in the same color
+        cmap = matplotlib.cm.get_cmap(self.params.simulator_params.waypt_cmap)
+        for i, (system_config, waypt_config) in enumerate(itertools.zip_longest(self.system_configs,
+                                                                                self.waypt_world_configs)):
+            color = cmap(i/len(self.system_configs))
+            system_config.render(ax, batch_idx=0, marker='o', color=color)
+            if waypt_config is not None:
+                pos_2 = waypt_config.position_nk2()[0, 0].numpy()
+                ax.text(pos_2[0], pos_2[1], str(i), color=color)
         boundary_params = {'norm': p.goal_dist_norm, 'cutoff':
                            p.goal_cutoff_dist, 'color': 'g'}
-        self.start_config.render(ax, batch_idx=0, marker='bo')
-        self.goal_config.render_with_boundary(ax, batch_idx=0, marker='k*',
+        self.start_config.render(ax, batch_idx=0, marker='o', color='blue')
+        self.goal_config.render_with_boundary(ax, batch_idx=0, marker='*', color='black',
                                               boundary_params=boundary_params)
 
         goal = self.goal_config.position_nk2()[0, 0]
