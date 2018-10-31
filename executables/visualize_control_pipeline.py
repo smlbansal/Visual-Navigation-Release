@@ -38,8 +38,9 @@ def create_params():
                     dtype=tf.float32)
     p.cost_params = {'C_gg': C, 'c_g': c}
     p.plant_params = {'dt': p.dt}
-    p.spline_params = {'epsilon': 1e-5}
-    p.control_pipeline_params = {}
+    p.spline_params = DotMap(epsilon=1e-5)
+    p.control_pipeline_params = DotMap(precompute=False,
+                                       load_from_pickle_file=False)
 
     p._cost = QuadraticRegulatorRef
     p._spline = Spline3rdOrder
@@ -56,9 +57,8 @@ def visualize_control_pipeline(starts_n5, goals_n5):
     dt = p.dx
 
     plant = p._plant(**p.plant_params)
-    control_pipeline = p._control_pipeline(system_dynamics=plant,
-                                           params=p,
-                                           **p.control_pipeline_params)
+    control_pipeline = p._control_pipeline(system_dynamics=plant, n=p.n,
+                                           params=p)
 
     start_x_n11, start_y_n11 = starts_n5[:, 0:1, None], starts_n5[:, 1:2, None]
     goal_x_n11, goal_y_n11 = goals_n5[:, 0:1, None], goals_n5[:, 1:2, None]
@@ -66,7 +66,7 @@ def visualize_control_pipeline(starts_n5, goals_n5):
 
     goal_x_n11, goal_y_n11, goal_theta_n11 = p._spline.ensure_goals_valid(start_x_n11, start_y_n11, goal_x_n11,
                                                                           goal_y_n11, goal_theta_n11,
-                                                                          epsilon=control_pipeline.traj_spline.epsilon)
+                                                                          epsilon=p.spline_params.epsilon)
 
     start_pos_nk2 = np.concatenate([start_x_n11, start_y_n11], axis=2)
     goal_pos_nk2 = np.concatenate([goal_x_n11, goal_y_n11], axis=2)
