@@ -107,6 +107,17 @@ class Trajectory(object):
         tf.assign(self.angular_speed_nk1(), angular_speed_nk1)
         tf.assign(self.angular_acceleration_nk1(), angular_acceleration_nk1)
 
+    def gather_across_batch_dim(self, idxs):
+        """Given a tensor of indexes to gather in the batch dimension,
+        update this trajectories instance variables and shape."""
+        self.n = len(idxs.numpy())
+        self._position_nk2 = tf.gather(self._position_nk2, idxs)
+        self._speed_nk1 = tf.gather(self._speed_nk1, idxs)
+        self._acceleration_nk1 = tf.gather(self._acceleration_nk1, idxs)
+        self._heading_nk1 = tf.gather(self._heading_nk1, idxs)
+        self._angular_speed_nk1 = tf.gather(self._angular_speed_nk1, idxs)
+        self._angular_acceleration_nk1 = tf.gather(self._angular_acceleration_nk1, idxs)
+
     def to_numpy_repr(self):
         """Utility function to return a representation of the trajectory using
         numpy arrays. Useful for pickling trajectories."""

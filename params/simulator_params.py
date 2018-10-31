@@ -72,9 +72,10 @@ def load_params():
                               velocity_disc=.01, dx=waypt_sample_dx,
                               num_theta_bins=21)
 
-    p.control_pipeline_params = {'precompute': precompute,
-                                 'load_from_pickle_file': True,
-                                 'bin_velocity': True}
+    p.control_pipeline_params = DotMap(precompute=precompute,
+                                       load_from_pickle_file=True,
+                                       bin_velocity=True,
+                                       verbose=True)
 
     # Simulator Params
     obstacle_map_reset_params = DotMap(reset_type='random',

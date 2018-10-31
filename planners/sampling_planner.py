@@ -17,17 +17,13 @@ class SamplingPlanner(Planner):
         self.start_velocities = np.linspace(system_dynamics.v_bounds[0],
                                             system_dynamics.v_bounds[1],
                                             int(np.ceil(delta_v/velocity_disc)))
-        
+
         assert(params.planner_params.precompute)
         self.waypt_egocentric_config_n = None
         self.waypt_egocentric_config_n = self._sample_initial_waypoints()
 
-        self.trajectories_world = [Trajectory(dt=params.dt, n=params.n, k=k, variable=True) for k
-                                   in params.ks]
-        self.opt_trajs = [Trajectory(dt=params.dt, n=1, k=k, variable=True) for k in
-                          params.ks]
-
         super().__init__(system_dynamics, obj_fn, params)
+        self._init_trajectory_objects()
 
     def optimize(self, start_config, vf=0.):
         """ Optimize the objective over a trajectory
@@ -39,59 +35,102 @@ class SamplingPlanner(Planner):
             4. Return the minimum cost waypoint, trajectory, and cost
         """
         p = self.params
-        self.start_config_broadcast_n.assign_from_broadcasted_batch(start_config, p.n)
         waypt_config_n = self._sample_initial_waypoints(vf=vf)
         costs = []
-        min_idx_per_k = []
-        for i, k in enumerate(p.ks):
-            self.trajectory_world = self.trajectories_world[i]  # used in super.eval_objective
-            obj_vals, trajectory = self.eval_objective(self.start_config_broadcast_n,
-                                                       waypt_config_n, k=k, mode='assign')
+        min_idxs = []
 
-            # Compute the min over valid indices.
-            # For control pipeline v0 this is all indices
-            valid_idxs = self._choose_control_pipeline(self.start_config_broadcast_n, k).valid_idxs
-            valid_obj_vals = tf.gather(obj_vals, valid_idxs)
-            min_valid_idx = tf.argmin(valid_obj_vals)
-            min_idx_per_k.append(valid_idxs[min_valid_idx])
-            costs.append(valid_obj_vals[min_valid_idx])
+        for i, k in enumerate(p.ks):
+            obj_vals, trajectory = self.eval_objective(start_config,
+                                                       waypt_config_n, k=k, mode='assign')
+            batch_idx = tf.argmin(obj_vals)
+            min_idxs.append({'k': k, 'batch_idx': batch_idx.numpy()})
+            costs.append(obj_vals[batch_idx])
         min_idx = tf.argmin(costs).numpy()
         min_cost = costs[min_idx]
-        self.opt_waypt.assign_from_config_batch_idx(waypt_config_n, min_idx_per_k[min_idx])
-        self.opt_trajs[min_idx].assign_from_trajectory_batch_idx(self.trajectories_world[min_idx],
-                                                                 min_idx_per_k[min_idx])
-        self.opt_traj = self.opt_trajs[min_idx]
-        return self.opt_waypt, self.opt_traj, min_cost
+        min_k = min_idxs[min_idx]['k']
+
+        self._update_control_pipeline(start_config, waypt_config_n, min_k)
+        self.opt_waypt_egocentric.assign_from_config_batch_idx(self.goal_config_egocentric,
+                                                               min_idxs[min_idx]['batch_idx'])
+        self.opt_waypt_world = self.system_dynamics.to_world_coordinates(start_config,
+                                                                         self.opt_waypt_egocentric,
+                                                                         self.opt_waypt_world,
+                                                                         mode='assign')
+        self.opt_traj.assign_from_trajectory_batch_idx(self.trajectory_world,
+                                                       min_idxs[min_idx]['batch_idx'])
+        return self.opt_waypt_egocentric, self.opt_traj, min_cost
+
+    def _init_trajectory_objects(self):
+        """Initialize various trajectory objects needed for the
+        planner to function."""
+        params = self.params
+
+        start_configs_egocentric = []
+        trajs_world = []
+        for i, k in enumerate(params.ks):
+            start_configs_k_egocentric = []
+            trajs_k_world = []
+            for pipeline in self.control_pipelines[i]:
+                start_configs_k_egocentric.append(SystemConfig(dt=params.dt, n=pipeline.n, k=1,
+                                                               variable=True))
+                trajs_k_world.append(Trajectory(dt=params.dt, n=pipeline.n, k=k, variable=True))
+            start_configs_egocentric.append(start_configs_k_egocentric)
+            trajs_world.append(trajs_k_world)
+
+        self.start_configs_egocentric = start_configs_egocentric
+        self.trajectories_world = trajs_world
+        self.opt_trajs = [Trajectory(dt=params.dt, n=1, k=k, variable=True) for k in
+                          params.ks]
 
     def _init_control_pipelines(self):
         p = self.params
         pipelines = []
+
         for k in p.ks:
             pipeline_k = []
             for velocity in self.start_velocities:
                 start_config = self.system_dynamics.init_egocentric_robot_config(dt=p.dt, n=p.n,
                                                                                  v=velocity, w=0.0)
+                goal_config = self._sample_initial_waypoints().copy()
+
+                # Calculates the valid problems (start and goal configs), updates
+                # start_config and goal_config to only contain these problems
+                # and returns the associated new batch size
+                n = p._control_pipeline.keep_valid_problems(system_dynamics=self.system_dynamics,
+                                                            k=k, planning_horizon_s=p.dt*k,
+                                                            start_config=start_config,
+                                                            goal_config=goal_config,
+                                                            params=p)
+                # Construct the control pipeline
                 pipeline = p._control_pipeline(
                                     system_dynamics=self.system_dynamics,
-                                    params=p,
-                                    v0=velocity,
-                                    k=k,
-                                    ** p.control_pipeline_params)
-                pipeline.plan(start_config, self.waypt_egocentric_config_n)
+                                    n=n, k=k, v0=velocity,
+                                    params=p)
+                pipeline.plan(start_config, goal_config)
                 pipeline_k.append(pipeline)
             pipelines.append(pipeline_k)
         return pipelines
 
-    def _choose_control_pipeline(self, start_config, k):
+    def _update_control_pipeline(self, start_config, waypt_config, k):
         """ Choose the control pipeline with planning horizon k and
-        the closest starting velocity"""
+        the closest starting velocity. Update the necessary instance
+        variables."""
         p = self.params
         idx_k = p.ks.index(k)
 
+        # Compute the index of the control pipeline with the
+        # closest starting velocity
         start_speed = start_config.speed_nk1()[0, 0, 0].numpy()
         diff = np.abs(start_speed - self.start_velocities)
         idx_v = np.argmin(diff)
-        return self.control_pipelines[idx_k][idx_v]
+    
+        # Update the planner instance variables
+        self.control_pipeline = self.control_pipelines[idx_k][idx_v]
+        self.goal_config_egocentric = self.control_pipeline.goal_config
+        self.start_config_world = self.control_pipeline.start_config 
+        self.trajectory_world = self.trajectories_world[idx_k][idx_v]
+        self.start_config_egocentric = self.start_configs_egocentric[idx_k][idx_v]
+        self.opt_traj = self.opt_trajs[idx_k]
 
     def _sample_initial_waypoints(self, vf=0.):
         """ Samples waypoints to be used by the control pipeline plan function.

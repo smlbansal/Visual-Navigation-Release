@@ -23,21 +23,20 @@ class ControlPipeline(ControlPipelineBase):
     assuming start_config and goal_config are specified in egocentric coordinates.
     """
 
-    def __init__(self, system_dynamics, params, precompute=False,
-                 load_from_pickle_file=True, bin_velocity=True, v0=None, k=None):
+    def __init__(self, system_dynamics, n, params, k=None, v0=None):
         self.system_dynamics = system_dynamics
         self.params = params
-        self.precompute = precompute
-        self.load_from_pickle_file = load_from_pickle_file
-        self.bin_velocity = bin_velocity
-        self.v0 = v0
+        
         if k is None:
             k = params.k
         self.k = k
+        self.n = n
+        self.v0 = v0
 
         self.computed = False
         init_pipeline = True
-        if precompute and load_from_pickle_file:
+        p_cp = params.control_pipeline_params
+        if p_cp.precompute and p_cp.load_from_pickle_file:
             filename = self._data_file_name()
             if os.path.exists(filename):
                 self._load_control_pipeline_data()
@@ -45,7 +44,7 @@ class ControlPipeline(ControlPipelineBase):
                 self.cost_fn = None  # Dont need this since LQR is precomputed
         if init_pipeline:
             self.traj_spline = params._spline(dt=params.dt,
-                                              n=params.n, k=self.k,
+                                              n=self.n, k=self.k,
                                               params=params)
             self.cost_fn = params._cost(trajectory_ref=self.traj_spline,
                                         system=self.system_dynamics,
@@ -61,12 +60,13 @@ class ControlPipeline(ControlPipelineBase):
             1. Fitting a spline between start_config and goal_config
             2. Using LQR with a system dynamics model and cost function to track the spline
         """
-        if self.precompute and self.computed:
-            if self.bin_velocity or self.params._spline.check_start_goal_equivalence(self.start_config,
-                                                                                     self.goal_config,
-                                                                                     start_config,
-                                                                                     goal_config):
-                self.traj_plot = self.traj_opt
+        p = self.params
+        p_cp = p.control_pipeline_params
+        if p_cp.precompute and self.computed:
+            if p_cp.bin_velocity or p._spline.check_start_goal_equivalence(self.start_config,
+                                                                           self.goal_config,
+                                                                           start_config,
+                                                                           goal_config):
                 return self.traj_opt
             else:
                 # apply the precomputed LQR feedback matrices on the current config
@@ -76,31 +76,28 @@ class ControlPipeline(ControlPipelineBase):
                                                                self.traj_spline,
                                                                k_array,
                                                                K_array)
-                self.traj_plot = trajectory_new
                 return trajectory_new
         else:
             self.start_config, self.goal_config = start_config, goal_config
-            p = self.params
             planning_horizon_s = self.k*p.dt
             ts_nk = tf.tile(tf.linspace(0., planning_horizon_s,
-                                        self.k)[None], [p.n, 1])
+                                        self.k)[None], [self.n, 1])
             self.traj_spline.fit(start_config=start_config, goal_config=goal_config,
                                  factors=None)
+            import pdb; pdb.set_trace()
             self.traj_spline.eval_spline(ts_nk, calculate_speeds=self.calculate_spline_speeds)
-            self.valid_idxs = self._compute_valid_batch_idxs(horizon_s=planning_horizon_s)
             self.lqr_res = self.lqr_solver.lqr(self.start_config, self.traj_spline,
                                                verbose=False)
             self.traj_opt = self.lqr_res['trajectory_opt']
-            self.traj_plot = self.traj_opt
-            self.computed = True
-            if self.precompute and self.load_from_pickle_file:
+            if p_cp.precompute and p_cp.load_from_pickle_file:
                 self._log_on_load()
                 self._save_control_pipeline_data(start_config, goal_config,
                                                  self.traj_spline,
-                                                 self.lqr_res,
-                                                 self.valid_idxs)
+                                                 self.lqr_res)
+
                 # Free up memory for more efficient computation
                 self._free_memory()
+            self.computed = True
             return self.traj_opt
 
     def render(self, axs, batch_idx=0, freq=4, plot_heading=True, plot_velocity=True):
@@ -120,12 +117,6 @@ class ControlPipeline(ControlPipelineBase):
                                 plot_velocity=plot_velocity, label_start_and_end=True)
         self.traj_opt.render(ax1, batch_idx=batch_idx, freq=freq, plot_heading=plot_heading,
                              plot_velocity=plot_velocity, label_start_and_end=True, name='LQR')
-
-    def _compute_valid_batch_idxs(self, horizon_s):
-        """Computes the batch indices corresponding to valid
-        trajectories in the control pipeline. Trajectories can be invalid
-        for violating dynamical constraints etc (see Control Pipeline v1)."""
-        raise NotImplementedError
 
     # Functionality needed for precomputing, saving, and loading control pipelines
     # from pickle files. Useful for precomputing a control pipeline in egocentric
@@ -172,30 +163,30 @@ class ControlPipeline(ControlPipelineBase):
                         'k_array_opt': k_array_opt,
                         'K_array_opt': K_array_opt,
                         'J_hist': J_hist}
-        self.valid_idxs = tf.constant(data['valid_idxs'], dtype=tf.int32)
         self._log_on_load()
         self.computed = True
 
     def _log_on_load(self):
         """Log useful control pipeline information upon initializing
         or loading the pipline."""
-        percentage = 100.*len(self.valid_idxs.numpy())/self.traj_spline.n
-        print('Control Pipeline k={:d}, v0={:.3f}, {:.3f}% valid Trajectories'.format(self.k,
-                                                                                      self.v0,
-                                                                                      percentage))
+        if self.params.control_pipeline_params.verbose:
+            percentage = 100.*self.n/self.params.n
+            print('Control Pipeline k={:d}, v0={:.3f}, {:.3f}% valid Trajectories'.format(self.k,
+                                                                                          self.v0,
+                                                                                          percentage))
 
     def _save_control_pipeline_data(self, start_config, goal_config, traj_spline,
-                                    lqr_res, valid_idxs):
+                                    lqr_res):
         filename = self._data_file_name()
         data = self._prepare_control_pipeline_data_for_saving(start_config,
                                                               goal_config,
                                                               traj_spline,
-                                                              lqr_res, valid_idxs)
+                                                              lqr_res)
         utils.dump_to_pickle_file(filename=filename, data=data)
 
     def _prepare_control_pipeline_data_for_saving(self, start_config,
                                                   goal_config, traj_spline,
-                                                  lqr_res, valid_idxs):
+                                                  lqr_res):
         start_config_data = start_config.to_numpy_repr()
         goal_config_data = goal_config.to_numpy_repr()
         traj_spline_data = traj_spline.to_numpy_repr()
@@ -203,15 +194,13 @@ class ControlPipeline(ControlPipelineBase):
         k_array_opt_data = [x.numpy() for x in lqr_res['k_array_opt']]
         K_array_opt_data = [x.numpy() for x in lqr_res['K_array_opt']]
         J_hist_data = [x.numpy() for x in lqr_res['J_hist']]
-        valid_idxs_data = valid_idxs.numpy()
         data = {'start_config': start_config_data,
                 'goal_config': goal_config_data,
                 'traj_spline': traj_spline_data,
                 'lqr_res': {'traj_opt': traj_opt_data,
                             'k_array_opt': k_array_opt_data,
                             'K_array_opt': K_array_opt_data,
-                            'J_hist': J_hist_data},
-                'valid_idxs': valid_idxs_data}
+                            'J_hist': J_hist_data}}
         return data
 
     def _free_memory(self):
@@ -220,5 +209,5 @@ class ControlPipeline(ControlPipelineBase):
         garbage collected."""
         self.cost_fn = None
         self.traj_spline.free_memory()
-        if self.bin_velocity:
+        if self.params.control_pipeline_params.bin_velocity:
             self.lqr_solver = None

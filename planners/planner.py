@@ -12,9 +12,9 @@ class Planner:
 
         self.start_config_broadcast_n = SystemConfig(dt=params.dt, n=params.n, k=1, variable=True)
 
-        # In Egocentric Coordinates
         self.start_config_egocentric = SystemConfig(dt=params.dt, n=params.n, k=1, variable=True)
-        self.opt_waypt = SystemConfig(dt=params.dt, n=1, k=1, variable=True)
+        self.opt_waypt_egocentric = SystemConfig(dt=params.dt, n=1, k=1, variable=True)
+        self.opt_waypt_world = SystemConfig(dt=params.dt, n=1, k=1, variable=True)
 
         if not params.k.empty():
             self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.k, variable=True)
@@ -37,26 +37,31 @@ class Planner:
         assert(mode in ['assign', 'new'])
         sys = self.system_dynamics
 
-        self.start_config_egocentric = sys.to_egocentric_coordinates(start_config, start_config,
-                                                                    self.start_config_egocentric,
-                                                                    mode=mode)
-        control_pipeline = self._choose_control_pipeline(self.start_config_egocentric, k)
-        trajectory = control_pipeline.plan(self.start_config_egocentric,
-                                           waypt_config)
+        # Chooses the appropriate control pipeline. Updates self.start_config_world,
+        # self.goal_config_egocentric, and other instance variables so that
+        # computation can occur correctly
+        self._update_control_pipeline(start_config, waypt_config, k)
+
+        self.start_config_egocentric = sys.to_egocentric_coordinates(self.start_config_world,
+                                                                     self.start_config_world,
+                                                                     self.start_config_egocentric,
+                                                                     mode=mode)
+        trajectory = self.control_pipeline.plan(self.start_config_egocentric,
+                                                self.goal_config_egocentric)
         self.trajectory_world = sys.to_world_coordinates(start_config, trajectory,
                                                          self.trajectory_world, mode=mode)
         obj_val = self.obj_fn.evaluate_function(self.trajectory_world)
         return obj_val, self.trajectory_world
 
     def _init_control_pipelines(self):
-        return [params._control_pipeline(system_dynamics=self.system_dynamics,
-                                         params=self.params, **self.params.control_pipeline_params)]
+        """Initialize the control pipelines used by this planner"""
+        raise NotImplementedError
 
-    def _choose_control_pipeline(self, start_config, k):
+    def _update_control_pipeline(self, start_config, k):
         """Choose which control pipeline to use for this start configuration.
         Override this in child classes to add functionality for selecting between
         multiple control pipelines."""
-        return self.control_pipelines[0]
+        raise NotImplementedError
 
     def render(self, axs, start_config, waypt_config, freq=4, obstacle_map=None):
         self.control_pipeline.render(axs, start_config, waypt_config, freq,

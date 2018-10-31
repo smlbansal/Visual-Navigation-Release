@@ -7,6 +7,10 @@ class Control_Pipeline_v0(ControlPipeline):
     valid. """
     pipeline_name = 'v0'
 
+    @staticmethod
+    def _compute_batch_size(params):
+        return params.n
+
     def _compute_valid_batch_idxs(self, horizon_s):
         """ All trajectories in the control pipeline are valid
         for pipeline v0"""

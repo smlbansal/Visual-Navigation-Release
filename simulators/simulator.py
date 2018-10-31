@@ -55,7 +55,6 @@ class Simulator:
                                     sys_config, wpt_config in zip(self.system_configs[:-1],
                                                                   self.waypt_egocentric_configs)]
 
-        import ipdb; ipdb.set_trace()
         self.obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
 
