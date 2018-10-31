@@ -331,3 +331,13 @@ class Simulator:
         final_pos = self.vehicle_trajectory.position_nk2()[0, -1]
         ax.set_xlabel('Cost: {cost:.3f} '.format(cost=self.obj_val) +
                       'End: [{:.2f}, {:.2f}]'.format(*final_pos), color=text_color)
+
+    def render_velocities(self, ax0, ax1):
+        speed_k = self.vehicle_trajectory.speed_nk1()[0, :, 0].numpy()
+        angular_speed_k = self.vehicle_trajectory.angular_speed_nk1()[0, :, 0].numpy()
+
+        ax0.plot(speed_k, 'r--')
+        ax0.set_title('Linear Velocity')
+
+        ax1.plot(angular_speed_k, 'r--')
+        ax1.set_title('Angular Velocity')
