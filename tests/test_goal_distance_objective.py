@@ -56,14 +56,15 @@ def test_goal_distance():
     dist1 = 0.05/np.sqrt(2)
     dist2 = np.sqrt(2) - dist1
     dist3 = 2. + np.pi/2 - 0.05
+
+    cost_at_margin = 25. * p.goal_distance_objective.goal_margin**2
     expected_distance = np.array([dist2, -dist1, dist3])
-    expected_distance_clipped = np.clip(expected_distance, 0, None)
-    expected_objective = 25. * expected_distance_clipped * expected_distance_clipped
-    
+    expected_objective = 25. * expected_distance * expected_distance - cost_at_margin
+
     # Error in objectives
     # We have to allow a little bit of leeway in this test because the computation of FMM distance is not exact.
     objetive_error = abs(expected_objective - objective_values_13.numpy()[0]) / (expected_objective + 1e-6)
-   
+
     assert max(objetive_error) <= 0.1
 
 

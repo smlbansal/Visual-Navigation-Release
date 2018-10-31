@@ -3,11 +3,11 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from trajectory.trajectory import SystemConfig
+from dotmap import DotMap
 tf.enable_eager_execution()
 
 
 def test_spline_3rd_order(visualize=False):
-    # Note(Somil): Style guide.
     np.random.seed(seed=1)
     n = 5
     dt = .01
@@ -28,8 +28,8 @@ def test_spline_3rd_order(visualize=False):
 
     start_config = SystemConfig(dt, n, 1, speed_nk1=start_speed_nk1, variable=False)
     goal_config = SystemConfig(dt, n, 1, position_nk2=goal_pos_nk2,
-                              speed_nk1=goal_speed_nk1, heading_nk1=goal_heading_nk1,
-                              variable=True)
+                               speed_nk1=goal_speed_nk1, heading_nk1=goal_heading_nk1,
+                               variable=True)
 
     start_nk5 = start_config.position_heading_speed_and_angular_speed_nk5()
     start_n5 = start_nk5[:, 0]
@@ -37,8 +37,9 @@ def test_spline_3rd_order(visualize=False):
     goal_nk5 = goal_config.position_heading_speed_and_angular_speed_nk5()
     goal_n5 = goal_nk5[:, 0]
 
+    p = DotMap(spline_params=DotMap(epsilon=1e-5))
     ts_nk = tf.tile(tf.linspace(0., dt*k, k)[None], [n, 1])
-    spline_traj = Spline3rdOrder(dt=dt, k=k, n=n)
+    spline_traj = Spline3rdOrder(dt=dt, k=k, n=n, params=p)
     spline_traj.fit(start_config, goal_config, factors=None)
     spline_traj.eval_spline(ts_nk, calculate_speeds=True)
 

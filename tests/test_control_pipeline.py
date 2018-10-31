@@ -49,8 +49,8 @@ def create_params(cs, rs):
     p.cost_params = {'C_gg': C, 'c_g': c}
     p.obstacle_params = {'centers_m2': cs, 'radii_m1': rs}
     p.plant_params = {'dt': p.dt}
-    p.spline_params = {}
-    p.control_pipeline_params = {}
+    p.spline_params = DotMap(epsilon=1e-5)
+    p.control_pipeline_params = DotMap(precompute=False, load_from_pickle_file=False)
 
     p._cost = QuadraticRegulatorRef
     p._spline = Spline3rdOrder
@@ -119,9 +119,9 @@ def test_control_pipeline(visualize=False):
     waypt_config = SystemConfig(dt, n, 1, position_nk2=waypt_pos_nk2,
                                speed_nk1=waypt_speed_nk1, variable=True)
 
-    control_pipeline = p._control_pipeline(system_dynamics=plant,
-                                           params=p,
-                                           **p.control_pipeline_params)
+    control_pipeline = p._control_pipeline(system_dynamics=plant, n=p.n,
+                                           params=p)
+                                           
     trajectory_lqr = control_pipeline.plan(start_config=start_config,
                                            goal_config=waypt_config)
 

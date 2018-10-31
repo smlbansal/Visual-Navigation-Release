@@ -22,8 +22,7 @@ class Control_Pipeline_v1(ControlPipeline):
         traj_spline.fit(start_config=start_config, goal_config=goal_config,
                         factors=None)
         traj_spline.eval_spline(ts_nk, calculate_speeds=True)
-        valid_idxs = traj_spline.enforce_dynamic_feasability(system_dynamics.v_bounds[1],
-                                                             system_dynamics.w_bounds[1],
+        valid_idxs = traj_spline.enforce_dynamic_feasability(system_dynamics=system_dynamics,
                                                              horizon_s=planning_horizon_s)
 
         # Update start_config and goal_config

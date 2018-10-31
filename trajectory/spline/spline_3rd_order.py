@@ -133,12 +133,18 @@ class Spline3rdOrder(Spline):
         self.y_coeffs_n14 = None
         self.p_coeffs_n14 = None
 
-    def enforce_dynamic_feasability(self, speed_max_system, angular_speed_max_system, horizon_s):
+    def enforce_dynamic_feasability(self, system_dynamics, horizon_s):
         """Checks whether the current computed spline (on time points in [0, horizon_s])
         can be executed in time <= horizon_s (specified in seconds) while respecting max speed and
         angular speed constraints. Returns the batch indices of all valid splines."""
+        if system_dynamics.v_bounds is None and system_dynamics.w_bounds is None:
+            return self.n
+
         # Speed assumed to be in [0, speed_max_system]
         # Angular speed assumed to be in [-angular_speed_max_system, angular_speed_max_system]
+        speed_max_system = system_dynamics.v_bounds[1]
+        angular_speed_max_system = system_dynamics.w_bounds[1]
+
         max_speed = tf.reduce_max(self.speed_nk1()*horizon_s, axis=1)
         max_angular_speed = tf.reduce_max(tf.abs(self.angular_speed_nk1()*horizon_s), axis=1)
 

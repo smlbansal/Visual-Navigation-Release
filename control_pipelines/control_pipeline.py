@@ -84,8 +84,7 @@ class ControlPipeline(ControlPipelineBase):
             self.traj_spline.fit(start_config=start_config, goal_config=goal_config,
                                  factors=None)
             self.traj_spline.eval_spline(ts_nk, calculate_speeds=self.calculate_spline_speeds)
-            self.traj_spline.enforce_dynamic_feasability(speed_max_system=self.system_dynamics.v_bounds[1],
-                                                         angular_speed_max_system=self.system_dynamics.w_bounds[1],
+            self.traj_spline.enforce_dynamic_feasability(system_dynamics=self.system_dynamics,
                                                          horizon_s=planning_horizon_s)
             self.lqr_res = self.lqr_solver.lqr(self.start_config, self.traj_spline,
                                                verbose=False)
