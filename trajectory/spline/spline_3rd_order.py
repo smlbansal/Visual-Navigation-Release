@@ -133,7 +133,7 @@ class Spline3rdOrder(Spline):
         self.y_coeffs_n14 = None
         self.p_coeffs_n14 = None
 
-    def check_dynamic_feasability(self, speed_max_system, angular_speed_max_system, horizon_s):
+    def enforce_dynamic_feasability(self, speed_max_system, angular_speed_max_system, horizon_s):
         """Checks whether the current computed spline (on time points in [0, horizon_s])
         can be executed in time <= horizon_s (specified in seconds) while respecting max speed and
         angular speed constraints. Returns the batch indices of all valid splines."""
@@ -156,7 +156,7 @@ class Spline3rdOrder(Spline):
             valid_mask_inv_nk = tf.cast(tf.logical_not(valid_mask_nk), dtype=tf.float32)
             valid_mask_nk = tf.cast(valid_mask_nk, dtype=tf.float32)
 
-            ts_nk = ts_nk*valid_mask_nk + valid_mask_inv_nk*cutoff_horizon_n[:,None]
+            ts_nk = ts_nk*valid_mask_nk + valid_mask_inv_nk*cutoff_horizon_n[:, None]
             self.eval_spline(ts_nk, calculate_speeds=True)
 
         return tf.cast(valid_idxs, tf.int32)

@@ -26,7 +26,7 @@ class ControlPipeline(ControlPipelineBase):
     def __init__(self, system_dynamics, n, params, k=None, v0=None):
         self.system_dynamics = system_dynamics
         self.params = params
-        
+
         if k is None:
             k = params.k
         self.k = k
@@ -52,7 +52,6 @@ class ControlPipeline(ControlPipelineBase):
         self.lqr_solver = LQRSolver(T=self.k-1,
                                     dynamics=self.system_dynamics,
                                     cost=self.cost_fn)
-        self.calculate_spline_speeds = False
 
     def plan(self, start_config, goal_config):
         """ Use the control pipeline to plan
@@ -84,8 +83,10 @@ class ControlPipeline(ControlPipelineBase):
                                         self.k)[None], [self.n, 1])
             self.traj_spline.fit(start_config=start_config, goal_config=goal_config,
                                  factors=None)
-            import pdb; pdb.set_trace()
             self.traj_spline.eval_spline(ts_nk, calculate_speeds=self.calculate_spline_speeds)
+            self.traj_spline.enforce_dynamic_feasability(speed_max_system=self.system_dynamics.v_bounds[1],
+                                                         angular_speed_max_system=self.system_dynamics.w_bounds[1],
+                                                         horizon_s=planning_horizon_s)
             self.lqr_res = self.lqr_solver.lqr(self.start_config, self.traj_spline,
                                                verbose=False)
             self.traj_opt = self.lqr_res['trajectory_opt']
@@ -99,6 +100,15 @@ class ControlPipeline(ControlPipelineBase):
                 self._free_memory()
             self.computed = True
             return self.traj_opt
+
+    @staticmethod
+    def keep_valid_problems(system_dynamics, k, planning_horizon_s,
+                            start_config, goal_config, params):
+        """Computes which problems (as represented by start_config and
+        goal_config) are valid. Updates start_config and goal_config to
+        only contain these problems and returns n', the number of
+        valid problems."""
+        raise NotImplementedError
 
     def render(self, axs, batch_idx=0, freq=4, plot_heading=True, plot_velocity=True):
         num_plots = 2
