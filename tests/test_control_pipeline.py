@@ -111,17 +111,17 @@ def test_control_pipeline(visualize=False):
                               [-.3, 0.]], dtype=np.float32)[:, None]
     start_speed_nk1 = np.array([[v0], [v0], [0.]], dtype=np.float32)[:, None]
     start_config = SystemConfig(dt, n, 1, position_nk2=start_pos_nk2,
-                               speed_nk1=start_speed_nk1, variable=False)
+                                speed_nk1=start_speed_nk1, variable=False)
 
     waypt_pos_nk2 = np.array([[-1, -.5], [-.5, -1.], [-.1, 0.]],
                              dtype=np.float32)[:, None]
     waypt_speed_nk1 = np.array([[vf], [vf], [0.]], dtype=np.float32)[:, None]
     waypt_config = SystemConfig(dt, n, 1, position_nk2=waypt_pos_nk2,
-                               speed_nk1=waypt_speed_nk1, variable=True)
+                                speed_nk1=waypt_speed_nk1, variable=True)
 
     control_pipeline = p._control_pipeline(system_dynamics=plant, n=p.n,
                                            params=p)
-                                           
+
     trajectory_lqr = control_pipeline.plan(start_config=start_config,
                                            goal_config=waypt_config)
 
