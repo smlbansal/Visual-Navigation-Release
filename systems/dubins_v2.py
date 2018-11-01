@@ -7,10 +7,10 @@ class DubinsV2(Dubins3D):
     functions on linear or angular velocity.
     """
 
-    def __init__(self, dt, v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1]):
+    def __init__(self, dt, params):
         super().__init__(dt)
-        self.v_bounds = v_bounds
-        self.w_bounds = w_bounds
+        self.v_bounds = params.v_bounds
+        self.w_bounds = params.w_bounds
 
 
     def _saturate_linear_velocity(self, vtilde_nk):
