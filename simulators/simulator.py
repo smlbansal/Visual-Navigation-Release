@@ -192,7 +192,7 @@ class Simulator:
     def _init_obj_fn(self):
         p = self.params
         self.goal_config = self.system_dynamics.init_egocentric_robot_config(dt=p.dt,
-                                                                           n=1)
+                                                                             n=1)
         self.fmm_map = self._init_fmm_map()
         obj_fn = ObjectiveFunction()
         if not p.avoid_obstacle_objective.empty():
