@@ -91,7 +91,8 @@ def test_spline_rescaling():
                                variable=True)
     
     # Fit the splines
-    spline_trajs = Spline3rdOrder(dt=dt, k=k, n=n)
+    p = DotMap(spline_params=DotMap(epsilon=1e-5))
+    spline_trajs = Spline3rdOrder(dt=dt, k=k, n=n, params=p)
     spline_trajs.fit(start_config, goal_config, final_times_n1, factors=None)
     
     # Evaluate the splines
