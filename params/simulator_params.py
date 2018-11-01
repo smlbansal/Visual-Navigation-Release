@@ -49,7 +49,8 @@ def load_params():
     p._control_pipeline = Control_Pipeline_v1
     p._simulator = CircularObstacleMapSimulator
 
-    p.lqr_quad_coeffs = np.array([1.0, 1.0, 1.0, 1e-10, 1e-10], dtype=np.float32)
+    p.lqr_quad_coeffs = np.array(
+        [1.0, 1.0, 1.0, 1e-10, 1e-10], dtype=np.float32)
     p.lqr_linear_coeffs = np.zeros((5), dtype=np.float32)
 
     # Store params as dictionaries so they can be used with **kwargs
@@ -62,14 +63,14 @@ def load_params():
                              'radii_m1': radii_m1}
 
     # Based on Turtlebot parameters
-    p.system_dynamics_params = {'v_bounds': [0.0, .6],
-                                'w_bounds': [-1.1, 1.1]}
+    p.system_dynamics_params = DotMap(v_bounds=[0.0, .6],
+                                      w_bounds=[-1.1, 1.1])
 
     precompute = True
     # The grid discretization for waypoint sampling
     waypt_sample_dx = .1
     p.planner_params = DotMap(mode='uniform', precompute=precompute,
-                              velocity_disc=.01, dx=waypt_sample_dx,
+                              velocity_disc=.5, dx=waypt_sample_dx,
                               num_theta_bins=21)
 
     p.control_pipeline_params = DotMap(precompute=precompute,

@@ -187,7 +187,7 @@ class Simulator:
 
     def _init_system_dynamics(self):
         p = self.params
-        return p._system_dynamics(dt=p.dt, **p.system_dynamics_params)
+        return p._system_dynamics(dt=p.dt, params=p.system_dynamics_params)
 
     def _init_obj_fn(self):
         p = self.params
