@@ -30,3 +30,4 @@ class Control_Pipeline_v1(ControlPipeline):
         start_config.gather_across_batch_dim(valid_idxs)
         goal_config.gather_across_batch_dim(valid_idxs)
         return len(valid_idxs.numpy())
+

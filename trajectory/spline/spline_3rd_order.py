@@ -14,19 +14,20 @@ class Spline3rdOrder(Spline):
     [xg, yg, thetag,vg]. Angular speeds w0 and wg are not constrainable.
     """
 
-    def fit(self, start_config, goal_config, factors=None):
+    def fit(self, start_config, goal_config, final_times_n1=None, factors=None):
         """Fit a 3rd order spline between start config and goal config.
         Factors_n2 represent 2 degrees of freedom in fitting the spline.
         If factors_n2=None it is set heuristically below.
+        If final_time_n1=None, a final time of 1 is used.
         The spline is of the form:
-            p(t) = a3t^3+b3t^2+c3t+d3
+            p(t) = a3(t/tf)^3+b3(t/tf)^2+c3(t/tf)+d3
             x(p) = a1p^3+b1p^2+c1p+d1
             y(p) = a2p^2+b2p^2+c2p+d2
         """
-
         self.start_config = start_config
         self.goal_config = goal_config
 
+        # Compute the factors
         if factors is None:  # Compute them heuristically
             factor1_n1 = self.start_config.speed_nk1()[:, :, 0] + \
                          tf.norm(goal_config.position_nk2()-start_config.position_nk2(), axis=2)
@@ -35,6 +36,11 @@ class Spline3rdOrder(Spline):
         else:
             factors_n2 = factors
 
+        # Compute the final times
+        if final_times_n1 is None:
+            final_times_n1 = tf.ones((self.n, 1))
+
+        # Fit spline
         with tf.name_scope('fit_spline'):
             f1_n1, f2_n1 = factors_n2[:, 0:1], factors_n2[:, 1:]
 
@@ -63,14 +69,15 @@ class Spline3rdOrder(Spline):
             a2_n1 = f2_n1*tf.sin(tg_n1)-2*yg_n1+c2_n1+2*d2_n1
             b2_n1 = 3*yg_n1-f2_n1*tf.sin(tg_n1)-2*c2_n1-3*d2_n1
 
-            c3_n1 = v0_n1 / f1_n1
-            a3_n1 = (vg_n1/f2_n1) + c3_n1 - 2.
+            c3_n1 = final_times_n1 * v0_n1 / f1_n1
+            a3_n1 = (final_times_n1*vg_n1/f2_n1) + c3_n1 - 2.
             b3_n1 = 1. - c3_n1 - a3_n1
 
             self.x_coeffs_n14 = tf.stack([a1_n1, b1_n1, c1_n1, d1_n1], axis=2)
             self.y_coeffs_n14 = tf.stack([a2_n1, b2_n1, c2_n1, d2_n1], axis=2)
             self.p_coeffs_n14 = tf.stack([a3_n1, b3_n1, c3_n1, 0.0*c3_n1],
                                          axis=2)
+            self.final_times_n1 = final_times_n1
 
     def _eval_spline(self, ts_nk, calculate_speeds=True):
         """ Evaluates the spline on points in ts_nk
@@ -126,13 +133,15 @@ class Spline3rdOrder(Spline):
         """Assumes that a spline has already been fit and evaluated and
         that the user will not need to fit or evaluate it again (as is the case
         when precomputing splines in egocentric coordinates). Set's irrelevant
-        instance variables to None to be garbage collected."""
+        instance variables to None to be garbage collected. Note: won't do anything
+        with a static tensorflow graph."""
         self.start_config = None
         self.goal_config = None
         self.x_coeffs_n14 = None
         self.y_coeffs_n14 = None
         self.p_coeffs_n14 = None
 
+    # TODO: Probably Delete this Later. It is now redundant
     def enforce_dynamic_feasability(self, system_dynamics, horizon_s):
         """Checks whether the current computed spline (on time points in [0, horizon_s])
         can be executed in time <= horizon_s (specified in seconds) while respecting max speed and
@@ -166,6 +175,55 @@ class Spline3rdOrder(Spline):
             self.eval_spline(ts_nk, calculate_speeds=True)
 
         return tf.cast(valid_idxs, tf.int32)
+    
+    def check_dynamic_feasibility(self, speed_max_system, angular_speed_max_system, horizon_s):
+        """Checks whether the current computed spline can be executed in time <= horizon_s (specified in seconds)
+        while respecting max speed and angular speed constraints. Returns the batch indices of all valid splines."""
+        
+        # Compute the minimum horizon required to execute the spline while ensuring dynamic feasibility
+        required_horizon_n1 = self.compute_dynamically_feasible_horizon(speed_max_system, angular_speed_max_system)
+        
+        # Compute the valid splines
+        valid_idxs_n = tf.where(required_horizon_n1 <= horizon_s)[:, 0]
+        return tf.cast(valid_idxs_n, tf.int32)
+    
+    def compute_dynamically_feasible_horizon(self, speed_max_system, angular_speed_max_system):
+        """
+        Compute the horizon (in seconds) such that the computed spline respect the speed and angular
+        speed at all times.
+        Speed assumed to be in [0, speed_max_system]
+        Angular speed assumed to be in [-angular_speed_max_system, angular_speed_max_system]
+        """
+        # Compute the horizon required to make sure that we satisfy the speed constraints at all times
+        max_speed_n1 = tf.reduce_max(self.speed_nk1(), axis=1)
+        required_horizon_speed_n1 = self.final_times_n1 * max_speed_n1/speed_max_system
+
+        # Compute the horizon required to make sure that we satisfy the angular speed constraints at all times
+        max_angular_speed_n1 = tf.reduce_max(tf.abs(self.angular_speed_nk1()), axis=1)
+        required_horizon_angular_speed_n1 = self.final_times_n1 * max_angular_speed_n1 / angular_speed_max_system
+        
+        # Compute the horizon required to make sure that we satisfy all control constraints at all times
+        return tf.maximum(required_horizon_speed_n1, required_horizon_angular_speed_n1)
+    
+    def rescale_spline_horizon_to_dynamically_feasible_horizon(self, speed_max_system, angular_speed_max_system):
+        """
+        Rescale the spline horizon to a new horizon without recomputing the spline coefficients.
+        """
+        # Compute the minimum horizon required to execute the spline while ensuring dynamic feasibility
+        required_horizon_n1 = self.compute_dynamically_feasible_horizon(speed_max_system, angular_speed_max_system)
+        
+        # Rescale the speed and angular velocity to be consistent with the new horizon
+        self.rescale_velocity_and_acceleration(self.final_times_n1, required_horizon_n1)
+        
+        # Reset the final times
+        self.final_times_n1 = required_horizon_n1
+        
+    def find_trajectories_within_a_horizon(self, horizon_s):
+        """
+        Find the indices of splines whose final time is within the horizon [0, horizon_s].
+        """
+        valid_idxs_n = tf.where(self.final_times_n1 <= horizon_s)[:, 0]
+        return tf.cast(valid_idxs_n, tf.int32)
 
     @staticmethod
     def check_start_goal_equivalence(start_config_old, goal_config_old,
