@@ -13,24 +13,32 @@ class Planner:
         self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.k, variable=True)
         self.control_pipeline = self._init_control_pipeline()
 
-    def optimize(self, start_config, vf=0.):
+    def optimize(self, start_config):
         """ Optimize the objective over a trajectory
         starting from start_config ending at speed vf. 
         Returns the opt_waypt, opt_trajectory, opt_cost
         """
         raise NotImplementedError
 
-    def eval_objective(self, start_config, vf=0.):
+    def eval_objective(self, start_config):
         """ Evaluate the objective function on a trajectory
-        generated through the control pipeline from start_config (world frame)
-        ending at speed vf."""
-        waypts, horizons, trajectories_world, controllers = self.control_pipeline.plan(start_config, vf=vf)
+        generated through the control pipeline from start_config (world frame).
+        Assumes the control pipeline has been initialized with goal configurations already."""
+        waypts, horizons, trajectories_world, controllers = self.control_pipeline.plan(start_config)
         obj_val = self.obj_fn.evaluate_function(self.trajectories_world)
         return obj_val, [waypts, horizons, trajectories_world, controllers]
 
     def _init_control_pipeline(self):
-        """Initialize the control pipelines used by this planner"""
-        raise NotImplementedError
+        """If the control pipeline has exists already (i.e. precomputed),
+        load it. Otherwise generate create it from scratch and save it."""
+        p = self.params.control_pipeline_params
+        control_pipeline = p.classname(params=p)
+
+        if control_pipeline.does_pipeline_exist():
+            control_pipeline.load_control_pipeline()
+        else:
+            control_pipeline.generate_control_pipeline()
+        return control_pipeline
 
     def render(self, axs, start_config, waypt_config, freq=4, obstacle_map=None):
         self.control_pipeline.render(axs, start_config, waypt_config, freq,
