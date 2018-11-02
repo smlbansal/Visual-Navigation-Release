@@ -1,32 +1,26 @@
 from dotmap import DotMap
+from utils import utils
 import numpy as np
-from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
-from obstacles.circular_obstacle_map import CircularObstacleMap
-from trajectory.spline.spline_3rd_order import Spline3rdOrder
-from planners.sampling_planner import SamplingPlanner
-from systems.dubins_v2 import DubinsV2
-from control_pipelines.control_pipeline_v1 import Control_Pipeline_v1
-from control_pipelines.control_pipeline_v0 import Control_Pipeline_v0
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
+
+dependencies = ['planner_params', 'obstacle_map_params']
 
 
 def load_params():
-    p = DotMap()
-    p.seed = 1  # for tf and numpy seeding
-    p.simulator_seed = 1
-    p.n = int(1e3)  # batch size
-    p.dx = 0.05  # grid discretization for FmmMap and Obstacle Occupancy Grid
-    p.dt = .05  # time discretization
+    # Load the dependencies
+    p = DotMap({dependency: utils.load_params(dependency)
+                for dependency in dependencies})
 
-    # [[min_x, min_y], [max_x, max_y]]
-    p.map_bounds = [[0.0, 0.0], [8.0, 8.0]]
-    # in egocentric coordinates
-    p.waypoint_bounds = [[0., -2.5], [2.5, 2.5]]
+    p.classname = CircularObstacleMapSimulator
+
+    p.seed = 1  # seed for the simulator (different than for numpy and tf)
 
     # Horizons in seconds
     p.episode_horizon_s = 20.0
-    p.planning_horizons_s = [6]
+    p.planning_horizon_s = p.planner_params.planning_horizon_s
     p.control_horizon_s = 1.5
+
+    # Define the Objectives
 
     # Obstacle Avoidance Objective
     p.avoid_obstacle_objective = DotMap(obstacle_margin0=0.3,
@@ -41,58 +35,25 @@ def load_params():
                                        goal_cost=.08,
                                        goal_margin=.3)
 
-    p._cost = QuadraticRegulatorRef
-    p._spline = Spline3rdOrder
-    p._obstacle_map = CircularObstacleMap
-    p._system_dynamics = DubinsV2
-    p._planner = SamplingPlanner
-    p._control_pipeline = Control_Pipeline_v1
-    p._simulator = CircularObstacleMapSimulator
+    p.reset_params = DotMap(obstacle_map=DotMap(reset_type='random',
+                                                params={'min_n': 4, 'max_n': 7, 'min_r': .3, 'max_r': .8}),
+                            start_config=DotMap(reset_type='random'),
+                            goal_config=DotMap(reset_type='random'))
 
-    p.lqr_quad_coeffs = np.array(
-        [1.0, 1.0, 1.0, 1e-10, 1e-10], dtype=np.float32)
-    p.lqr_linear_coeffs = np.zeros((5), dtype=np.float32)
+    p.goal_cutoff_dist = p.goal_distance_objective.goal_margin,
+    p.goal_dist_norm = 2,  # Default is l2 norm
+    p.episode_termination_reasons = ['Timeout', 'Collision', 'Success'],
+    p.episode_termination_colors = ['b', 'r', 'g'],
+    p.waypt_cmap = 'winter'
 
-    # Store params as dictionaries so they can be used with **kwargs
+    p.num_validation_goals = 10
+    return p
 
-    p.spline_params = DotMap(epsilon=1e-5, vary_horizon=True)
 
-    centers_m2 = [[2.0, 2.0]]
-    radii_m1 = [[.5]]
-    p.obstacle_map_params = {'centers_m2': centers_m2,
-                             'radii_m1': radii_m1}
+def parse_params(p):
+    dt = p.planner_params.dt
 
-    # Based on Turtlebot parameters
-    p.system_dynamics_params = DotMap(v_bounds=[0.0, .6],
-                                      w_bounds=[-1.1, 1.1])
-
-    precompute = True
-    # The grid discretization for waypoint sampling
-    waypt_sample_dx = .1
-    p.planner_params = DotMap(mode='uniform', precompute=precompute,
-                              velocity_disc=.5, dx=waypt_sample_dx,
-                              num_theta_bins=21)
-
-    p.control_pipeline_params = DotMap(precompute=precompute,
-                                       load_from_pickle_file=True,
-                                       bin_velocity=True,
-                                       verbose=True)
-
-    # Simulator Params
-    obstacle_map_reset_params = DotMap(reset_type='random',
-                                       params={'min_n': 4, 'max_n': 7, 'min_r': .3, 'max_r': .8})
-    start_config_reset_params = DotMap(reset_type='random')
-    goal_config_reset_params = DotMap(reset_type='random')
-    reset_params = DotMap(obstacle_map=obstacle_map_reset_params,
-                          start_config=start_config_reset_params,
-                          goal_config=goal_config_reset_params)
-
-    p.simulator_params = DotMap(goal_cutoff_dist=p.goal_distance_objective.goal_margin,
-                                goal_dist_norm=2,  # Default is l2 norm
-                                reset_params=reset_params,
-                                episode_termination_reasons=['Timeout', 'Collision', 'Success'],
-                                episode_termination_colors=['b', 'r', 'g'],
-                                waypt_cmap='winter')
-
-    p.num_validation_goals = 50
+    p.episode_horizon = int(np.ceil(p.episode_horizon_s/dt))
+    p.planning_horizon = int(np.ceil(p.planning_horizon_s/dt))
+    p.control_horizon = int(np.ceil(p.control_horizon_s/dt))
     return p

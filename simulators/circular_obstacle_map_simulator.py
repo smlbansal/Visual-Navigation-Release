@@ -5,7 +5,7 @@ from simulators.simulator import Simulator
 class CircularObstacleMapSimulator(Simulator):
 
     def __init__(self, params):
-        assert(params._obstacle_map is CircularObstacleMap)
+        assert(params.obstacle_map_params.classname is CircularObstacleMap)
         super().__init__(params=params)
 
     def _reset_obstacle_map(self, rng):
@@ -17,11 +17,12 @@ class CircularObstacleMapSimulator(Simulator):
         self.fmm_map = self._init_fmm_map()
         self._update_obj_fn()
 
-    def _init_obstacle_map(self, rng, params):
+    def _init_obstacle_map(self, rng):
         """ Initializes a new circular obstacle map."""
         p = self.params
-        return p._obstacle_map.init_random_map(map_bounds=p.map_bounds,
-                                               rng=rng, **params)
+        return p.obstacle_map_params.classname.init_random_map(map_bounds=p.obstacle_map_params.map_bounds,
+                                                               rng=rng,
+                                                               **p.reset_params.obstacle_map.params)
 
     def _render_obstacle_map(self, ax):
         p = self.params

@@ -24,13 +24,19 @@ def load_params(module_name):
     """Loads a parameter file in ./params/module_name.py"""
     module_name = 'params.{:s}'.format(module_name)
     params = importlib.import_module(module_name)
-    p = parse_params(params.load_params())
+    p = params.parse_params(params.load_params())
+    # p = parse_params(params.load_params())
     return p
 
 
 def parse_params(p):
+    return p
+
+#Todo: Probably delete this
+def parse_params_old(p):
     """Parse a parameter file to compute other relevant parameters
     for experiments."""
+    import pdb; pdb.set_trace()
     # Map Origin and size
     origin_x = int(p.map_bounds[0][0]/p.dx)
     origin_y = int(p.map_bounds[0][1]/p.dx)
