@@ -189,6 +189,17 @@ class Trajectory(object):
                                                    axis=1)
         self.k = self.k + trajectory.k
 
+    #TODO: Dont redefine in child class
+    def copy(self):
+        return Trajectory(dt=self.dt, n=self.n, k=self.k,
+                          position_nk2=self.position_nk2()*1.,
+                          speed_nk1=self.speed_nk1()*1.,
+                          acceleration_nk1=self.acceleration_nk1()*1.,
+                          heading_nk1=self.heading_nk1()*1.,
+                          angular_speed_nk1=self.angular_speed_nk1()*1.,
+                          angular_acceleration_nk1=self.angular_acceleration_nk1()*1.,
+                          variable=False, direct_init=True)
+
     def clip_along_time_axis(self, horizon):
         """ Utility function for clipping a trajectory along
         the time axis. Useful for clipping a trajectory within

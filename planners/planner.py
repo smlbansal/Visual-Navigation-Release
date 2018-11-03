@@ -2,7 +2,7 @@ from trajectory.trajectory import Trajectory, SystemConfig
 
 
 class Planner:
-    """Plans optimal trajectories (with respect to minimizing an objective function)
+    """Plans optimal trajectories (by minimizing an objective function)
     through an environment. """
 
     def __init__(self, obj_fn, params):
@@ -10,7 +10,7 @@ class Planner:
         self.params = params
 
         self.opt_waypt = SystemConfig(dt=params.dt, n=1, k=1, variable=True)
-        self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.k, variable=True)
+        self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.planning_horizon, variable=True)
         self.control_pipeline = self._init_control_pipeline()
 
     def optimize(self, start_config):

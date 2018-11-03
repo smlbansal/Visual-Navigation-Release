@@ -1,5 +1,6 @@
 from dotmap import DotMap
 from utils import utils
+import numpy as np
 from planners.sampling_planner import SamplingPlanner
 
 dependencies = ['control_pipeline_params']
@@ -12,7 +13,7 @@ def load_params():
     p.system_dynamics = p.control_pipeline_params.system_dynamics_params.classname
     p.dt = p.control_pipeline_params.system_dynamics_params.dt
 
-    p.planning_horizon_s = p.control_pipeline_params.spline_params.max_final_time
+    p.planning_horizon = p.control_pipeline_params.planning_horizon
     return p
 
 def parse_params(p):

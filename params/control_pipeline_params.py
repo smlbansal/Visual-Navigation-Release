@@ -6,7 +6,7 @@ from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from systems.dubins_v2 import DubinsV2
 from control_pipelines.control_pipeline_v0 import ControlPipelineV0
 
-dependencies = []
+dependencies = ['waypoint_params']
 
 
 def load_params():
@@ -17,11 +17,12 @@ def load_params():
     p.classname = ControlPipelineV0
 
     # The directory for saving the control pipeline files
-    p.dir = './data/control_pipeline'
+    p.dir = './data/control_pipelines'
 
     # Spline parameters
     p.spline_params = DotMap(spline=Spline3rdOrder,
-                             max_final_time=6.0)
+                             max_final_time=1.5,
+                             epsilon=1e-5)
 
     # System Dynamics params
     p.system_dynamics_params = DotMap(classname=DubinsV2,
@@ -33,20 +34,17 @@ def load_params():
     p.lqr_params = DotMap(cost_fn=QuadraticRegulatorRef,
                           quad_coeffs=np.array(
                               [1.0, 1.0, 1.0, 1e-10, 1e-10], dtype=np.float32),
-                          linear_coeffs=np.zeros((5), dtype=np.float32),
-                          planning_horizon=p.spline_params.max_final_time,
-                          dt=.05)
-
-    # Waypoint bounds for x, y and theta, and number of waypoints
-    p.waypoint_params = DotMap(num_waypoints=10000,
-                               bound_min=[0., -2.5, -np.pi / 2],
-                               bound_max=[2.5, 2.5, np.pi / 2])
+                          linear_coeffs=np.zeros((5), dtype=np.float32))
 
     # Velocity binning parameters
-    p.binning_parameters = DotMap(num_bins=100,
-                                  max_speed=0.6)
+    p.binning_parameters = DotMap(num_bins=5,
+                                  max_speed=p.system_dynamics_params.v_bounds[1])
 
     return p
 
+
 def parse_params(p):
-  return p
+    p.planning_horizon_s = p.spline_params.max_final_time
+    p.planning_horizon = int(
+        np.ceil(p.planning_horizon_s / p.system_dynamics_params.dt))
+    return p

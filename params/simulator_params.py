@@ -17,7 +17,6 @@ def load_params():
 
     # Horizons in seconds
     p.episode_horizon_s = 20.0
-    p.planning_horizon_s = p.planner_params.planning_horizon_s
     p.control_horizon_s = 1.5
 
     # Define the Objectives
@@ -54,6 +53,5 @@ def parse_params(p):
     dt = p.planner_params.dt
 
     p.episode_horizon = int(np.ceil(p.episode_horizon_s/dt))
-    p.planning_horizon = int(np.ceil(p.planning_horizon_s/dt))
     p.control_horizon = int(np.ceil(p.control_horizon_s/dt))
     return p

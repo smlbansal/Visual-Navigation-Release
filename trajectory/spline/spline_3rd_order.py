@@ -24,12 +24,10 @@ class Spline3rdOrder(Spline):
             x(p) = a1p^3+b1p^2+c1p+d1
             y(p) = a2p^2+b2p^2+c2p+d2
         """
-        self.start_config = start_config
-        self.goal_config = goal_config
 
         # Compute the factors
         if factors is None:  # Compute them heuristically
-            factor1_n1 = self.start_config.speed_nk1()[:, :, 0] + \
+            factor1_n1 = start_config.speed_nk1()[:, :, 0] + \
                          tf.norm(goal_config.position_nk2()-start_config.position_nk2(), axis=2)
             factor2_n1 = factor1_n1
             factors_n2 = tf.concat([factor1_n1, factor2_n1], axis=1)
@@ -44,20 +42,20 @@ class Spline3rdOrder(Spline):
         with tf.name_scope('fit_spline'):
             f1_n1, f2_n1 = factors_n2[:, 0:1], factors_n2[:, 1:]
 
-            start_pos_n12 = self.start_config.position_nk2()
-            goal_pos_n12 = self.goal_config.position_nk2()
+            start_pos_n12 = start_config.position_nk2()
+            goal_pos_n12 = goal_config.position_nk2()
 
             # Multiple solutions if start and goal are the same x,y coordinates
             assert(tf.reduce_all(tf.norm(goal_pos_n12-start_pos_n12, axis=2) >=
-                                 self.params.spline_params.epsilon))
+                                 self.params.epsilon))
 
             x0_n1, y0_n1 = start_pos_n12[:, :, 0], start_pos_n12[:, :, 1]
-            t0_n1 = self.start_config.heading_nk1()[:, :, 0]
-            v0_n1 = self.start_config.speed_nk1()[:, :, 0]
+            t0_n1 = start_config.heading_nk1()[:, :, 0]
+            v0_n1 = start_config.speed_nk1()[:, :, 0]
 
             xg_n1, yg_n1 = goal_pos_n12[:, :, 0], goal_pos_n12[:, :, 1]
-            tg_n1 = self.goal_config.heading_nk1()[:, :, 0]
-            vg_n1 = self.goal_config.speed_nk1()[:, :, 0]
+            tg_n1 = goal_config.heading_nk1()[:, :, 0]
+            vg_n1 = goal_config.speed_nk1()[:, :, 0]
 
             d1_n1 = x0_n1
             c1_n1 = f1_n1*tf.cos(t0_n1)
@@ -135,8 +133,6 @@ class Spline3rdOrder(Spline):
         when precomputing splines in egocentric coordinates). Set's irrelevant
         instance variables to None to be garbage collected. Note: won't do anything
         with a static tensorflow graph."""
-        self.start_config = None
-        self.goal_config = None
         self.x_coeffs_n14 = None
         self.y_coeffs_n14 = None
         self.p_coeffs_n14 = None
@@ -225,6 +221,7 @@ class Spline3rdOrder(Spline):
         valid_idxs_n = tf.where(self.final_times_n1 <= horizon_s)[:, 0]
         return tf.cast(valid_idxs_n, tf.int32)
 
+    #TODO: Probably Delete this
     @staticmethod
     def check_start_goal_equivalence(start_config_old, goal_config_old,
                                      start_config_new, goal_config_new):

@@ -10,38 +10,45 @@ class QuadraticRegulatorRef(DiscreteCost):
     are angles, which are wrapped in the cost.
     """
 
-    def __init__(self, trajectory_ref, C_gg, c_g, system):
+    def __init__(self, trajectory_ref, system, params):
         """
         :param: trajectory_ref: A reference trajectory against which to penalize
-                C_gg, c_g: Quadratic and linear penalties (of dimension g where
-                            g = d + f)
-                angle_dims: index array which specifies the dimensions of the
+                system: A system dynamics object (used for parsing trajectory objects)
                 state that corresponds to angles and should be wrapped.
         """
-
+        
         # Used for parsing trajectory objects into tensors of states and actions
+        self.params = params
         self.system = system
 
         self._x_dim, self._u_dim = system._x_dim, system._u_dim  # d, f
         self.angle_dims = system._angle_dims
-        self.update_trajectory_ref_and_cost(trajectory_ref, C_gg, c_g)
+
+        self.trajectory_ref = trajectory_ref
+        self.update_shape()
         super().__init__(x_dim=self._x_dim, u_dim=self._u_dim)
 
         self.isTimevarying = True
         self.isNonquadratic = False
 
-    def update_trajectory_ref_and_cost(self, trajectory_ref, C_gg, c_g):
-        """Update the reference trajectory and quadratic/linear penalites of the
-        cost function. Allows a cost function object to be reused over multiple trajectories
-        of different shapes."""
+    def update_shape(self):
+        """Update the shape of quadratic/linear penalites of the
+        cost function based on the shape of self.trajectory_ref.
+        Allows a cost function object to be reused with a trajectory
+        object as it changes shape."""
+        p = self.params
+
         x_dim, u_dim = self._x_dim, self._u_dim
+
+        C_gg = tf.diag(p.quad_coeffs, name='lqr_coeffs_quad')
+        c_g = tf.constant(p.linear_coeffs, name='lqr_coeffs_linear', dtype=tf.float32)
         # Check dimensions
         assert ((tf.reduce_all(tf.equal(C_gg[:x_dim, x_dim:],
                                         tf.transpose(C_gg[x_dim:, :x_dim]))).numpy()))
         assert ((x_dim + u_dim) == C_gg.shape[0].value
                 == C_gg.shape[1].value == c_g.shape[0].value)
 
-        self.trajectory_ref = trajectory_ref
+        trajectory_ref = self.trajectory_ref
         n, k, g = trajectory_ref.n, trajectory_ref.k, C_gg.shape[0]
         self._C_nkgg = tf.broadcast_to(C_gg, (n, k, g, g))
         self._c_nkg = tf.broadcast_to(c_g, (n, k, g))
