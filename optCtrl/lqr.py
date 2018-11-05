@@ -76,12 +76,11 @@ class LQRSolver:
             J_opt_n = self.evaluate_trajectory_cost(trajectory)
             J_hist = [J_opt_n]
 
-            # k_array, and K_array are python lists length self.T
-            # each element in k_array and K_array are tensors size
-            # (n, u_dim, 1) and (n, u_dim, x_dim) respectively
-            k_array_Tnf1, K_array_Tnfd = self.back_propagation(trajectory)
+            # k_array, and K_array are tensors of dimension
+            # (n, self.T-1, u_dim, 1) and (n, self.T-1, u_dim, x_dim) respectively
+            k_array_nTf1, K_array_nTfd = self.back_propagation(trajectory)
             trajectory_new = self.apply_control(start_config, trajectory,
-                                                k_array_Tnf1, K_array_Tnfd)
+                                                k_array_nTf1, K_array_nTfd)
 
             # evaluate the cost of this trial
             J_new_n = self.evaluate_trajectory_cost(trajectory_new)
@@ -91,19 +90,18 @@ class LQRSolver:
             res_dict = {
                 'J_hist': J_hist,
                 'trajectory_opt': trajectory_new,
-                'k_array_opt': k_array_Tnf1,
-                'K_array_opt': K_array_Tnfd
+                'k_array_opt': k_array_nTf1,
+                'K_array_opt': K_array_nTfd
             }
 
             return res_dict
 
     def apply_control(self, start_config, trajectory,
-                      k_array_Tnf1, K_array_Tnfd):
+                      k_array_nTf1, K_array_nTfd):
         """
         apply the derived control to the error system to derive a new
-        trajectory. Here k_array_Tnf1 and K_aaray_Tnfd are python lists of
-        length self.T. Each element of k_array_Tnf1 and K_array_Tnfd is a
-        tensor of dimension (n, f, 1) and (n, f, d) respectively.
+        trajectory. Here k_array_nTf1 and K_aaray_nTfd are
+        tensors of dimension (n, self.T-1, f, 1) and (n, self.T-1, f, d) respectively.
         """
         with tf.name_scope('apply_control'):
             x0_n1d, _ = self.plant_dyn.parse_trajectory(start_config)
@@ -120,9 +118,9 @@ class LQRSolver:
                                          angle_normalize(error_t_n1d[:, :, angle_dims:angle_dims+1]),
                                          error_t_n1d[:, :, angle_dims+1:]],
                                         axis=2)
-                fdback = tf.matmul(K_array_Tnfd[t],
+                fdback = tf.matmul(K_array_nTfd[:, t],
                                    tf.transpose(error_t_n1d, perm=[0, 2, 1]))
-                u_n1f = u_ref_n1f + tf.transpose(k_array_Tnf1[t] + fdback,
+                u_n1f = u_ref_n1f + tf.transpose(k_array_nTf1[:, t] + fdback,
                                                  perm=[0, 2, 1])
                 x_next_n1d = self.fwdSim(x_next_n1d, u_n1f)
                 actions.append(u_n1f)
@@ -194,7 +192,12 @@ class LQRSolver:
                 Vxx_ndd = Qxx_ndd - tf.matmul(tf.matmul(fdbck_gain_nfd, Quu_nff),
                                               fdbck_gain_Tnfd[t])
                 Vx_nd1 = Qx_nd1 - tf.matmul(tf.matmul(fdbck_gain_nfd, Quu_nff), fdfwd_Tnf1[t])
-            return fdfwd_Tnf1, fdbck_gain_Tnfd
+
+            # Stack the outer time dimension as dimension 1
+            # in the tensors
+            fdfwd_nTf1 = tf.stack(fdfwd_Tnf1, axis=1)
+            fdbck_gain_nTfd = tf.stack(fdbck_gain_Tnfd, axis=1)
+            return fdfwd_nTf1, fdbck_gain_nTfd
 
     def build_lqr_system(self, trajectory):
         """Given a trajectory returns the first order

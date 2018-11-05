@@ -107,7 +107,7 @@ def mkdir_if_missing(dirname):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
-
+#Probably can delete
 def dump_to_pickle_file(filename, data):
     with open(filename, 'wb') as f:
         pickle.dump(data, f)

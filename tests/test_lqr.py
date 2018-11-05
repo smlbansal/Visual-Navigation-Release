@@ -5,20 +5,19 @@ import matplotlib.pyplot as plt
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from optCtrl.lqr import LQRSolver
 from systems.dubins_v1 import DubinsV1
-import dotmap
+from dotmap import DotMap
 
 
 def create_params():
-    p = dotmap.DotMap()
+    p = DotMap()
     p.seed = 1
     p.n = 5
     p.k = 20
     p.map_bounds = [[0.0, 0.0], [4.0, 4.0]]
     p.dx, p.dt = .05, .1
 
-    p.lqr_coeffs = dotmap.DotMap({'quad': [1.0, 1.0, 1.0, 1e-10, 1e-10],
-                                  'linear': [0.0, 0.0, 0.0, 0.0, 0.0]})
-    p.ctrl = 1.
+    p.quad_coeffs = [1.0, 1.0, 1.0, 1e-10, 1e-10]
+    p.linear_coeffs = [0.0, 0.0, 0.0, 0.0, 0.0]
     return p
 
 
@@ -37,9 +36,7 @@ def test_lqr0(visualize=False):
     u_ref_nk2 = tf.constant(np.zeros((n, k, u_dim), dtype=np.float32))
     trajectory_ref = db.assemble_trajectory(x_ref_nk3, u_ref_nk2)
 
-    C = tf.constant(np.diag(p.lqr_coeffs.quad), dtype=tf.float32)
-    c = tf.constant(np.array(p.lqr_coeffs.linear), dtype=tf.float32)
-    cost_fn = QuadraticRegulatorRef(trajectory_ref, C, c, db)
+    cost_fn = QuadraticRegulatorRef(trajectory_ref, db, p)
 
     x_nk3 = tf.constant(np.zeros((n, k, x_dim), dtype=np.float32))
     u_nk2 = tf.constant(np.zeros((n, k, u_dim), dtype=np.float32))
@@ -88,10 +85,7 @@ def test_lqr1(visualize=False):
     u_nk2 = tf.zeros((n, k-1, 2), dtype=tf.float32)+u_1k2
     trajectory_ref = db.simulate_T(x_n13, u_nk2, T=k)
 
-    C = tf.constant(np.diag(p.lqr_coeffs.quad), dtype=tf.float32)
-    c = tf.constant(np.array(p.lqr_coeffs.linear), dtype=tf.float32)
-
-    cost_fn = QuadraticRegulatorRef(trajectory_ref, C, c, db)
+    cost_fn = QuadraticRegulatorRef(trajectory_ref, db, p)
 
     x_nk3 = tf.constant(np.zeros((n, k, x_dim), dtype=np.float32))
     u_nk2 = tf.constant(np.zeros((n, k, u_dim), dtype=np.float32))
@@ -154,9 +148,7 @@ def test_lqr2(visualize=False):
     u_nk2 = tf.concat([u_ref_nk2, u_nk2[0:1]], axis=0)
     trajectory_ref = db.assemble_trajectory(x_nk3, u_nk2)
 
-    C = tf.constant(np.diag(p.lqr_coeffs.quad), dtype=tf.float32)
-    c = tf.constant(np.array(p.lqr_coeffs.linear), dtype=tf.float32)
-    cost_fn = QuadraticRegulatorRef(trajectory_ref, C, c, db)
+    cost_fn = QuadraticRegulatorRef(trajectory_ref, db, p)
 
     x_nk3 = tf.constant(np.zeros((n, k, x_dim), dtype=np.float32))
     u_nk2 = tf.constant(np.zeros((n, k, u_dim), dtype=np.float32))

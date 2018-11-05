@@ -28,14 +28,14 @@ class Simulator:
         config = self.start_config
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_configs = [self.start_config]
-        waypt_egocentric_configs = []
+        waypt_configs = []
         config_time_idxs = [0]
         while vehicle_trajectory.k < self.params.episode_horizon:
-            waypt_trajectory, next_config, waypt_egocentric_config = self._iterate(
+            waypt_trajectory, next_config, waypt_config = self._iterate(
                 config)
             vehicle_trajectory.append_along_time_axis(waypt_trajectory)
             vehicle_configs.append(next_config)
-            waypt_egocentric_configs.append(waypt_egocentric_config)
+            waypt_configs.append(waypt_config)
             config_time_idxs.append(vehicle_trajectory.k)
             config = next_config
         self.min_obs_distances = self._calculate_min_obs_distances(
@@ -49,8 +49,8 @@ class Simulator:
         # corresponding to unclipped parts of the trajectory
         keep_idx = np.array(config_time_idxs) <= end_time_idx
         self.system_configs = np.array(vehicle_configs)[keep_idx]
-        self.waypt_egocentric_configs = np.array(
-            waypt_egocentric_configs)[keep_idx[1:]]
+        self.waypt_configs = np.array(
+            waypt_configs)[keep_idx[1:]]
 
         self.obj_val = tf.squeeze(
             self.obj_fn.evaluate_function(vehicle_trajectory))
@@ -92,7 +92,7 @@ class Simulator:
         return min_traj, next_config, min_waypt.copy()
 
     def _reset_start_configuration(self, rng):
-        p = self.params.simulator_params.reset_params.start_config
+        p = self.params.reset_params.start_config
         assert(p.reset_type == 'random')
         obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
 
@@ -107,11 +107,11 @@ class Simulator:
                                          position_nk2=start_112)
 
     def _reset_goal_configuration(self, rng):
-        p = self.params.simulator_params.reset_params.goal_config
+        p = self.params.reset_params.goal_config
         assert(p.reset_type == 'random')
         obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
-        goal_norm = self.params.simulator_params.goal_dist_norm
-        goal_radius = self.params.simulator_params.goal_cutoff_dist
+        goal_norm = self.params.goal_dist_norm
+        goal_radius = self.params.goal_cutoff_dist
         start_112 = self.start_config.position_nk2()
 
         goal_112 = self.obstacle_map.sample_point_112(self.rng)
@@ -131,7 +131,7 @@ class Simulator:
     def _enforce_episode_termination_conditions(self, vehicle_trajectory):
         """ A utility function to enforce episode termination conditions.
         Clips the vehicle trajectory along the time axis."""
-        p = self.params.simulator_params
+        p = self.params
         time_idxs = []
         for condition in p.episode_termination_reasons:
             time_idxs.append(self._compute_time_idx_for_termination_condition(vehicle_trajectory,
@@ -166,7 +166,7 @@ class Simulator:
             dist_to_goal_1k = self._dist_to_goal(
                 pos_1k2, self.goal_config.position_nk2())
             successes = tf.where(tf.less(dist_to_goal_1k,
-                                         self.params.simulator_params.goal_cutoff_dist))
+                                         self.params.goal_cutoff_dist))
             success_idxs = successes[:, 1]
             if tf.size(success_idxs).numpy() != 0:
                 time_idx = success_idxs[0]
@@ -180,6 +180,7 @@ class Simulator:
         obstacle_map and fmm map """
         p = self.params
         idx = 0
+        #TODO- Fix this. Shouldnt be hardcoded
         if not p.avoid_obstacle_objective.empty():
             self.obj_fn.objectives[idx].obstacle_map = self.obstacle_map
             idx += 1
@@ -204,7 +205,7 @@ class Simulator:
                                                                                          n=1)
         self.fmm_map = self._init_fmm_map()
         obj_fn = ObjectiveFunction()
-        if not p.planner_params.avoid_obstacle_objective.empty():
+        if not p.avoid_obstacle_objective.empty():
             obj_fn.add_objective(ObstacleAvoidance(
                 params=p.avoid_obstacle_objective,
                 obstacle_map=self.obstacle_map))
@@ -245,7 +246,7 @@ class Simulator:
     def _dist_to_goal(self, pos_nk2, goal_12):
         """Calculate the distance between
         each point in pos_nk2 and the given goal, goal_12"""
-        if self.params.simulator_params.goal_dist_norm == 2:
+        if self.params.goal_dist_norm == 2:
             return tf.norm(pos_nk2 - goal_12, axis=2)
         else:
             assert(False)
@@ -311,15 +312,15 @@ class Simulator:
         raise NotImplementedError
 
     def render(self, ax, freq=4):
-        p = self.params.simulator_params
+        p = self.params
         self._render_obstacle_map(ax)
         self.vehicle_trajectory.render([ax], freq=freq)
 
         # Plot the system configuration and corresponding
         # waypoint produced in the same color
-        cmap = matplotlib.cm.get_cmap(self.params.simulator_params.waypt_cmap)
+        cmap = matplotlib.cm.get_cmap(self.params.waypt_cmap)
         for i, (system_config, waypt_config) in enumerate(itertools.zip_longest(self.system_configs,
-                                                                                self.waypt_world_configs)):
+                                                                                self.waypt_configs)):
             color = cmap(i / len(self.system_configs))
             system_config.render(ax, batch_idx=0, marker='o', color=color)
             if waypt_config is not None:

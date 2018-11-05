@@ -77,6 +77,10 @@ class Spline3rdOrder(Spline):
                                          axis=2)
             self.final_times_n1 = final_times_n1
 
+            # Update the batch size as the same spline object
+            # can be used with multiple start/ goal configurations
+            self.n = start_config.n
+
     def _eval_spline(self, ts_nk, calculate_speeds=True):
         """ Evaluates the spline on points in ts_nk
         Assumes ts is normalized to be in [0, 1.]
@@ -84,6 +88,8 @@ class Spline3rdOrder(Spline):
         x_coeffs_n14 = self.x_coeffs_n14
         y_coeffs_n14 = self.y_coeffs_n14
         p_coeffs_n14 = self.p_coeffs_n14
+
+        self.k = ts_nk.shape[1].value
 
         with tf.name_scope('eval_spline'):
             ts_n4k = tf.stack([tf.pow(ts_nk, 3), tf.pow(ts_nk, 2),
@@ -126,6 +132,9 @@ class Spline3rdOrder(Spline):
 
                 self._speed_nk1 = speed_nk[:, :, None]
                 self._angular_speed_nk1 = angular_speed_nk[:, :, None]
+
+                self._acceleration_nk1 = tf.zeros_like(self._speed_nk1)
+                self._angular_acceleration_nk1 = tf.zeros_like(self._speed_nk1)
 
     def free_memory(self):
         """Assumes that a spline has already been fit and evaluated and

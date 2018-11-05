@@ -46,9 +46,11 @@ class ControlPipelineBase(object):
         Save the data dictionary given by data in the file given by filename. This function should be typically called
         by generate_control_pipeline function.
         """
-        # ToDO(Varun): Implement this function in the parent class itself as this should be a generic function to all
-        # child classes based on the parameters.
-        raise NotImplementedError
+        if file_format == '.pkl':
+            with open(filename, 'wb') as f:
+                pickle.dump(data, f)
+        else:
+            raise NotImplementedError
 
     def does_pipeline_exist(self):
         """
@@ -63,9 +65,9 @@ class ControlPipelineBase(object):
         """
         raise NotImplementedError
 
-    def plan(self, start_config, goal_config):
+    def plan(self, start_config):
         """Use the control pipeline to find the set of trajectories in the control pipeline that are suitable for
-        start_config and goal_config. The function should return list of valid_waypoints, corresponding horizons,
+        start_config. The function should return list of valid_waypoints, corresponding horizons,
         state-control trajectories, and controllers. It is assumed that the pipeline exists and already has been
         loaded."""
         raise NotImplementedError

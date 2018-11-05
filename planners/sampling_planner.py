@@ -28,6 +28,5 @@ class SamplingPlanner(Planner):
 
         # TODO- optionally return horizon here?
         self.opt_waypt.assign_from_config_batch_idx(waypts, min_idx)
-        self.opt_traj.assign_from_trajectory_batch_idx(
-            trajectories_world, min_idx)
+        self.opt_traj.assign_from_trajectory_batch_idx(trajectories, min_idx)
         return self.opt_waypt, self.opt_traj, min_cost

@@ -117,6 +117,7 @@ class Trajectory(object):
         self._heading_nk1 = tf.gather(self._heading_nk1, idxs)
         self._angular_speed_nk1 = tf.gather(self._angular_speed_nk1, idxs)
         self._angular_acceleration_nk1 = tf.gather(self._angular_acceleration_nk1, idxs)
+        return self
 
     def to_numpy_repr(self):
         """Utility function to return a representation of the trajectory using
@@ -130,6 +131,46 @@ class Trajectory(object):
                       'angular_acceleration_nk1':
                       self.angular_acceleration_nk1().numpy()}
         return numpy_dict
+
+    @classmethod
+    def concat_across_batch_dim(cls, trajs):
+        """Concatenates a list of trajectory objects
+        across the batch dimension, returning a new 
+        trajectory object."""
+        position_nk2 = tf.concat([traj.position_nk2() for traj in trajs], axis=0)
+        speed_nk1 = tf.concat([traj.speed_nk1() for traj in trajs], axis=0)
+        acceleration_nk1 = tf.concat([traj.acceleration_nk1() for traj in trajs], axis=0)
+        heading_nk1 = tf.concat([traj.heading_nk1() for traj in trajs], axis=0)
+        angular_speed_nk1 = tf.concat([traj.angular_speed_nk1() for traj in trajs], axis=0)
+        angular_acceleration_nk1 = tf.concat([traj.angular_acceleration_nk1() for traj in trajs], axis=0)
+
+        dt = trajs[0].dt
+        k = trajs[0].k
+        n = position_nk2.shape[0].value
+        return cls(dt=dt, n=n, k=k, position_nk2=position_nk2,
+                   speed_nk1=speed_nk1, acceleration_nk1=acceleration_nk1,
+                   heading_nk1=heading_nk1, angular_speed_nk1=angular_speed_nk1,
+                   angular_acceleration_nk1=angular_acceleration_nk1)
+
+    @classmethod
+    def gather_across_batch_dim_and_create(cls, traj, idxs):
+        """Given a tensor of indexes to gather in the batch dimension,
+        gather traj's instance variables across the batch dimension
+        creating a new trajectory object."""
+        dt = traj.dt
+        n = len(idxs.numpy())
+        k = traj.k
+
+        position_nk2 = tf.gather(traj.position_nk2(), idxs)
+        speed_nk1 = tf.gather(traj.speed_nk1(), idxs)
+        acceleration_nk1 = tf.gather(traj.acceleration_nk1(), idxs)
+        heading_nk1 = tf.gather(traj.heading_nk1(), idxs)
+        angular_speed_nk1 = tf.gather(traj.angular_speed_nk1(), idxs)
+        angular_acceleration_nk1 = tf.gather(traj.angular_acceleration_nk1(), idxs)
+        return cls(dt=dt, n=n, k=k, position_nk2=position_nk2,
+                   speed_nk1=speed_nk1, acceleration_nk1=acceleration_nk1,
+                   heading_nk1=heading_nk1, angular_speed_nk1=angular_speed_nk1,
+                   angular_acceleration_nk1=angular_acceleration_nk1)
 
     @property
     def trainable_variables(self):
@@ -282,6 +323,7 @@ class SystemConfig(Trajectory):
                          angular_acceleration_nk1, dtype=tf.float32,
                          variable=variable, direct_init=direct_init)
 
+    #TODO: Don't repeat this
     def copy(self):
         return SystemConfig(dt=self.dt, n=self.n, k=self.k,
                             position_nk2=self.position_nk2()*1.,

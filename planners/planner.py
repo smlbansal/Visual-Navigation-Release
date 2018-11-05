@@ -25,7 +25,7 @@ class Planner:
         generated through the control pipeline from start_config (world frame).
         Assumes the control pipeline has been initialized with goal configurations already."""
         waypts, horizons, trajectories_world, controllers = self.control_pipeline.plan(start_config)
-        obj_val = self.obj_fn.evaluate_function(self.trajectories_world)
+        obj_val = self.obj_fn.evaluate_function(trajectories_world)
         return obj_val, [waypts, horizons, trajectories_world, controllers]
 
     def _init_control_pipeline(self):

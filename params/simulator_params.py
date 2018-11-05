@@ -39,10 +39,10 @@ def load_params():
                             start_config=DotMap(reset_type='random'),
                             goal_config=DotMap(reset_type='random'))
 
-    p.goal_cutoff_dist = p.goal_distance_objective.goal_margin,
-    p.goal_dist_norm = 2,  # Default is l2 norm
-    p.episode_termination_reasons = ['Timeout', 'Collision', 'Success'],
-    p.episode_termination_colors = ['b', 'r', 'g'],
+    p.goal_cutoff_dist = p.goal_distance_objective.goal_margin
+    p.goal_dist_norm = p.goal_distance_objective.power  # Default is l2 norm
+    p.episode_termination_reasons = ['Timeout', 'Collision', 'Success']
+    p.episode_termination_colors = ['b', 'r', 'g']
     p.waypt_cmap = 'winter'
 
     p.num_validation_goals = 10
