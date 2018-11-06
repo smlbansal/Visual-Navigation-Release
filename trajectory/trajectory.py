@@ -230,17 +230,6 @@ class Trajectory(object):
                                                    axis=1)
         self.k = self.k + trajectory.k
 
-    #TODO: Dont redefine in child class
-    def copy(self):
-        return Trajectory(dt=self.dt, n=self.n, k=self.k,
-                          position_nk2=self.position_nk2()*1.,
-                          speed_nk1=self.speed_nk1()*1.,
-                          acceleration_nk1=self.acceleration_nk1()*1.,
-                          heading_nk1=self.heading_nk1()*1.,
-                          angular_speed_nk1=self.angular_speed_nk1()*1.,
-                          angular_acceleration_nk1=self.angular_acceleration_nk1()*1.,
-                          variable=False, direct_init=True)
-
     def clip_along_time_axis(self, horizon):
         """ Utility function for clipping a trajectory along
         the time axis. Useful for clipping a trajectory within
@@ -255,6 +244,17 @@ class Trajectory(object):
         self._angular_speed_nk1 = self._angular_speed_nk1[:, :horizon]
         self._angular_acceleration_nk1 = self._angular_acceleration_nk1[:, :horizon]
         self.k = horizon
+
+    @classmethod
+    def copy(cls, traj):
+        return cls(dt=traj.dt, n=traj.n, k=traj.k,
+                   position_nk2=traj.position_nk2()*1.,
+                   speed_nk1=traj.speed_nk1()*1.,
+                   acceleration_nk1=traj.acceleration_nk1()*1.,
+                   heading_nk1=traj.heading_nk1()*1.,
+                   angular_speed_nk1=traj.angular_speed_nk1()*1.,
+                   angular_acceleration_nk1=traj.angular_acceleration_nk1()*1.,
+                   variable=False, direct_init=True)
 
     @classmethod
     def new_traj_clip_along_time_axis(cls, trajectory, horizon):
@@ -323,16 +323,6 @@ class SystemConfig(Trajectory):
                          angular_acceleration_nk1, dtype=tf.float32,
                          variable=variable, direct_init=direct_init)
 
-    #TODO: Don't repeat this
-    def copy(self):
-        return SystemConfig(dt=self.dt, n=self.n, k=self.k,
-                            position_nk2=self.position_nk2()*1.,
-                            speed_nk1=self.speed_nk1()*1.,
-                            acceleration_nk1=self.acceleration_nk1()*1.,
-                            heading_nk1=self.heading_nk1()*1.,
-                            angular_speed_nk1=self.angular_speed_nk1()*1.,
-                            angular_acceleration_nk1=self.angular_acceleration_nk1()*1.,
-                            variable=False, direct_init=True)
 
     def assign_from_broadcasted_batch(self, config, n):
         """ Assigns a SystemConfig's variables by broadcasting a given config to

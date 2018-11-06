@@ -89,7 +89,7 @@ class Simulator:
             min_traj, self.params.control_horizon)
         next_config = SystemConfig.init_config_from_trajectory_time_index(
             min_traj, t=-1)
-        return min_traj, next_config, min_waypt.copy()
+        return min_traj, next_config, SystemConfig.copy(min_waypt)
 
     def _reset_start_configuration(self, rng):
         p = self.params.reset_params.start_config
@@ -158,13 +158,7 @@ class Simulator:
                 time_idx = collision_idxs[0]
         elif condition == 'Success':
             time_idx += 1
-
-            pos_1k2 = vehicle_trajectory.position_nk2()
-            #TODO: Dont use self._dist_to_goal
-            # can give slightly incorrect values
-            # as discussed with Somil
-            dist_to_goal_1k = self._dist_to_goal(
-                pos_1k2, self.goal_config.position_nk2())
+            dist_to_goal_1k = self._dist_to_goal(vehicle_trajectory)
             successes = tf.where(tf.less(dist_to_goal_1k,
                                          self.params.goal_cutoff_dist))
             success_idxs = successes[:, 1]
@@ -179,17 +173,15 @@ class Simulator:
         """ Update the objective function to use a new
         obstacle_map and fmm map """
         p = self.params
-        idx = 0
-        #TODO- Fix this. Shouldnt be hardcoded
-        if not p.avoid_obstacle_objective.empty():
-            self.obj_fn.objectives[idx].obstacle_map = self.obstacle_map
-            idx += 1
-        if not p.goal_distance_objective.empty():
-            self.obj_fn.objectives[idx].fmm_map = self.fmm_map
-            idx += 1
-        if not p.goal_angle_objective.empty():
-            self.obj_fn.objectives[idx].fmm_map = self.fmm_map
-            idx += 1
+        for objective in self.obj_fn.objectives:
+            if isinstance(objective, ObstacleAvoidance):
+                objective.obstacle_map = self.obstacle_map
+            elif isinstance(objective, GoalDistance):
+                objective.fmm_map = self.fmm_map
+            elif isinstance(objective, AngleDistance):
+                objective.fmm_map = self.fmm_map
+            else:
+                assert(False)
 
     def _init_obstacle_map(self, obstacle_params=None):
         """ Initializes a new obstacle map."""
@@ -243,13 +235,14 @@ class Simulator:
 
     # Functions for computing relevant metrics
     # on robot trajectories
-    def _dist_to_goal(self, pos_nk2, goal_12):
-        """Calculate the distance between
-        each point in pos_nk2 and the given goal, goal_12"""
-        if self.params.goal_dist_norm == 2:
-            return tf.norm(pos_nk2 - goal_12, axis=2)
-        else:
-            assert(False)
+    def _dist_to_goal(self, trajectory):
+        """Calculate the FMM distance between
+        each state in trajectory and the goal."""
+        p = self.params
+        for objective in self.obj_fn.objectives:
+            if isinstance(objective, GoalDistance):
+                dist_to_goal_nk = objective.compute_dist_to_goal_nk(trajectory)
+        return dist_to_goal_nk
 
     def _calculate_min_obs_distances(self, vehicle_trajectory):
         """Returns an array of dimension 1k where each element is the distance to the closest
@@ -269,10 +262,9 @@ class Simulator:
         """After the episode is over, call the get_metrics function to get metrics
         per episode.  Returns a structure, lists of which are passed to accumulate
         metrics static function to generate summary statistics."""
-        final_dist = self._dist_to_goal(self.vehicle_trajectory.position_nk2()[:, -1],
-                                        self.goal_config.position_nk2())
-        init_dist = self._dist_to_goal(self.vehicle_trajectory.position_nk2()[:, -1],
-                                       self.start_config.position_nk2())
+        dists_1k = self._dist_to_goal(self.vehicle_trajectory)
+        init_dist = dists_1k[0, 0].numpy()
+        final_dist = dists_1k[0, -1].numpy()
         collisions_mu = np.mean(self.collisions)
         return np.array([self.obj_val,
                          init_dist,

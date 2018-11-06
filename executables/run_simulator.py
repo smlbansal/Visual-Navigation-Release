@@ -10,11 +10,10 @@ logdir = './logs/simulator'
 
 def simulate(plot_controls=False):
     p = utils.load_params('simulator_params')
-    p.common.seed = 1  # TODO: Change this
-
+    
     print(logdir)
     utils.mkdir_if_missing(logdir)
-    #utils.log_dict_as_json(p, os.path.join(logdir, 'simulator_params.json')) #TODO: Fix this function
+    utils.log_dict_as_json(p, os.path.join(logdir, 'simulator_params.json'))
 
     sqrt_num_plots = int(np.ceil(np.sqrt(p.num_validation_goals)))
     fig, _, axs = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),

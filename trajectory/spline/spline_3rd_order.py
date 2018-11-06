@@ -144,41 +144,6 @@ class Spline3rdOrder(Spline):
         self.y_coeffs_n14 = None
         self.p_coeffs_n14 = None
         self.final_times_n1 = None
-
-    # TODO: Probably Delete this Later. It is now redundant
-    def enforce_dynamic_feasability(self, system_dynamics, horizon_s):
-        """Checks whether the current computed spline (on time points in [0, horizon_s])
-        can be executed in time <= horizon_s (specified in seconds) while respecting max speed and
-        angular speed constraints. Returns the batch indices of all valid splines."""
-        if system_dynamics.v_bounds is None and system_dynamics.w_bounds is None:
-            return self.n
-
-        # Speed assumed to be in [0, speed_max_system]
-        # Angular speed assumed to be in [-angular_speed_max_system, angular_speed_max_system]
-        speed_max_system = system_dynamics.v_bounds[1]
-        angular_speed_max_system = system_dynamics.w_bounds[1]
-
-        max_speed = tf.reduce_max(self.speed_nk1()*horizon_s, axis=1)
-        max_angular_speed = tf.reduce_max(tf.abs(self.angular_speed_nk1()*horizon_s), axis=1)
-
-        horizon_speed = max_speed/speed_max_system
-        horizon_angular_speed = max_angular_speed/angular_speed_max_system
-        horizons = tf.concat([horizon_speed, horizon_angular_speed], axis=1)
-        cutoff_horizon_n = tf.reduce_max(horizons, axis=1)
-        valid_idxs = tf.squeeze(tf.where(cutoff_horizon_n <= horizon_s), axis=1)
-
-        # If vary_horizon is true the spline is dynamically recomputed with
-        # time horizon min(cutoff_horizon_n, horizon_s) along the batch dimension
-        if self.params.spline_params.vary_horizon:
-            ts_nk = tf.tile(tf.linspace(0., horizon_s, self.k)[None], [self.n, 1])
-            valid_mask_nk = (ts_nk <= cutoff_horizon_n[:, None])
-            valid_mask_inv_nk = tf.cast(tf.logical_not(valid_mask_nk), dtype=tf.float32)
-            valid_mask_nk = tf.cast(valid_mask_nk, dtype=tf.float32)
-
-            ts_nk = ts_nk*valid_mask_nk + valid_mask_inv_nk*cutoff_horizon_n[:, None]
-            self.eval_spline(ts_nk, calculate_speeds=True)
-
-        return tf.cast(valid_idxs, tf.int32)
     
     def check_dynamic_feasibility(self, speed_max_system, angular_speed_max_system, horizon_s):
         """Checks whether the current computed spline can be executed in time <= horizon_s (specified in seconds)
@@ -228,50 +193,6 @@ class Spline3rdOrder(Spline):
         """
         valid_idxs_n = tf.where(self.final_times_n1 <= horizon_s)[:, 0]
         return tf.cast(valid_idxs_n, tf.int32)
-
-    #TODO: Probably Delete this
-    @staticmethod
-    def check_start_goal_equivalence(start_config_old, goal_config_old,
-                                     start_config_new, goal_config_new):
-        """ A utility function that checks whether start_config_old,
-        goal_config_old imply the same spline constraints as those implied by
-        start_config_new, goal_config_new. Useful for checking that a
-        precomputed spline on the old start and goal will work on new start
-        and goal."""
-        start_old_pos_nk2 = start_config_old.position_nk2()
-        start_old_heading_nk1 = start_config_old.heading_nk1()
-        start_old_speed_nk1 = start_config_old.speed_nk1()
-
-        start_new_pos_nk2 = start_config_new.position_nk2()
-        start_new_heading_nk1 = start_config_new.heading_nk1()
-        start_new_speed_nk1 = start_config_new.speed_nk1()
-
-        start_pos_match = (tf.norm(start_old_pos_nk2-start_new_pos_nk2).numpy() == 0.0)
-        start_heading_match = (tf.norm(start_old_heading_nk1-start_new_heading_nk1).numpy() == 0.0)
-        start_speed_match = (tf.norm(start_old_speed_nk1-start_new_speed_nk1).numpy() == 0.0)
-
-        start_match = (start_pos_match and start_heading_match and
-                       start_speed_match)
-
-        # Check whether they are the same object
-        if goal_config_old is goal_config_new:
-            return start_match
-        else:
-            goal_old_pos_nk2 = goal_config_old.position_nk2()
-            goal_old_heading_nk1 = goal_config_old.heading_nk1()
-            goal_old_speed_nk1 = goal_config_old.speed_nk1()
-
-            goal_new_pos_nk2 = goal_config_new.position_nk2()
-            goal_new_heading_nk1 = goal_config_new.heading_nk1()
-            goal_new_speed_nk1 = goal_config_new.speed_nk1()
-
-            goal_pos_match = (tf.norm(goal_old_pos_nk2-goal_new_pos_nk2).numpy() == 0.0)
-            goal_heading_match = (tf.norm(goal_old_heading_nk1-goal_new_heading_nk1).numpy() == 0.0)
-            goal_speed_match = (tf.norm(goal_old_speed_nk1-goal_new_speed_nk1).numpy() == 0.0)
-
-            goal_match = (goal_pos_match and goal_heading_match and
-                          goal_speed_match)
-            return start_match and goal_match
 
     @staticmethod
     def ensure_goals_valid(start_x, start_y, goal_x_nk1, goal_y_nk1, goal_theta_nk1, epsilon):

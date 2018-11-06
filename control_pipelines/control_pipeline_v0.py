@@ -47,14 +47,14 @@ class ControlPipelineV0(ControlPipelineBase):
                     start_config = self.system_dynamics.init_egocentric_robot_config(dt=p.system_dynamics_params.dt,
                                                                                      n=self.waypoint_grid.n,
                                                                                      v=v0)
-                    goal_config = waypoints_egocentric.copy()
+                    goal_config = SystemConfig.copy(waypoints_egocentric)
                     start_config, goal_config, horizons_n1 = self._dynamically_fit_spline(
                         start_config, goal_config)
                     lqr_trajectory, K_array, k_array = self._lqr(start_config)
                     data_bin = {'start_configs': start_config,
                                 'waypt_configs': goal_config,
                                 'start_speeds': self.spline_trajectory.speed_nk1()[:, 0],
-                                'spline_trajectories': self.spline_trajectory.copy(),
+                                'spline_trajectories': Trajectory.copy(self.spline_trajectory),
                                 'horizons': horizons_n1,
                                 'lqr_trajectories': lqr_trajectory,
                                 'K_arrays': K_array,
