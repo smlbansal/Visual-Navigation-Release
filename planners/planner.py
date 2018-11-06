@@ -32,7 +32,7 @@ class Planner:
         """If the control pipeline has exists already (i.e. precomputed),
         load it. Otherwise generate create it from scratch and save it."""
         p = self.params.control_pipeline_params
-        control_pipeline = p.classname(params=p)
+        control_pipeline = p.pipeline(params=p)
 
         if control_pipeline.does_pipeline_exist():
             control_pipeline.load_control_pipeline()

@@ -230,8 +230,8 @@ class Simulator:
 
     def _init_planner(self):
         p = self.params
-        return p.planner_params.classname(obj_fn=self.obj_fn,
-                                          params=p.planner_params)
+        return p.planner_params.planner(obj_fn=self.obj_fn,
+                                        params=p.planner_params)
 
     # Functions for computing relevant metrics
     # on robot trajectories

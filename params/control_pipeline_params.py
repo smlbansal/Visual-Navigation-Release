@@ -14,7 +14,7 @@ def load_params():
     p = DotMap({dependency: utils.load_params(dependency)
                 for dependency in dependencies})
 
-    p.classname = ControlPipelineV0
+    p.pipeline = ControlPipelineV0
 
     # The directory for saving the control pipeline files
     p.dir = './data/control_pipelines'
@@ -25,7 +25,7 @@ def load_params():
                              epsilon=1e-5)
 
     # System Dynamics params
-    p.system_dynamics_params = DotMap(classname=DubinsV2,
+    p.system_dynamics_params = DotMap(system=DubinsV2,
                                       dt=.05,
                                       v_bounds=[0.0, .6],
                                       w_bounds=[-1.1, 1.1])

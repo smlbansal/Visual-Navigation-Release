@@ -12,8 +12,8 @@ class ControlPipelineBase(object):
 
     def __init__(self, params):
         self.params = params
-        self.system_dynamics = params.system_dynamics_params.classname(dt=params.system_dynamics_params.dt,
-                                                                       params=params.system_dynamics_params)
+        self.system_dynamics = params.system_dynamics_params.system(dt=params.system_dynamics_params.dt,
+                                                                    params=params.system_dynamics_params)
         self.pipeline_files = self.valid_file_names()
 
     def generate_control_pipeline(self, params=None):

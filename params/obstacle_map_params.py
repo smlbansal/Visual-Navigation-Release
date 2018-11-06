@@ -9,7 +9,7 @@ def load_params():
     # Load the dependencies
     p = DotMap({dependency: utils.load_params(dependency) for dependency in dependencies})
 
-    p.classname = CircularObstacleMap
+    p.obstacle_map = CircularObstacleMap
 
     # [[min_x, min_y], [max_x, max_y]]
     p.map_bounds = [[0.0, 0.0], [8.0, 8.0]]

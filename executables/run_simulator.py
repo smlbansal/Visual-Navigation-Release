@@ -30,7 +30,7 @@ def simulate(plot_controls=False):
     tf.set_random_seed(p.common.seed)
     np.random.seed(p.common.seed)
 
-    sim = p.classname(params=p)
+    sim = p.simulator(params=p)
 
     metrics = []
     # heuristic- this looks good
