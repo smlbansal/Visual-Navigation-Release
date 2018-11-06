@@ -21,7 +21,7 @@ def load_params():
 
     # Spline parameters
     p.spline_params = DotMap(spline=Spline3rdOrder,
-                             max_final_time=1.5,
+                             max_final_time=6.0,
                              epsilon=1e-5)
 
     # System Dynamics params
@@ -37,9 +37,10 @@ def load_params():
                           linear_coeffs=np.zeros((5), dtype=np.float32))
 
     # Velocity binning parameters
-    p.binning_parameters = DotMap(num_bins=5,
+    p.binning_parameters = DotMap(num_bins=61,
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 
+    p.verbose = True
     return p
 
 

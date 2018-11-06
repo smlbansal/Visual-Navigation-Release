@@ -89,8 +89,6 @@ class Spline3rdOrder(Spline):
         y_coeffs_n14 = self.y_coeffs_n14
         p_coeffs_n14 = self.p_coeffs_n14
 
-        self.k = ts_nk.shape[1].value
-
         with tf.name_scope('eval_spline'):
             ts_n4k = tf.stack([tf.pow(ts_nk, 3), tf.pow(ts_nk, 2),
                                ts_nk, tf.ones_like(ts_nk)], axis=1)
@@ -145,6 +143,7 @@ class Spline3rdOrder(Spline):
         self.x_coeffs_n14 = None
         self.y_coeffs_n14 = None
         self.p_coeffs_n14 = None
+        self.final_times_n1 = None
 
     # TODO: Probably Delete this Later. It is now redundant
     def enforce_dynamic_feasability(self, system_dynamics, horizon_s):

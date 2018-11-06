@@ -75,5 +75,4 @@ class UniformSamplingGrid(WaypointGridBase):
         num_x_bins = utils.ensure_odd(int(np.ceil(x_range / dx)))
         num_y_bins = utils.ensure_odd(int(np.ceil(y_range / dx)))
         num_theta_bins = utils.ensure_odd(p.num_theta_bins)
-
         return num_x_bins, num_y_bins, num_theta_bins
