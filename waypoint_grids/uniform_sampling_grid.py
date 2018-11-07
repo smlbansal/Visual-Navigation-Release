@@ -7,14 +7,9 @@ class UniformSamplingGrid(WaypointGridBase):
     """A class representing a uniform grid over x, y, theta
     space."""
 
-    def __init__(self, params):
-        super().__init__(params)
-        self.n = self.compute_number_waypoints(params)
-
     def sample_egocentric_waypoints(self, vf=0.):
         """ Uniformly samples an egocentric waypoint grid
-        over which to plan trajectories. Returns a system configuration
-        object with the waypoints."""
+        over which to plan trajectories."""
         p = self.params
         wx_n11, wy_n11, wtheta_n11 = self._compute_waypoint_meshgrid_n11()
         wx_n11, wy_n11, wtheta_n11 = self._keep_valid_waypoints(wx_n11, wy_n11, wtheta_n11)
@@ -47,6 +42,18 @@ class UniformSamplingGrid(WaypointGridBase):
         wy_n11 = np.delete(wy_n11, idx, axis=0)
         wtheta_n11 = np.delete(wtheta_n11, idx, axis=0)
         return wx_n11, wy_n11, wtheta_n11
+
+    @property
+    def descriptor_string(self):
+        """Returns a unique string identifying
+        this waypoint grid."""
+        p = self.params
+        name = 'uniform_grid'
+        name += 'n_{:d}'.format(p.n)
+        name += '_theta_bins_{:d}'.format(p.num_theta_bins)
+        name += '_bound_min_{:.2f}_{:.2f}_{:.2f}'.format(*p.bound_min)
+        name += '_bound_max_{:.2f}_{:.2f}_{:.2f}'.format(*p.bound_max)
+        return name
 
     @staticmethod
     def compute_number_waypoints(params):

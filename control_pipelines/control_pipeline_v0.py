@@ -1,4 +1,4 @@
-import utils.utils as utils
+from utils import utils
 import os
 import numpy as np
 import tensorflow as tf
@@ -14,6 +14,7 @@ class ControlPipelineV0(ControlPipelineBase):
     """
 
     def __init__(self, params):
+        self.waypoint_grid = params.waypoint_params.grid(params.waypoint_params)
         self.start_velocities = np.linspace(
             0.0, params.binning_parameters.max_speed, params.binning_parameters.num_bins)
         self.helper = ControlPipelineV0Helper()
@@ -44,6 +45,8 @@ class ControlPipelineV0(ControlPipelineBase):
         with tf.name_scope('generate_control_pipeline'):
             if not self._incorrectly_binned_data_exists():
                 for v0 in self.start_velocities:
+                    if p.verbose:
+                        print('Initial Bin: v0={:.3f}'.format(v0))
                     start_config = self.system_dynamics.init_egocentric_robot_config(dt=p.system_dynamics_params.dt,
                                                                                      n=self.waypoint_grid.n,
                                                                                      v=v0)
@@ -183,6 +186,13 @@ class ControlPipelineV0(ControlPipelineBase):
             data_bin['lqr_trajectories'] = Trajectory.gather_across_batch_dim_and_create(data['lqr_trajectories'], idxs)
             data_bin['K_arrays'] = tf.gather(data['K_arrays'], idxs, axis=0)
             data_bin['k_arrays'] = tf.gather(data['k_arrays'], idxs, axis=0)
+            
+            #TODO: Remove this- it is for debugging
+            lqr_bins = self._compute_bin_idx_for_start_velocities(data_bin['lqr_trajectories'].speed_nk1()[:, 0, :])
+            percent_correct = 100.*np.sum(lqr_bins.numpy() == i)/len(lqr_bins.numpy())
+            percent_incorrect = 100.*np.sum(lqr_bins.numpy() != i)/len(lqr_bins.numpy())
+            max_velocity_error = np.max(np.abs(lqr_bins.numpy()-i))*.01
+            print('{:.3f}% Correct Bin, {:.3f}% Incorrect Bin, {:.3f} m/s max velocity binning error'.format(percent_correct, percent_incorrect, max_velocity_error))
             self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
 
         return pipeline_data
@@ -207,7 +217,10 @@ class ControlPipelineV0(ControlPipelineBase):
 
     def _load_incorrectly_binned_data(self):
         filename = self._data_file_name(incorrectly_binned=True)
-        return self._load_and_process_data(filename)
+        pipeline_data = self.helper.empty_data_dictionary()
+        data_bin = self.helper.load_and_process_data(filename)
+        self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
+        return pipeline_data
 
     def _incorrectly_binned_data_exists(self):
         filename = self._data_file_name(incorrectly_binned=True)
@@ -226,12 +239,10 @@ class ControlPipelineV0(ControlPipelineBase):
             p.planning_horizon, p.system_dynamics_params.dt))
 
         utils.mkdir_if_missing(base_dir)
-        filename = 'n_{:d}'.format(p.waypoint_params.n)
-        filename += '_theta_bins_{:d}'.format(p.waypoint_params.num_theta_bins)
-        filename += '_bound_min_{:.2f}_{:.2f}_{:.2f}'.format(
-            *p.waypoint_params.bound_min)
-        filename += '_bound_max_{:.2f}_{:.2f}_{:.2f}'.format(
-            *p.waypoint_params.bound_max)
+        filename = self.waypoint_grid.descriptor_string
+
+        #TODO: Add number of velocity bins here
+        #TODO: Add system name here
 
         if v0 is not None:
             filename += '_velocity_{:.3f}{:s}'.format(v0, file_format)
@@ -247,11 +258,8 @@ class ControlPipelineV0(ControlPipelineBase):
         over which to plan trajectories."""
         p = self.params.waypoint_params
 
-        self.waypoint_grid = p.grid(p)
-        waypoints_egocentric = self.waypoint_grid.sample_egocentric_waypoints(
-            vf=vf)
-        waypoints_egocentric = self._ensure_waypoints_valid(
-            waypoints_egocentric)
+        waypoints_egocentric = self.waypoint_grid.sample_egocentric_waypoints(vf=vf)
+        waypoints_egocentric = self._ensure_waypoints_valid(waypoints_egocentric)
         wx_n11, wy_n11, wtheta_n11, wv_n11, ww_n11 = waypoints_egocentric
         waypt_pos_n12 = np.concatenate([wx_n11, wy_n11], axis=2)
         waypoint_egocentric_config = SystemConfig(dt=self.params.dt, n=self.waypoint_grid.n, k=1,

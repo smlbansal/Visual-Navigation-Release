@@ -71,3 +71,7 @@ class ControlPipelineBase(object):
         state-control trajectories, and controllers. It is assumed that the pipeline exists and already has been
         loaded."""
         raise NotImplementedError
+
+    #TODO: Fill this function in
+    def render(self):
+        raise NotImplementedError

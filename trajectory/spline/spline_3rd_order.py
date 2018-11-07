@@ -134,17 +134,6 @@ class Spline3rdOrder(Spline):
                 self._acceleration_nk1 = tf.zeros_like(self._speed_nk1)
                 self._angular_acceleration_nk1 = tf.zeros_like(self._speed_nk1)
 
-    def free_memory(self):
-        """Assumes that a spline has already been fit and evaluated and
-        that the user will not need to fit or evaluate it again (as is the case
-        when precomputing splines in egocentric coordinates). Set's irrelevant
-        instance variables to None to be garbage collected. Note: won't do anything
-        with a static tensorflow graph."""
-        self.x_coeffs_n14 = None
-        self.y_coeffs_n14 = None
-        self.p_coeffs_n14 = None
-        self.final_times_n1 = None
-    
     def check_dynamic_feasibility(self, speed_max_system, angular_speed_max_system, horizon_s):
         """Checks whether the current computed spline can be executed in time <= horizon_s (specified in seconds)
         while respecting max speed and angular speed constraints. Returns the batch indices of all valid splines."""
