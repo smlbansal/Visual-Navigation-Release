@@ -67,7 +67,7 @@ class Spline3rdOrder(Spline):
             a2_n1 = f2_n1*tf.sin(tg_n1)-2*yg_n1+c2_n1+2*d2_n1
             b2_n1 = 3*yg_n1-f2_n1*tf.sin(tg_n1)-2*c2_n1-3*d2_n1
 
-            c3_n1 = final_times_n1 * v0_n1 / f1_n1
+            c3_n1 = (final_times_n1 * v0_n1) / f1_n1
             a3_n1 = (final_times_n1*vg_n1/f2_n1) + c3_n1 - 2.
             b3_n1 = 1. - c3_n1 - a3_n1
 
@@ -181,11 +181,12 @@ class Spline3rdOrder(Spline):
         # Compute the minimum horizon required to execute the spline while ensuring dynamic feasibility
         required_horizon_n1 = self.compute_dynamically_feasible_horizon(speed_max_system, angular_speed_max_system)
         
-        # Rescale the speed and angular velocity to be consistent with the new horizon
-        self.rescale_velocity_and_acceleration(self.final_times_n1, required_horizon_n1)
-        
         # Reset the final times
+        old_final_times_n1 = self.final_times_n1 * 1.
         self.final_times_n1 = required_horizon_n1
+
+        # Reevaluate the spline to be consistent with the new horizon
+        self.eval_spline(old_final_times_n1)
         
     def find_trajectories_within_a_horizon(self, horizon_s):
         """
