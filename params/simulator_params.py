@@ -34,10 +34,43 @@ def load_params():
                                        goal_cost=.08,
                                        goal_margin=.3)
 
-    p.reset_params = DotMap(obstacle_map=DotMap(reset_type='random',
+    p.reset_params = DotMap(
+                            obstacle_map=DotMap(reset_type='random',
                                                 params={'min_n': 4, 'max_n': 7, 'min_r': .3, 'max_r': .8}),
-                            start_config=DotMap(reset_type='random'),
-                            goal_config=DotMap(reset_type='random'))
+                            start_config=DotMap(
+                                                position=DotMap(
+                                                    # There could be different reset types
+                                                    # 'random': the position is initialized randomly on the
+                                                    # map but at least at a distance of the obstacle margin from the
+                                                    # obstacle.
+                                                    reset_type='random'
+                                                ),
+                                                heading=DotMap(
+                                                    # 'zero': the heading is initialized to zero.
+                                                    # 'random': the heading is initialized randomly within the given
+                                                    # bounds.
+                                                    reset_type='zero',
+                                                    bounds=[-np.pi / 2, np.pi / 2]
+                                                ),
+                                                speed=DotMap(
+                                                    # For description of reset types see heading parameters above.
+                                                    reset_type='zero',
+                                                    bounds=[0., 0.6]
+                                                ),
+                                                ang_speed=DotMap(
+                                                    # For description of reset types see heading parameters above.
+                                                    reset_type='zero',
+                                                    bounds=[-0.5, 0.5]
+                                                )
+                            ),
+                            goal_config=DotMap(
+                                                position=DotMap(
+                                                    # For description of reset types see position parameters in the
+                                                    # start_config above.
+                                                    reset_type='random'
+                                                )
+                            )
+    )
 
     p.goal_cutoff_dist = p.goal_distance_objective.goal_margin
     p.goal_dist_norm = p.goal_distance_objective.power  # Default is l2 norm
