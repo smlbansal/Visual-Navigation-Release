@@ -168,14 +168,15 @@ class Spline3rdOrder(Spline):
         Rescale the spline horizon to a new horizon without recomputing the spline coefficients.
         """
         # Compute the minimum horizon required to execute the spline while ensuring dynamic feasibility
+        
         required_horizon_n1 = self.compute_dynamically_feasible_horizon(speed_max_system, angular_speed_max_system)
         
         # Reset the final times
-        old_final_times_n1 = self.final_times_n1 * 1.
+        #old_final_times_n1 = self.final_times_n1 * 1.
         self.final_times_n1 = required_horizon_n1
 
         # Reevaluate the spline to be consistent with the new horizon
-        self.eval_spline(old_final_times_n1)
+        self.eval_spline(self.ts_nk)
         
     def find_trajectories_within_a_horizon(self, horizon_s):
         """

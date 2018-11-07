@@ -37,7 +37,7 @@ def load_params():
                           linear_coeffs=np.zeros((5), dtype=np.float32))
 
     # Velocity binning parameters
-    p.binning_parameters = DotMap(num_bins=3,
+    p.binning_parameters = DotMap(num_bins=61,
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 
     p.verbose = True

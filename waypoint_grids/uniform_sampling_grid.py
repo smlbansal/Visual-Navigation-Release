@@ -48,7 +48,7 @@ class UniformSamplingGrid(WaypointGridBase):
         """Returns a unique string identifying
         this waypoint grid."""
         p = self.params
-        name = 'uniform_grid'
+        name = 'uniform_grid_'
         name += 'n_{:d}'.format(p.n)
         name += '_theta_bins_{:d}'.format(p.num_theta_bins)
         name += '_bound_min_{:.2f}_{:.2f}_{:.2f}'.format(*p.bound_min)

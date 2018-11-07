@@ -186,13 +186,14 @@ class ControlPipelineV0(ControlPipelineBase):
             data_bin['lqr_trajectories'] = Trajectory.gather_across_batch_dim_and_create(data['lqr_trajectories'], idxs)
             data_bin['K_arrays'] = tf.gather(data['K_arrays'], idxs, axis=0)
             data_bin['k_arrays'] = tf.gather(data['k_arrays'], idxs, axis=0)
-            
-            #TODO: Remove this- it is for debugging
-            lqr_bins = self._compute_bin_idx_for_start_velocities(data_bin['lqr_trajectories'].speed_nk1()[:, 0, :])
-            percent_correct = 100.*np.sum(lqr_bins.numpy() == i)/len(lqr_bins.numpy())
-            percent_incorrect = 100.*np.sum(lqr_bins.numpy() != i)/len(lqr_bins.numpy())
-            max_velocity_error = np.max(np.abs(lqr_bins.numpy()-i))*.01
-            print('{:.3f}% Correct Bin, {:.3f}% Incorrect Bin, {:.3f} m/s max velocity binning error'.format(percent_correct, percent_incorrect, max_velocity_error))
+
+            #TODO: Only keep one copy of each waypoint in a given bin 
+            if self.params.verbose:
+                lqr_bins = self._compute_bin_idx_for_start_velocities(data_bin['lqr_trajectories'].speed_nk1()[:, 0, :])
+                percent_correct = 100.*np.sum(lqr_bins.numpy() == i)/len(lqr_bins.numpy())
+                percent_incorrect = 100.*np.sum(lqr_bins.numpy() != i)/len(lqr_bins.numpy())
+                max_bin_error = np.max(np.abs(lqr_bins.numpy()-i))
+                print('{:.3f}% Correct Bin, {:.3f}% Incorrect Bin, Max {:d} bin(s) error'.format(percent_correct, percent_incorrect, max_bin_error))
             self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
 
         return pipeline_data
@@ -238,16 +239,16 @@ class ControlPipelineV0(ControlPipelineBase):
         base_dir = os.path.join(base_dir, 'planning_horizon_{:d}_dt_{:.2f}'.format(
             p.planning_horizon, p.system_dynamics_params.dt))
 
+        base_dir = os.path.join(base_dir, self.waypoint_grid.descriptor_string) 
         utils.mkdir_if_missing(base_dir)
-        filename = self.waypoint_grid.descriptor_string
 
         #TODO: Add number of velocity bins here
         #TODO: Add system name here
 
         if v0 is not None:
-            filename += '_velocity_{:.3f}{:s}'.format(v0, file_format)
+            filename = '_velocity_{:.3f}{:s}'.format(v0, file_format)
         elif incorrectly_binned:
-            filename += '_incorrectly_binned{:s}'.format(file_format)
+            filename = '_incorrectly_binned{:s}'.format(file_format)
         else:
             assert(False)
         filename = os.path.join(base_dir, filename)
