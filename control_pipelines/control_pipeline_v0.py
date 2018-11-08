@@ -177,17 +177,14 @@ class ControlPipelineV0(ControlPipelineBase):
 
         for i in range(len(self.start_velocities)):
             idxs = tf.where(tf.equal(bin_idxs, i))[:, 0]
-            data_bin = self.helper.empty_data_dictionary()
-            data_bin['start_configs'] = SystemConfig.gather_across_batch_dim_and_create(data['start_configs'], idxs)
-            data_bin['waypt_configs'] = SystemConfig.gather_across_batch_dim_and_create(data['waypt_configs'], idxs)
-            data_bin['start_speeds'] = tf.gather(data['start_speeds'], idxs, axis=0)
-            data_bin['spline_trajectories'] = Trajectory.gather_across_batch_dim_and_create(data['spline_trajectories'], idxs)
-            data_bin['horizons'] = tf.gather(data['horizons'], idxs, axis=0)
-            data_bin['lqr_trajectories'] = Trajectory.gather_across_batch_dim_and_create(data['lqr_trajectories'], idxs)
-            data_bin['K_arrays'] = tf.gather(data['K_arrays'], idxs, axis=0)
-            data_bin['k_arrays'] = tf.gather(data['k_arrays'], idxs, axis=0)
+            data_bin = self.helper.gather_across_batch_dim_and_create(data, idxs)
 
-            #TODO: Only keep one copy of each waypoint in a given bin 
+            # When rebinning the same waypoint may occur more than once in a given bin
+            # If this happens filter out the data such that each waypoint occurs only once.
+            unique_idxs = self._compute_unique_waypt_idxs(data_bin['waypt_configs'])
+            if unique_idxs.shape[0].value < data_bin['waypt_configs'].n:
+                data_bin = self.helper.gather_across_batch_dim_and_create(data_bin, unique_idxs)
+
             if self.params.verbose:
                 lqr_bins = self._compute_bin_idx_for_start_velocities(data_bin['lqr_trajectories'].speed_nk1()[:, 0, :])
                 percent_correct = 100.*np.sum(lqr_bins.numpy() == i)/len(lqr_bins.numpy())
@@ -197,6 +194,16 @@ class ControlPipelineV0(ControlPipelineBase):
             self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
 
         return pipeline_data
+
+    def _compute_unique_waypt_idxs(self, waypt_configs):
+        """Return a set of indices of unique elements in
+        waypt_configs."""
+        # tensorflow doesnt support unique operation on
+        # multidimensional tensors so use numpy here
+        waypt_config_np = waypt_configs.position_heading_speed_and_angular_speed_nk5()[:, 0].numpy()
+        _, idxs = np.unique(waypt_config_np, axis=0, return_index=True)
+        idxs.sort()
+        return tf.constant(idxs)
 
     def _compute_bin_idx_for_start_velocities(self, start_speeds_n1):
         """Computes the closest starting velocity bin to each speed
@@ -239,16 +246,16 @@ class ControlPipelineV0(ControlPipelineBase):
         base_dir = os.path.join(base_dir, 'planning_horizon_{:d}_dt_{:.2f}'.format(
             p.planning_horizon, p.system_dynamics_params.dt))
 
-        base_dir = os.path.join(base_dir, self.waypoint_grid.descriptor_string) 
+        base_dir = os.path.join(base_dir, self.system_dynamics.name)
+        base_dir = os.path.join(base_dir, self.waypoint_grid.descriptor_string)
+        base_dir = os.path.join(base_dir,
+                                '{:d}_velocity_bins'.format(p.binning_parameters.num_bins))
         utils.mkdir_if_missing(base_dir)
 
-        #TODO: Add number of velocity bins here
-        #TODO: Add system name here
-
         if v0 is not None:
-            filename = '_velocity_{:.3f}{:s}'.format(v0, file_format)
+            filename = 'velocity_{:.3f}{:s}'.format(v0, file_format)
         elif incorrectly_binned:
-            filename = '_incorrectly_binned{:s}'.format(file_format)
+            filename = 'incorrectly_binned{:s}'.format(file_format)
         else:
             assert(False)
         filename = os.path.join(base_dir, filename)

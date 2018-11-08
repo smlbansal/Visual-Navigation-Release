@@ -33,7 +33,7 @@ def load_params():
     # LQR setting parameters
     p.lqr_params = DotMap(cost_fn=QuadraticRegulatorRef,
                           quad_coeffs=np.array(
-                              [1.0, 1.0, 1.0, 1e-10, 1e-10], dtype=np.float32),
+                              [1.0, 1.0, 1.0, 1.0, 1.0], dtype=np.float32),
                           linear_coeffs=np.zeros((5), dtype=np.float32))
 
     # Velocity binning parameters

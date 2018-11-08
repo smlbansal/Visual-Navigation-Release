@@ -36,7 +36,7 @@ def load_params(goals_n5):
     # LQR setting parameters
     p.lqr_params = DotMap(cost_fn=QuadraticRegulatorRef,
                           quad_coeffs=np.array(
-                              [1.0, 1.0, 1.0, 1e-10, 1e-10], dtype=np.float32),
+                              [1.0, 1.0, 1.0, 1.0, 1.0], dtype=np.float32),
                           linear_coeffs=np.zeros((5), dtype=np.float32))
 
     p.waypoint_params = DotMap(grid=UserDefinedGrid,
@@ -44,8 +44,8 @@ def load_params(goals_n5):
 
     p.waypoint_params = waypoint_params.parse_params(p.waypoint_params)
 
-    # Velocity binning parameters
-    p.binning_parameters = DotMap(num_bins=3,
+    # Velocity binning parameters (TODO- make this work for other velocities)
+    p.binning_parameters = DotMap(num_bins=1,
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 
     p.verbose = True
@@ -55,17 +55,32 @@ def load_params(goals_n5):
 
 def visualize():
     # [x, y, theta, v, omega]
-    start_5 = np.array([0., 0., 0., 0., 0.], dtype=np.float32)
-    goals_n5 = np.array([[1., 0., 0., 0., 0.]], dtype=np.float32)
+    start_5 = np.array([0., 0., 0., 0.155, 0.], dtype=np.float32)
+    goals_n5 = np.array([[1.136e-1, -1.136e-1, -1.5706, 0., 0.]], dtype=np.float32)
     N = len(goals_n5)
 
     p = load_params(goals_n5)
 
+    utils.delete_if_exists(p.dir)
+
     control_pipeline = p.pipeline(params=p)
+
+    # trick so the pipeline only precomputes
+    # for your desired starting velocity
+    v0 = start_5[3]
+    control_pipeline.start_velocities = np.array([v0])
+
     control_pipeline.generate_control_pipeline()
-    import pdb; pdb.set_trace()
-    test = 5
     
+    fig, _, axs = utils.subplot2(plt, (2*N, 4), (8, 8), (.4, .4))
+    axs = axs[::-1]
+    for i in range(N):
+        axs0, axs1 = axs[2*i*4: (2*i+1)*4], axs[2*i*4+4: (2*i+1)*4+4] 
+        control_pipeline.spline_trajectories[0].render(axs0, batch_idx=i, plot_heading=True, plot_velocity=True,
+                                label_start_and_end=True, name='Spline')
+        control_pipeline.lqr_trajectories[0].render(axs1, batch_idx=i, plot_heading=True, plot_velocity=True,
+                                label_start_and_end=True, name='LQR')
+    fig.savefig('./tmp/visualize_control_pipeline.png', bbox_inches='tight')
 
 def main():
     plt.style.use('ggplot')

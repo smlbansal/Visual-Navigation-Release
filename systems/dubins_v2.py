@@ -6,12 +6,12 @@ class DubinsV2(Dubins3D):
     """ A discrete time 3 dimensional dubins car with linear clipping saturation
     functions on linear or angular velocity.
     """
+    name = 'dubins_v2'
 
     def __init__(self, dt, params):
         super().__init__(dt)
         self.v_bounds = params.v_bounds
         self.w_bounds = params.w_bounds
-
 
     def _saturate_linear_velocity(self, vtilde_nk):
         """ Linear clipping saturation function for linear velocity"""

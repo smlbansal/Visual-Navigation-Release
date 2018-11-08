@@ -6,6 +6,7 @@ import copy
 import numpy as np
 import tensorflow as tf
 import dotmap
+import shutil
 
 
 def gpu_config():
@@ -62,6 +63,10 @@ def _to_json_serializable_dict(param_dict):
 def mkdir_if_missing(dirname):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
+
+def delete_if_exists(dirname):
+    if os.path.exists(dirname):
+        shutil.rmtree(dirname)
 
 #Probably can delete
 def dump_to_pickle_file(filename, data):
