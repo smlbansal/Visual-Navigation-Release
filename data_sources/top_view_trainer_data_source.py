@@ -15,28 +15,23 @@ class TopViewDataSource(DataSource):
         # Generate the data
         counter = 1
         for _ in range(0, self.p.data_creation.data_points, self.p.data_creation.data_points_per_file):
-            x = np.random.uniform(-2., 2., (self.p.data_creation.data_points_per_file, 1)).astype(np.float32)
-            sinx = np.sin(x)
+            # Reset the data dictionary
+            data = self.reset_data_dictionary()
             
-            # Create a data dictionary
-            data = {'inputs': x, 'labels': sinx}
+            for _ in range(0, self.p.data_creation.data_points_per_file):
+                # Reset the simulator
             
-            # Save the file
+                # Run the planner for one step
+                
+                # Append the data to the current data dictionary
+                
+            # Prepare the dictionary for saving purposes
+            
+            # Save the data
             filename = os.path.join(self.p.data_creation.data_dir, 'file%i.pkl' % counter)
             with open(filename, 'wb') as handle:
                 pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
             
+            # Increase the counter
             counter += 1
     
-    def load_dataset(self):
-        # Get all the files in the directory
-        file_list = self.get_file_list()
-        
-        # Concatenate the data corresponding to a list of files
-        data = self.concatenate_file_data(file_list)
-        
-        # Shuffle the data and create the training and the validation datasets
-        data = self.shuffle_data_dictionary(data)
-        self.training_dataset = self.get_data_from_indices(data, np.arange(self.num_training_samples))
-        self.validation_dataset = self.get_data_from_indices(data, np.arange(self.num_training_samples,
-                                                                             self.p.trainer.num_samples))

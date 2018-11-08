@@ -108,8 +108,9 @@ def create_params():
                                 data_dir='/tmp'
     )
     
-    # Change the simulator parameters for data creation
-    
+    # Change the simulator parameters for data collection
+    reset_params = p.simulator_params.reset_params
+    reset_params.obstacle_map.params = {'min_n': 5, 'max_n': 5, 'min_r': .3, 'max_r': .8}
     
     
     # Test parameters

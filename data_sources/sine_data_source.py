@@ -27,16 +27,3 @@ class SineDataSource(DataSource):
                 pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
             
             counter += 1
-
-    def load_dataset(self):
-        # Get all the files in the directory
-        file_list = self.get_file_list()
-        
-        # Concatenate the data corresponding to a list of files
-        data = self.concatenate_file_data(file_list)
-        
-        # Shuffle the data and create the training and the validation datasets
-        data = self.shuffle_data_dictionary(data)
-        self.training_dataset = self.get_data_from_indices(data, np.arange(self.num_training_samples))
-        self.validation_dataset = self.get_data_from_indices(data, np.arange(self.num_training_samples,
-                                                                             self.p.trainer.num_samples))
