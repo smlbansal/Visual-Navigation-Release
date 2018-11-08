@@ -54,6 +54,8 @@ class ControlPipelineV0(ControlPipelineBase):
                     start_config, goal_config, horizons_n1 = self._dynamically_fit_spline(
                         start_config, goal_config)
                     lqr_trajectory, K_array, k_array = self._lqr(start_config)
+                    #TODO: Put the initial bin information in here too
+                    # this will make debugging much easier
                     data_bin = {'start_configs': start_config,
                                 'waypt_configs': goal_config,
                                 'start_speeds': self.spline_trajectory.speed_nk1()[:, 0],
