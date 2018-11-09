@@ -8,6 +8,7 @@ import datetime
 from data_sources.data_source import DataSource
 from training_utils.trainer_helper import TrainerHelper
 from models.base import BaseModel
+from utils import utils
 
 
 # TODO(Somil, Varun): Setup a logger which has all tha parameters, and all the messages printed during the training
@@ -17,7 +18,7 @@ class TrainerFrontendHelper(object):
     A base class for setting up a data collector, trainer or test.
     """
     def run(self):
-        tf.enable_eager_execution()
+        tf.enable_eager_execution(config=utils.gpu_config())
         self.setup_parser()
     
     def setup_parser(self):
@@ -47,7 +48,7 @@ class TrainerFrontendHelper(object):
         self.create_session_dir(args.job_dir)
         
         # Configure the device
-        if args.device == 0:
+        if args.device == -1:
             self.p.device = '/cpu:0'
         else:
             self.p.device = '/gpu:%i' % args.device

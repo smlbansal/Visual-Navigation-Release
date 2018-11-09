@@ -6,10 +6,8 @@ dependencies = ['simulator_params']
 
 
 def create_params():
-    p = DotMap()
-    
     # Load the dependencies
-    p.simulator_params = DotMap({dependency: utils.load_params(dependency)
+    p = DotMap({dependency: utils.load_params(dependency)
                                 for dependency in dependencies})
     
     # Model parameters
@@ -99,19 +97,19 @@ def create_params():
     # Data creation parameters
     p.data_creation = DotMap(
                                 # Number of data points
-                                data_points=100000,
+                                data_points=100,
         
                                 # Number of data points per file
-                                data_points_per_file=10000,
+                                data_points_per_file=10,
                                 
                                 # Data directory
-                                data_dir='/tmp'
+                                data_dir='./tmp/test'
     )
     
     # Change the simulator parameters for data collection
+    p.simulator_params.episode_horizon_s = p.simulator_params.control_horizon_s * 1.
     reset_params = p.simulator_params.reset_params
     reset_params.obstacle_map.params = {'min_n': 5, 'max_n': 5, 'min_r': .3, 'max_r': .8}
-    
     
     # Test parameters
     p.test = DotMap(

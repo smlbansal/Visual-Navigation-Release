@@ -13,11 +13,21 @@ import itertools
 class Simulator:
 
     def __init__(self, params):
+        params = self.parse_params(params)
         self.params = params
         self.rng = np.random.RandomState(params.seed)
         self.obstacle_map = self._init_obstacle_map(self.rng)
         self.obj_fn = self._init_obj_fn()
         self.planner = self._init_planner()
+
+    def parse_params(self, p):
+        """
+        Parse the parameters to add some additional helpful parameters.
+        """
+        dt = p.planner_params.dt
+        p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
+        p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
+        return p
 
     def simulate(self):
         """ A function that simulates an entire episode. The agent starts at self.start_config, repeatedly

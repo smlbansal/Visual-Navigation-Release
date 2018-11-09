@@ -78,13 +78,10 @@ def load_params():
     p.episode_termination_colors = ['b', 'r', 'g']
     p.waypt_cmap = 'winter'
 
-    p.num_validation_goals = 50
+    p.num_validation_goals = 1
     return p
 
 
 def parse_params(p):
-    dt = p.planner_params.dt
-
-    p.episode_horizon = int(np.ceil(p.episode_horizon_s/dt))
-    p.control_horizon = int(np.ceil(p.control_horizon_s/dt))
+    # TODO(Varun): Remove the parses function from the parameter and move them to the corresponding main classes.
     return p
