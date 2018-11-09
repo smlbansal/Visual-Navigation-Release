@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from systems.dubins_v1 import DubinsV1
 from systems.dubins_v2 import DubinsV2
 from systems.dubins_v3 import DubinsV3
+from dotmap import DotMap
 
 
 def test_dubins_v1(visualize=False):
@@ -94,8 +95,10 @@ def test_dubins_v2(visualize=False):
     n, k = 17, 12
     ctrl = 1
 
+    p = DotMap(v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1])
+    
     # Test that computation is occurring correctly
-    db = DubinsV2(dt, v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1])
+    db = DubinsV2(dt, p)
     state_n13 = tf.constant(np.zeros((n, 1, x_dim)), dtype=tf.float32)
     ctrl_nk2 = tf.constant(np.ones((n, k, u_dim))*ctrl, dtype=tf.float32)
     trajectory = db.simulate_T(state_n13, ctrl_nk2, T=k)
@@ -157,8 +160,9 @@ def test_dubins_v3():
     n, k = 17, 12
     ctrl = 1
 
+    p = DotMap(v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1])
     # Test that computation is occurring correctly
-    db = DubinsV3(dt, v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1])
+    db = DubinsV3(dt, p)
     state_n15 = tf.constant(np.zeros((n, 1, x_dim)), dtype=tf.float32)
     ctrl_nk2 = tf.constant(np.ones((n, k, u_dim))*ctrl, dtype=tf.float32)
     trajectory = db.simulate_T(state_n15, ctrl_nk2, T=k)
