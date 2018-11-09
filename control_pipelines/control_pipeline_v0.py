@@ -164,7 +164,7 @@ class ControlPipelineV0(ControlPipelineBase):
         self.waypt_configs_world = [SystemConfig(
             dt=dt, n=config.n, k=1, variable=True) for config in data['start_configs']]
         self.trajectories_world = [Trajectory(
-            dt=dt, n=traj.n, k=self.params.planning_horizon, variable=True)
+            dt=dt, n=config.n, k=self.params.planning_horizon, variable=True)
            for config in data['start_configs']]
 
         if self.params.verbose:

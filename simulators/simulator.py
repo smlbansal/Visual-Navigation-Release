@@ -29,13 +29,14 @@ class Simulator:
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_configs = [self.start_config]
         waypt_configs = []
+        waypt_horizons = []
         config_time_idxs = [0]
         while vehicle_trajectory.k < self.params.episode_horizon:
-            waypt_trajectory, next_config, waypt_config = self._iterate(
-                config)
+            waypt_trajectory, next_config, waypt_config, waypt_horizon = self._iterate(config)
             vehicle_trajectory.append_along_time_axis(waypt_trajectory)
             vehicle_configs.append(next_config)
             waypt_configs.append(waypt_config)
+            waypt_horizons.append(waypt_horizon)
             config_time_idxs.append(vehicle_trajectory.k)
             config = next_config
         self.min_obs_distances = self._calculate_min_obs_distances(
@@ -85,12 +86,13 @@ class Simulator:
         """ Runs the planner for one step from config to generate an optimal
         subtrajectory and the resulting robot config after the robot executes
         the subtrajectory"""
-        min_waypt, min_traj, min_cost = self.planner.optimize(config)
+        min_waypt, min_traj, min_cost, min_horizon = self.planner.optimize(config)
+        horizon = min(min_horizon, self.params.control_horizon)
         min_traj = Trajectory.new_traj_clip_along_time_axis(
-            min_traj, self.params.control_horizon)
+            min_traj, horizon)
         next_config = SystemConfig.init_config_from_trajectory_time_index(
             min_traj, t=-1)
-        return min_traj, next_config, SystemConfig.copy(min_waypt)
+        return min_traj, next_config, SystemConfig.copy(min_waypt), min_horizon
 
     def _reset_start_configuration(self, rng):
         p = self.params.reset_params.start_config
