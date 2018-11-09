@@ -113,11 +113,14 @@ class ControlPipelineV0(ControlPipelineBase):
         self.lqr_solver.cost.update_shape()
         lqr_res = self.lqr_solver.lqr(start_config, self.spline_trajectory,
                                       verbose=False)
-        #TODO: This should probably go somewhere else
-        lqr_res['trajectory_opt'].valid_horizons_n1 = self.spline_trajectory.valid_horizons_n1
+        # The LQR trajectory's valid_horizon is the same as the spline
+        # reference trajectory that it tracks
+        lqr_res['trajectory_opt'].valid_horizons_n1 = 1.*self.spline_trajectory.valid_horizons_n1
         return lqr_res['trajectory_opt'], lqr_res['K_array_opt'], lqr_res['k_array_opt']
 
     def _init_pipeline(self):
+        """Initialize Spline, LQR, and LQR cost functions
+        for use in planning. """
         p = self.params
         self.spline_trajectory = p.spline_params.spline(dt=p.system_dynamics_params.dt,
                                                         n=p.waypoint_params.n,
@@ -161,9 +164,8 @@ class ControlPipelineV0(ControlPipelineBase):
         self.waypt_configs_world = [SystemConfig(
             dt=dt, n=config.n, k=1, variable=True) for config in data['start_configs']]
         self.trajectories_world = [Trajectory(
-            dt=dt, n=traj.n, k=self.params.planning_horizon, variable=True,
-            valid_horizons_n1=traj.valid_horizons_n1) for traj in
-            data['spline_trajectories']]
+            dt=dt, n=traj.n, k=self.params.planning_horizon, variable=True)
+           for config in data['start_configs']]
 
         if self.params.verbose:
             N = self.params.waypoint_params.n
@@ -184,13 +186,13 @@ class ControlPipelineV0(ControlPipelineBase):
 
         for i in range(len(self.start_velocities)):
             idxs = tf.where(tf.equal(bin_idxs, i))[:, 0]
-            data_bin = self.helper.gather_across_batch_dim_and_create(data, idxs)
+            data_bin = self.helper.gather_across_batch_dim(data, idxs)
 
             # When rebinning the same waypoint may occur more than once in a given bin
             # If this happens filter out the data such that each waypoint occurs only once.
             unique_idxs = self._compute_unique_waypt_idxs(data_bin['waypt_configs'])
             if unique_idxs.shape[0].value < data_bin['waypt_configs'].n:
-                data_bin = self.helper.gather_across_batch_dim_and_create(data_bin, unique_idxs)
+                data_bin = self.helper.gather_across_batch_dim(data_bin, unique_idxs)
 
             if self.params.verbose:
                 lqr_bins = self._compute_bin_idx_for_start_velocities(data_bin['lqr_trajectories'].speed_nk1()[:, 0, :])
@@ -205,6 +207,7 @@ class ControlPipelineV0(ControlPipelineBase):
     def _compute_unique_waypt_idxs(self, waypt_configs):
         """Return a set of indices of unique elements in
         waypt_configs."""
+
         # tensorflow doesnt support unique operation on
         # multidimensional tensors so use numpy here
         waypt_config_np = waypt_configs.position_heading_speed_and_angular_speed_nk5()[:, 0].numpy()

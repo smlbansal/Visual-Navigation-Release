@@ -25,7 +25,7 @@ class ControlPipelineV0Helper():
         """Assumes pipeline data is a dictionary where keys maps to lists (i.e. multiple
         bins) of tensors, trajectories, or system config objects. Returns a new
         dictionary corresponding to one particular bin in pipeline_data."""
-        data_bin = self.empty_data_dictionary()
+        data_bin = {}
         for key in pipeline_data.keys():
             data_bin[key] = pipeline_data[key][idx]
         return data_bin
@@ -51,7 +51,7 @@ class ControlPipelineV0Helper():
                           'k_arrays': tf.constant(data['k_arrays'])}
         return data_processed
 
-    def gather_across_batch_dim_and_create(self, data, idxs):
+    def gather_across_batch_dim(self, data, idxs):
         """ For each key in data gather idxs across the batch dimension
         creating a new data dictionary."""
         data_bin = {}
@@ -69,7 +69,7 @@ class ControlPipelineV0Helper():
         """Concatenate across the binning dimension. It is asummed
         that data is a dictionary where each key maps to a list
         of tensors, Trajectory, or System Config objects.
-        (i.e. ignore incorrect velocity binning). The concatenated results are stored in
+        The concatenated results are stored in
         lists of length 1 for each key (i.e. only one bin)."""
         data['start_speeds'] = [tf.concat(data['start_speeds'], axis=0)]
         data['start_configs'] = [SystemConfig.concat_across_batch_dim(data['start_configs'])]
