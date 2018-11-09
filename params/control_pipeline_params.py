@@ -23,6 +23,7 @@ def load_params():
     p.spline_params = DotMap(spline=Spline3rdOrder,
                              max_final_time=6.0,
                              epsilon=1e-5)
+    p.minimum_spline_horizon = 1.5
 
     # System Dynamics params
     p.system_dynamics_params = DotMap(system=DubinsV2,

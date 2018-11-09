@@ -52,7 +52,8 @@ class Simulator:
         self.waypt_configs = np.array(
             waypt_configs)[keep_idx[1:]]
 
-        self.obj_val = tf.squeeze(
+        self.obj_val = self._compute_objective_value(vehicle_trajectory)
+        tf.squeeze(
             self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
 
@@ -128,6 +129,15 @@ class Simulator:
         self.goal_config = SystemConfig(dt=p.dt, n=1, k=1,
                                         position_nk2=goal_112)
 
+    def _compute_objective_value(self, vehicle_trajectory):
+        p = self.params.objective_fn_params
+        if p.obj_type == 'valid_mean':
+            vehicle_trajectory.update_valid_mask_nk()
+        else:
+            assert(p.obj_type in ['valid_mean', 'mean'])
+        obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
+        return obj_val
+
     def _enforce_episode_termination_conditions(self, vehicle_trajectory):
         """ A utility function to enforce episode termination conditions.
         Clips the vehicle trajectory along the time axis."""
@@ -137,14 +147,14 @@ class Simulator:
             time_idxs.append(self._compute_time_idx_for_termination_condition(vehicle_trajectory,
                                                                               condition))
         idx = np.argmin(time_idxs)
-        vehicle_trajectory.clip_along_time_axis(time_idxs[idx])
+        vehicle_trajectory.clip_along_time_axis(time_idxs[idx].numpy())
         return idx, time_idxs[idx]
 
     def _compute_time_idx_for_termination_condition(self, vehicle_trajectory, condition):
         """ For a given trajectory termination condition (i.e. timeout, collision, etc.)
         computes the earliest time index at which this condition is met. Returns
         episode_horizon+1 otherwise."""
-        time_idx = self.params.episode_horizon
+        time_idx = tf.constant(self.params.episode_horizon)
         if condition == 'Timeout':
             pass
         elif condition == 'Collision':
@@ -196,7 +206,7 @@ class Simulator:
         self.goal_config = p.planner_params.system_dynamics.init_egocentric_robot_config(dt=p.dt,
                                                                                          n=1)
         self.fmm_map = self._init_fmm_map()
-        obj_fn = ObjectiveFunction()
+        obj_fn = ObjectiveFunction(p.objective_fn_params)
         if not p.avoid_obstacle_objective.empty():
             obj_fn.add_objective(ObstacleAvoidance(
                 params=p.avoid_obstacle_objective,

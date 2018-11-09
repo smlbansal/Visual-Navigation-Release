@@ -33,6 +33,7 @@ class ControlPipelineV0(ControlPipelineBase):
 
         # TODO: K & k are currently in egocentric coordinates
         controllers = {'K_array': self.K_arrays[idx], 'k_array': self.k_arrays[idx]}
+        self.trajectories_world[idx].update_valid_mask_nk()
         return self.waypt_configs_world[idx], self.horizons[idx], self.trajectories_world[idx], controllers
 
     def generate_control_pipeline(self, params=None):
@@ -91,7 +92,8 @@ class ControlPipelineV0(ControlPipelineBase):
                                    final_times_n1=final_times_n1)
         self.spline_trajectory.eval_spline(times_nk, calculate_speeds=True)
         self.spline_trajectory.rescale_spline_horizon_to_dynamically_feasible_horizon(speed_max_system=self.system_dynamics.v_bounds[1],
-                                                                                      angular_speed_max_system=self.system_dynamics.w_bounds[1])
+                                                                                      angular_speed_max_system=self.system_dynamics.w_bounds[1],
+                                                                                      minimum_horizon=p.minimum_spline_horizon)
 
         valid_idxs = self.spline_trajectory.find_trajectories_within_a_horizon(p.planning_horizon_s)
         horizons_n1 = self.spline_trajectory.final_times_n1
@@ -111,6 +113,8 @@ class ControlPipelineV0(ControlPipelineBase):
         self.lqr_solver.cost.update_shape()
         lqr_res = self.lqr_solver.lqr(start_config, self.spline_trajectory,
                                       verbose=False)
+        #TODO: This should probably go somewhere else
+        lqr_res['trajectory_opt'].valid_horizons_n1 = self.spline_trajectory.valid_horizons_n1
         return lqr_res['trajectory_opt'], lqr_res['K_array_opt'], lqr_res['k_array_opt']
 
     def _init_pipeline(self):
@@ -157,8 +161,9 @@ class ControlPipelineV0(ControlPipelineBase):
         self.waypt_configs_world = [SystemConfig(
             dt=dt, n=config.n, k=1, variable=True) for config in data['start_configs']]
         self.trajectories_world = [Trajectory(
-            dt=dt, n=config.n, k=self.params.planning_horizon, variable=True) for config in
-            data['start_configs']]
+            dt=dt, n=traj.n, k=self.params.planning_horizon, variable=True,
+            valid_horizons_n1=traj.valid_horizons_n1) for traj in
+            data['spline_trajectories']]
 
         if self.params.verbose:
             N = self.params.waypoint_params.n

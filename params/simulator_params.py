@@ -34,6 +34,8 @@ def load_params():
                                        goal_cost=.08,
                                        goal_margin=.3)
 
+    p.objective_fn_params = DotMap(obj_type='valid_mean')
+
     p.reset_params = DotMap(obstacle_map=DotMap(reset_type='random',
                                                 params={'min_n': 4, 'max_n': 7, 'min_r': .3, 'max_r': .8}),
                             start_config=DotMap(reset_type='random'),

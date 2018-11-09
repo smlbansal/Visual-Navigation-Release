@@ -163,17 +163,25 @@ class Spline3rdOrder(Spline):
         # Compute the horizon required to make sure that we satisfy all control constraints at all times
         return tf.maximum(required_horizon_speed_n1, required_horizon_angular_speed_n1)
     
-    def rescale_spline_horizon_to_dynamically_feasible_horizon(self, speed_max_system, angular_speed_max_system):
+    def rescale_spline_horizon_to_dynamically_feasible_horizon(self, speed_max_system,
+                                                               angular_speed_max_system,
+                                                               minimum_horizon=0.0):
         """
         Rescale the spline horizon to a new horizon without recomputing the spline coefficients.
         """
         # Compute the minimum horizon required to execute the spline while ensuring dynamic feasibility
         
         required_horizon_n1 = self.compute_dynamically_feasible_horizon(speed_max_system, angular_speed_max_system)
+       
+        # Enforce a minimum horizon
+        required_horizon_n1 = tf.maximum(required_horizon_n1, minimum_horizon)
         
         # Reset the final times
-        #old_final_times_n1 = self.final_times_n1 * 1.
         self.final_times_n1 = required_horizon_n1
+        
+        # Valid horizon for each trajectory in the batch
+        # in discrete time steps
+        self.valid_horizons_n1 = tf.ceil(self.final_times_n1/self.dt)
 
         # Reevaluate the spline to be consistent with the new horizon
         self.eval_spline(self.ts_nk)

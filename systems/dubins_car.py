@@ -61,7 +61,8 @@ class DubinsCar(Dynamics):
                                                            acceleration_nk1=traj_world.acceleration_nk1(),
                                                            heading_nk1=heading_nk1,
                                                            angular_speed_nk1=traj_world.angular_speed_nk1(),
-                                                           angular_acceleration_nk1=traj_world.angular_acceleration_nk1())
+                                                           angular_acceleration_nk1=traj_world.angular_acceleration_nk1(),
+                                                           valid_horizons_n1=traj_world.valid_horizons_n1)
             return traj_egocentric
         elif mode == 'new':
             if traj_world.k == 1:
@@ -104,7 +105,8 @@ class DubinsCar(Dynamics):
                                                       acceleration_nk1=traj_egocentric.acceleration_nk1(),
                                                       heading_nk1=heading_nk1,
                                                       angular_speed_nk1=traj_egocentric.angular_speed_nk1(),
-                                                      angular_acceleration_nk1=traj_egocentric.angular_acceleration_nk1())
+                                                      angular_acceleration_nk1=traj_egocentric.angular_acceleration_nk1(),
+                                                      valid_horizons_n1=traj_egocentric.valid_horizons_n1)
             return traj_world
         elif mode == 'new':
             if traj_world.k == 1:
