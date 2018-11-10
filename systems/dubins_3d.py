@@ -1,6 +1,7 @@
 import tensorflow as tf
 from trajectory.trajectory import Trajectory
 from systems.dubins_car import DubinsCar
+from utils.angle_utils import padded_rotation_matrix
 
 class Dubins3D(DubinsCar):
     """ A discrete time dubins car with state
