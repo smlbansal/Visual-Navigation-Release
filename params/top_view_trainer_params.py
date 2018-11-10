@@ -1,4 +1,5 @@
 from utils import utils
+import numpy as np
 import tensorflow as tf
 from dotmap import DotMap
 
@@ -11,16 +12,34 @@ def create_params():
                                 for dependency in dependencies})
     
     # Model parameters
+    num_conv_layers = 2
     p.model = DotMap(
+                     
+                     
                      # Number of inputs to the model
-                     num_inputs=1,
+                     num_inputs=DotMap(occupancy_grid_size=[32, 32],
+                                       num_state_features=2 + 2  # Goal (x, y) position + Vehicle's current speed and
+                                                                 # angular speed
+                     ),
                      
                      # Number of the outputs to the model
-                     num_outputs=1,
+                     num_outputs=3,  # (x, y, theta) waypoint
                      
                      # Architecture parameters
                      arch=DotMap(
-                                 # Number of hidden layers
+                                 # Number of convolutional layers
+                                 num_conv_layers=num_conv_layers,
+                         
+                                 # Number of CNN filters
+                                 num_conv_filters=16 * np.ones(num_conv_layers),
+                                 
+                                 # Size of CNN filters
+                                 size_conv_filters=3 * np.ones(num_conv_layers),
+                         
+                                 # Max pooling layer filter size
+                                 size_maxpool_filters=2 * np.ones(num_conv_layers),
+                                 
+                                 # Number of fully connected hidden layers
                                  num_hidden_layers=3,
                                  
                                  # Number of neurons per hidden layer
@@ -37,7 +56,7 @@ def create_params():
                                  
                                  # Dropout rate (in case dropout is used)
                                  dropout_rate=0.3,
-                                 )
+                     )
     )
     
     # Data processing parameters

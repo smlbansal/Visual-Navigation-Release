@@ -4,6 +4,8 @@ import numpy as np
 
 from data_sources.data_source import DataSource
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
+from trajectory.trajectory import Trajectory
+from systems.dubins_car import DubinsCar
 
 
 class TopViewDataSource(DataSource):
@@ -15,6 +17,9 @@ class TopViewDataSource(DataSource):
         
         # Initialize the simulator
         simulator = CircularObstacleMapSimulator(self.p.simulator_params)
+        
+        # Initialize the trajectory objects to save the goal and waypoint egocentric configurations
+        self.initialize_configs_for_ego_data()
         
         # Generate the data
         counter = 1
@@ -38,26 +43,52 @@ class TopViewDataSource(DataSource):
             # Increase the counter
             counter += 1
     
-    def reset_data_dictionary(self):
+    @staticmethod
+    def reset_data_dictionary():
         """
         Create a dictionary to store the data.
         """
+        # Data dictionary to store the data
         data = {}
+        
+        # Obstacle information
         data['obs_centers_n2'] = []
         data['obs_radii_n2'] = []
+        
+        # Start configuration information
         data['vehicle_state_n3'] = []
         data['vehicle_controls_n2'] = []
+
+        # Goal configuration information
         data['goal_position_n2'] = []
+        data['goal_position_ego_n2'] = []
+
+        # Optimal waypoint configuration information
         data['optimal_waypoint_n3'] = []
+        data['optimal_waypoint_ego_n3'] = []
         # TODO(Varun): Add the logic in simulator to fetch the horizon and then add the logic here to fetch the data.
         # data['waypoint_horizon_n1'] = []
+        
+        # Optimal control information
         data['optimal_control_nk2'] = []
         return data
+
+    def initialize_configs_for_ego_data(self):
+        """
+        Creates configuration objects to store the egocentric goal and waypoint.
+        """
+        self.goal_ego_config = Trajectory(dt=0, n=1, k=1)
+        self.waypoint_ego_config = Trajectory(dt=0, n=1, k=1)
     
     def append_data_to_dictionary(self, data, simulator):
         """
         Append the appropriate data from the simulator to the existing data dictionary.
         """
+        # Convert the waypoint and the goal information to egocentric frame
+        DubinsCar.to_egocentric_coordinates(simulator.start_config, simulator.waypt_configs[0],
+                                            self.waypoint_ego_config)
+        DubinsCar.to_egocentric_coordinates(simulator.start_config, simulator.goal_config, self.goal_ego_config)
+        
         # Obstacle data
         data['obs_centers_n2'].append(simulator.obstacle_map.obstacle_centers_m2.numpy())
         data['obs_radii_n2'].append(simulator.obstacle_map.obstacle_radii_m1.numpy())
@@ -68,9 +99,11 @@ class TopViewDataSource(DataSource):
         
         # Goal data
         data['goal_position_n2'].append(simulator.goal_config.position_nk2().numpy()[:, 0, :])
+        data['goal_position_ego_n2'].append(self.goal_ego_config.position_nk2().numpy()[:, 0, :])
         
         # Waypoint data
         data['optimal_waypoint_n3'].append(simulator.waypt_configs[0].position_and_heading_nk3().numpy()[:, 0, :])
+        data['optimal_waypoint_ego_n3'].append(self.waypoint_ego_config.position_and_heading_nk3().numpy()[:, 0, :])
         # TODO(Varun): Add the functionality of saving the horizon.
         
         # Optimal control data

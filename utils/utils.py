@@ -19,6 +19,7 @@ def ensure_odd(integer):
         integer += 1
     return integer
 
+
 def load_params(module_name):
     """Loads a parameter file in ./params/module_name.py"""
     module_name = 'params.{:s}'.format(module_name)
@@ -28,6 +29,7 @@ def load_params(module_name):
     common_params = importlib.import_module('params.common_params')
     p.common = common_params.parse_params(common_params.load_params())
     return p
+
 
 def log_dict_as_json(params, filename):
     """Save params (either a DotMap object or a python dictionary) to a file in json format"""
@@ -53,7 +55,7 @@ def _to_json_serializable_dict(param_dict):
         if type(elem) is type:  # elem is a class
             return str(elem)
         else:
-            return elem
+            return str(elem)
     for key in param_dict.keys():
         param_dict[key] = _to_serializable_type(param_dict[key])
     return param_dict
@@ -62,6 +64,7 @@ def _to_json_serializable_dict(param_dict):
 def mkdir_if_missing(dirname):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
+
 
 #Probably can delete
 def dump_to_pickle_file(filename, data):
