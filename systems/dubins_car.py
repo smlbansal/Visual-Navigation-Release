@@ -1,6 +1,6 @@
 from systems.dynamics import Dynamics
 from trajectory.trajectory import Trajectory, SystemConfig
-from utils.angle_utils import angle_normalize, rotate_pos_nk2
+from utils.angle_utils import angle_normalize, rotate_pos_nk2, padded_rotation_matrix
 import tensorflow as tf
 
 
@@ -125,17 +125,17 @@ class DubinsCar(Dynamics):
         else:
             assert(mode in ['new', 'assign'])
 
-     @staticmethod
-     def convert_K_to_world_coordinates(ref_config, K_egocentric_nkfd, K_world_nkfd=None, mode='assign'):
-          """ Converts LQR Feedback matrix K_egocentric_nkfd (n=batch size, k=time, f=action size, d=state size) 
-          to the world coordinate frame assuming ref_config is the origin of the egocentric coordinate frame
-          in the world coordinate frame. If mode is assign the result is assigned to
-          K_world_nkfd, else a new tensor is created."""
-          theta_n11 = -ref_config.heading_nk1()
-          n, k, f, d = [x.value for x in K_egocentric_nkfd.shape]
-          rot_matrix_nkdd = padded_rotation_matrix(theta_n11, shape=(n, k, d), lower_identity=True)
-          if mode == 'assign':
-               tf.assign(K_world_nkfd, tf.matmul(K_egocentric_nkfd, rot_matrix_nkdd))
-          else:
-               K_world_nkfd = tf.matmul(K_egocentric_nkfd, rot_matrix_nkdd)
-          return K_world_nkfd
+    @staticmethod
+    def convert_K_to_world_coordinates(ref_config, K_egocentric_nkfd, K_world_nkfd=None, mode='assign'):
+        """ Converts LQR Feedback matrix K_egocentric_nkfd (n=batch size, k=time, f=action size, d=state size) 
+        to the world coordinate frame assuming ref_config is the origin of the egocentric coordinate frame
+        in the world coordinate frame. If mode is assign the result is assigned to
+        K_world_nkfd, else a new tensor is created."""
+        theta_n11 = -ref_config.heading_nk1()
+        n, k, f, d = [x.value for x in K_egocentric_nkfd.shape]
+        rot_matrix_nkdd = padded_rotation_matrix(theta_n11, shape=(n, k, d), lower_identity=True)
+        if mode == 'assign':
+            tf.assign(K_world_nkfd, tf.matmul(K_egocentric_nkfd, rot_matrix_nkdd))
+        else:
+            K_world_nkfd = tf.matmul(K_egocentric_nkfd, rot_matrix_nkdd)
+        return K_world_nkfd

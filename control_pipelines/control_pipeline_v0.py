@@ -166,6 +166,9 @@ class ControlPipelineV0(ControlPipelineBase):
         self.trajectories_world = [Trajectory(
             dt=dt, n=config.n, k=self.params.planning_horizon, variable=True)
            for config in data['start_configs']]
+        
+        #TODO: Save a K array variable placeholder here
+        import pdb; pdb.set_trace()
 
         if self.params.verbose:
             N = self.params.waypoint_params.n
