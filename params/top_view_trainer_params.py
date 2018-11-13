@@ -119,13 +119,13 @@ def create_params():
     # Data creation parameters
     p.data_creation = DotMap(
                                 # Number of data points
-                                data_points=100,
+                                data_points=20000,
         
                                 # Number of data points per file
-                                data_points_per_file=10,
+                                data_points_per_file=100,
                                 
                                 # Data directory
-                                data_dir='./data/topview/test'
+                                data_dir='/home/ext_drive/somilb/data/topview'
     )
 
     # Change the simulator parameters for data collection

@@ -10,7 +10,9 @@ from systems.dubins_car import DubinsCar
 
 
 class TopViewDataSource(DataSource):
-    
+   
+    # TODO: Varun- look into efficiency at some point to see
+    # if data collection can be sped up
     def generate_data(self):
         # Create the data directory if required
         if not os.path.exists(self.p.data_creation.data_dir):
@@ -43,6 +45,7 @@ class TopViewDataSource(DataSource):
             
             # Increase the counter
             counter += 1
+            print(counter*self.p.data_creation.data_points_per_file)
     
     @staticmethod
     def reset_data_dictionary():
