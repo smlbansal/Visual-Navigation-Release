@@ -13,10 +13,12 @@ def simple_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     for i in range(params.num_conv_layers):
         # TODO(Somil): Add parameters for providing stride and padding configurations.
         # Convolutional layer
-        x = layers.Conv2D(filters=params.num_conv_filters[i], kernel_size=params.size_conv_filters[i], padding='same',
-                          activation=params.hidden_layer_activation_func)(x)
+        x = layers.Conv2D(filters=params.num_conv_filters[i],
+                          kernel_size=(params.size_conv_filters[i], params.size_conv_filters[i]),
+                          padding='same', activation=params.hidden_layer_activation_func)(x)
         # Max-pooling layer
-        x = layers.MaxPool2D(pool_size=params.size_maxpool_filters[i], padding='valid')(x)
+        x = layers.MaxPool2D(pool_size=(params.size_maxpool_filters[i], params.size_maxpool_filters[i]),
+                             padding='valid')(x)
         
     # Concatenate the image and the flat outputs
     x = layers.Flatten()(x)

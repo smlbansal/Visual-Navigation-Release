@@ -24,6 +24,9 @@ def create_params():
                      
                      # Number of the outputs to the model
                      num_outputs=3,  # (x, y, theta) waypoint
+        
+                     # Occupancy grid discretization
+                     occupancy_grid_dx=[0.1, 0.1],
                      
                      # Architecture parameters
                      arch=DotMap(
@@ -31,13 +34,13 @@ def create_params():
                                  num_conv_layers=num_conv_layers,
                          
                                  # Number of CNN filters
-                                 num_conv_filters=16 * np.ones(num_conv_layers),
+                                 num_conv_filters=16 * np.ones(num_conv_layers, dtype=np.int32),
                                  
                                  # Size of CNN filters
-                                 size_conv_filters=3 * np.ones(num_conv_layers),
+                                 size_conv_filters=3 * np.ones(num_conv_layers, dtype=np.int32),
                          
                                  # Max pooling layer filter size
-                                 size_maxpool_filters=2 * np.ones(num_conv_layers),
+                                 size_maxpool_filters=2 * np.ones(num_conv_layers, dtype=np.int32),
                                  
                                  # Number of fully connected hidden layers
                                  num_hidden_layers=3,
@@ -83,16 +86,16 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=20,
+                        num_epochs=5,
         
                         # Total number of samples in the dataset
-                        num_samples=100000,
+                        num_samples=90,
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
         
                         # Batch size
-                        batch_size=10000,
+                        batch_size=10,
                         
                         # The training optimizer
                         optimizer=tf.train.AdamOptimizer,

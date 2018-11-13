@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+import tensorflow as tf
 
 from data_sources.data_source import DataSource
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
@@ -52,8 +53,8 @@ class TopViewDataSource(DataSource):
         data = {}
         
         # Obstacle information
-        data['obs_centers_n2'] = []
-        data['obs_radii_n2'] = []
+        data['obs_centers_nm2'] = []
+        data['obs_radii_nm1'] = []
         
         # Start configuration information
         data['vehicle_state_n3'] = []
@@ -66,6 +67,8 @@ class TopViewDataSource(DataSource):
         # Optimal waypoint configuration information
         data['optimal_waypoint_n3'] = []
         data['optimal_waypoint_ego_n3'] = []
+        
+        # The horizon of waypoint
         # TODO(Varun): Add the logic in simulator to fetch the horizon and then add the logic here to fetch the data.
         # data['waypoint_horizon_n1'] = []
         
@@ -90,8 +93,8 @@ class TopViewDataSource(DataSource):
         DubinsCar.to_egocentric_coordinates(simulator.start_config, simulator.goal_config, self.goal_ego_config)
         
         # Obstacle data
-        data['obs_centers_n2'].append(simulator.obstacle_map.obstacle_centers_m2.numpy())
-        data['obs_radii_n2'].append(simulator.obstacle_map.obstacle_radii_m1.numpy())
+        data['obs_centers_nm2'].append(simulator.obstacle_map.obstacle_centers_m2[tf.newaxis, :, :].numpy())
+        data['obs_radii_nm1'].append(simulator.obstacle_map.obstacle_radii_m1[tf.newaxis, :, :].numpy())
         
         # Vehicle data
         data['vehicle_state_n3'].append(simulator.start_config.position_and_heading_nk3().numpy()[:, 0, :])
@@ -104,6 +107,8 @@ class TopViewDataSource(DataSource):
         # Waypoint data
         data['optimal_waypoint_n3'].append(simulator.waypt_configs[0].position_and_heading_nk3().numpy()[:, 0, :])
         data['optimal_waypoint_ego_n3'].append(self.waypoint_ego_config.position_and_heading_nk3().numpy()[:, 0, :])
+        
+        # Waypoint horizon
         # TODO(Varun): Add the functionality of saving the horizon.
         
         # Optimal control data
@@ -117,7 +122,7 @@ class TopViewDataSource(DataSource):
         # Stack the lists
         data_tags = data.keys()
         for tag in data_tags:
-            data[tag] = np.stack(data[tag], axis=0)
+            data[tag] = np.concatenate(data[tag], axis=0)
 
         # Save the data
         filename = os.path.join(self.p.data_creation.data_dir, 'file%i.pkl' % counter)
