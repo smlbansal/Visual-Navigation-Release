@@ -125,7 +125,7 @@ def create_params():
                                 data_points_per_file=10,
                                 
                                 # Data directory
-                                data_dir='./tmp/test'
+                                data_dir='./data/topview/test'
     )
     
     # Change the simulator parameters for data collection

@@ -67,11 +67,10 @@ class TopViewDataSource(DataSource):
         # Optimal waypoint configuration information
         data['optimal_waypoint_n3'] = []
         data['optimal_waypoint_ego_n3'] = []
-        
+
         # The horizon of waypoint
-        # TODO(Varun): Add the logic in simulator to fetch the horizon and then add the logic here to fetch the data.
-        # data['waypoint_horizon_n1'] = []
-        
+        data['waypoint_horizon_n1'] = []
+
         # Optimal control information
         data['optimal_control_nk2'] = []
         return data
@@ -109,8 +108,8 @@ class TopViewDataSource(DataSource):
         data['optimal_waypoint_ego_n3'].append(self.waypoint_ego_config.position_and_heading_nk3().numpy()[:, 0, :])
         
         # Waypoint horizon
-        # TODO(Varun): Add the functionality of saving the horizon.
-        
+        data['waypoint_horizon_n1'].append(simulator.waypt_horizons[0])
+
         # Optimal control data
         data['optimal_control_nk2'].append(simulator.vehicle_trajectory.speed_and_angular_speed_nk2().numpy())
         return data
