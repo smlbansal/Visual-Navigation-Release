@@ -45,7 +45,6 @@ class TopViewDataSource(DataSource):
             
             # Increase the counter
             counter += 1
-            print(counter*self.p.data_creation.data_points_per_file)
     
     @staticmethod
     def reset_data_dictionary():
