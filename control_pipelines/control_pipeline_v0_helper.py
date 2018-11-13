@@ -17,8 +17,8 @@ class ControlPipelineV0Helper():
                         'spline_trajectories': data['spline_trajectories'][idx].to_numpy_repr(),
                         'horizons': data['horizons'][idx].numpy(),
                         'lqr_trajectories': data['lqr_trajectories'][idx].to_numpy_repr(),
-                        'K_arrays': data['K_arrays'][idx].numpy(),
-                        'k_arrays': data['k_arrays'][idx].numpy()}
+                        'K_nkfd': data['K_nkfd'][idx].numpy(),
+                        'k_nkf1': data['k_nkf1'][idx].numpy()}
         return data_to_save
 
     def extract_data_bin(self, pipeline_data, idx):
@@ -47,8 +47,8 @@ class ControlPipelineV0Helper():
                           'horizons': tf.constant(data['horizons']),
                           'lqr_trajectories':
                           Trajectory.init_from_numpy_repr(**data['lqr_trajectories']),
-                          'K_arrays': tf.constant(data['K_arrays']),
-                          'k_arrays': tf.constant(data['k_arrays'])}
+                          'K_nkfd': tf.constant(data['K_nkfd']),
+                          'k_nkf1': tf.constant(data['k_nkf1'])}
         return data_processed
 
     def gather_across_batch_dim(self, data, idxs):
@@ -61,8 +61,8 @@ class ControlPipelineV0Helper():
         data_bin['spline_trajectories'] = Trajectory.gather_across_batch_dim_and_create(data['spline_trajectories'], idxs)
         data_bin['horizons'] = tf.gather(data['horizons'], idxs, axis=0)
         data_bin['lqr_trajectories'] = Trajectory.gather_across_batch_dim_and_create(data['lqr_trajectories'], idxs)
-        data_bin['K_arrays'] = tf.gather(data['K_arrays'], idxs, axis=0)
-        data_bin['k_arrays'] = tf.gather(data['k_arrays'], idxs, axis=0)
+        data_bin['K_nkfd'] = tf.gather(data['K_nkfd'], idxs, axis=0)
+        data_bin['k_nkf1'] = tf.gather(data['k_nkf1'], idxs, axis=0)
         return data_bin
 
     def concat_data_across_binning_dim(self, data):
@@ -77,8 +77,8 @@ class ControlPipelineV0Helper():
         data['spline_trajectories'] = [Trajectory.concat_across_batch_dim(data['spline_trajectories'])]
         data['horizons'] = [tf.concat(data['horizons'], axis=0)]
         data['lqr_trajectories'] = [Trajectory.concat_across_batch_dim(data['lqr_trajectories'])]
-        data['K_arrays'] = [tf.concat(data['K_arrays'], axis=0)]
-        data['k_arrays'] = [tf.concat(data['k_arrays'], axis=0)]
+        data['K_nkfd'] = [tf.concat(data['K_nkfd'], axis=0)]
+        data['k_nkf1'] = [tf.concat(data['k_nkf1'], axis=0)]
         return data
 
     def append_data_bin_to_pipeline_data(self, pipeline_data, data_bin):
@@ -96,7 +96,7 @@ class ControlPipelineV0Helper():
         data = {'start_configs': [], 'waypt_configs': [],
                 'start_speeds': [], 'spline_trajectories': [],
                 'horizons': [], 'lqr_trajectories': [],
-                'K_arrays': [], 'k_arrays': []}
+                'K_nkfd': [], 'k_nkf1': []}
         return data
 
 

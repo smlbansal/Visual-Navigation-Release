@@ -90,8 +90,8 @@ class LQRSolver:
             res_dict = {
                 'J_hist': J_hist,
                 'trajectory_opt': trajectory_new,
-                'k_array_opt': k_array_nTf1,
-                'K_array_opt': K_array_nTfd
+                'k_opt_nkf1': k_array_nTf1,
+                'K_opt_nkfd': K_array_nTfd
             }
             return res_dict
 
