@@ -1,100 +1,92 @@
-import numpy as np
 import tensorflow as tf
-tf.enable_eager_execution()
+import os
+import numpy as np
 import matplotlib.pyplot as plt
-from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
-from systems.dubins_v3 import DubinsV3
-from systems.dubins_v2 import DubinsV2
-from systems.dubins_v1 import DubinsV1
-from trajectory.spline.spline_3rd_order import Spline3rdOrder
-from trajectory.trajectory import SystemConfig
-from control_pipelines.control_pipeline_v0 import Control_Pipeline_v0
-from control_pipelines.control_pipeline_v1 import Control_Pipeline_v1
 from utils import utils
-from dotmap import DotMap
+import argparse
 
+def load_params(goals_n5):
+    """Custom Parameters for visualization."""
+    from dotmap import DotMap
+    from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
+    from trajectory.spline.spline_3rd_order import Spline3rdOrder
+    from systems.dubins_v2 import DubinsV2
+    from control_pipelines.control_pipeline_v0 import ControlPipelineV0
+    from waypoint_grids.user_defined_grid import UserDefinedGrid
+    from params import control_pipeline_params
+    from params import waypoint_params
 
-def create_params():
     p = DotMap()
-    p.seed = 1
-    p.planning_horizon_s = 3.0  # seconds
-    p.n = 1
-    p.map_bounds = [[-2.0, -2.0], [2.0, 2.0]]
-    p.dx, p.dt = .05, .1
-    p.k = int(np.ceil(p.planning_horizon_s/p.dt))
+    p.pipeline = ControlPipelineV0
 
-    p._plant = DubinsV2
-    if p._plant is DubinsV3:
-        p.lqr_coeffs = DotMap({'quad': [1.0, 1.0, 1.0, 1e-5, 1e-5, 1e-5, 1e-5],
-                               'linear': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]})
-    else:
-        p.lqr_coeffs = DotMap({'quad': [1.0, 1.0, 1.0, 1e-5, 1e-5],
-                               'linear': [0.0, 0.0, 0.0, 0.0, 0.0]})
-    p.ctrl = 1.
+    # The directory for saving the control pipeline files
+    p.dir = './tmp/visualize_control_pipelines'
 
-    C = tf.diag(p.lqr_coeffs.quad, name='lqr_coeffs_quad')
-    c = tf.constant(p.lqr_coeffs.linear,
-                    name='lqr_coeffs_linear',
-                    dtype=tf.float32)
-    p.cost_params = {'C_gg': C, 'c_g': c}
-    p.plant_params = {'dt': p.dt}
-    p.spline_params = DotMap(epsilon=1e-5)
-    p.control_pipeline_params = DotMap(precompute=False,
-                                       load_from_pickle_file=False)
+    # Spline parameters
+    p.spline_params = DotMap(spline=Spline3rdOrder,
+                             max_final_time=6.0,
+                             epsilon=1e-5)
 
-    p._cost = QuadraticRegulatorRef
-    p._spline = Spline3rdOrder
-    p._control_pipeline = Control_Pipeline_v1
+    # System Dynamics params
+    p.system_dynamics_params = DotMap(system=DubinsV2,
+                                      dt=.05,
+                                      v_bounds=[0.0, .6],
+                                      w_bounds=[-1.1, 1.1])
+
+    # LQR setting parameters
+    p.lqr_params = DotMap(cost_fn=QuadraticRegulatorRef,
+                          quad_coeffs=np.array(
+                              [1.0, 1.0, 1.0, 1.0, 1.0], dtype=np.float32),
+                          linear_coeffs=np.zeros((5), dtype=np.float32))
+
+    p.waypoint_params = DotMap(grid=UserDefinedGrid,
+                               goals_n5=goals_n5)
+
+    p.waypoint_params = waypoint_params.parse_params(p.waypoint_params)
+
+    # Velocity binning parameters (TODO- make this work for other velocities)
+    p.binning_parameters = DotMap(num_bins=1,
+                                  max_speed=p.system_dynamics_params.v_bounds[1])
+
+    p.verbose = True
+    p = control_pipeline_params.parse_params(p)
     return p
 
 
-def visualize_control_pipeline(starts_n5, goals_n5):
-    p = create_params()
-    np.random.seed(seed=p.seed)
-    tf.set_random_seed(seed=p.seed)
-    p.n = len(starts_n5)
-    n = p.n
-    dt = p.dx
+def visualize():
+    # [x, y, theta, v, omega]
+    start_5 = np.array([0., 0., 0., 0.155, 0.], dtype=np.float32)
+    goals_n5 = np.array([[1.136e-1, -1.136e-1, -1.5706, 0., 0.]], dtype=np.float32)
+    N = len(goals_n5)
 
-    plant = p._plant(**p.plant_params)
-    control_pipeline = p._control_pipeline(system_dynamics=plant, n=p.n,
-                                           params=p)
+    p = load_params(goals_n5)
 
-    start_x_n11, start_y_n11 = starts_n5[:, 0:1, None], starts_n5[:, 1:2, None]
-    goal_x_n11, goal_y_n11 = goals_n5[:, 0:1, None], goals_n5[:, 1:2, None]
-    goal_theta_n11 = goals_n5[:, 2:3, None]
+    utils.delete_if_exists(p.dir)
 
-    goal_x_n11, goal_y_n11, goal_theta_n11 = p._spline.ensure_goals_valid(start_x_n11, start_y_n11, goal_x_n11,
-                                                                          goal_y_n11, goal_theta_n11,
-                                                                          epsilon=p.spline_params.epsilon)
+    control_pipeline = p.pipeline(params=p)
 
-    start_pos_nk2 = np.concatenate([start_x_n11, start_y_n11], axis=2)
-    goal_pos_nk2 = np.concatenate([goal_x_n11, goal_y_n11], axis=2)
+    # trick so the pipeline only precomputes
+    # for your desired starting velocity
+    v0 = start_5[3]
+    control_pipeline.start_velocities = np.array([v0])
 
-    start_config = SystemConfig(dt, n, 1, position_nk2=start_pos_nk2, heading_nk1=starts_n5[:, 2:3, None],
-                                speed_nk1=starts_n5[:, 3:4, None], variable=False)
-    goal_config = SystemConfig(dt, n, 1, position_nk2=goal_pos_nk2,
-                               speed_nk1=goals_n5[:, 3:4, None], heading_nk1=goal_theta_n11,
-                               variable=True)
+    control_pipeline.generate_control_pipeline()
+    
+    fig, _, axs = utils.subplot2(plt, (2*N, 4), (8, 8), (.4, .4))
+    axs = axs[::-1]
+    for i in range(N):
+        axs0, axs1 = axs[2*i*4: (2*i+1)*4], axs[2*i*4+4: (2*i+1)*4+4] 
+        control_pipeline.spline_trajectories[0].render(axs0, batch_idx=i, plot_heading=True, plot_velocity=True,
+                                label_start_and_end=True, name='Spline')
+        control_pipeline.lqr_trajectories[0].render(axs1, batch_idx=i, plot_heading=True, plot_velocity=True,
+                                label_start_and_end=True, name='LQR')
+    fig.savefig('./tmp/visualize_control_pipeline.png', bbox_inches='tight')
 
-    control_pipeline.plan(start_config=start_config,
-                          goal_config=goal_config)
-
-    fig, _, axes = utils.subplot2(plt, (p.n*2, 4), (8, 8), (.4, .4))
-    axes = axes[::-1]
-    for i in range(p.n):
-        axs = axes[8*i:8*(i+1)]
-        control_pipeline.render(axs, batch_idx=i, freq=4, plot_heading=True, plot_velocity=True)
-    fig.suptitle('Control Pipeline Trajectories')
-    plt.savefig('./tmp/control_pipeline.png')
-
+def main():
+    plt.style.use('ggplot')
+    tf.enable_eager_execution(config=utils.gpu_config())
+    visualize()
+   
 
 if __name__ == '__main__':
-    plt.style.use('ggplot')
-
-    # [x, y, theta, v, omega]
-    starts_n5 = np.array([[0.0, 0.0, 0.0, 0.1, 0.0]], dtype=np.float32)
-    goals_n5 = np.array([[0.0, 0.0, 1e-10, 0., 0.]], dtype=np.float32)
-    assert(len(starts_n5) == len(goals_n5))
-
-    visualize_control_pipeline(starts_n5, goals_n5)
+    main()

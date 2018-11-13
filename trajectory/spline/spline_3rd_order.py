@@ -67,7 +67,7 @@ class Spline3rdOrder(Spline):
             a2_n1 = f2_n1*tf.sin(tg_n1)-2*yg_n1+c2_n1+2*d2_n1
             b2_n1 = 3*yg_n1-f2_n1*tf.sin(tg_n1)-2*c2_n1-3*d2_n1
 
-            c3_n1 = final_times_n1 * v0_n1 / f1_n1
+            c3_n1 = (final_times_n1 * v0_n1) / f1_n1
             a3_n1 = (final_times_n1*vg_n1/f2_n1) + c3_n1 - 2.
             b3_n1 = 1. - c3_n1 - a3_n1
 
@@ -134,17 +134,6 @@ class Spline3rdOrder(Spline):
                 self._acceleration_nk1 = tf.zeros_like(self._speed_nk1)
                 self._angular_acceleration_nk1 = tf.zeros_like(self._speed_nk1)
 
-    def free_memory(self):
-        """Assumes that a spline has already been fit and evaluated and
-        that the user will not need to fit or evaluate it again (as is the case
-        when precomputing splines in egocentric coordinates). Set's irrelevant
-        instance variables to None to be garbage collected. Note: won't do anything
-        with a static tensorflow graph."""
-        self.x_coeffs_n14 = None
-        self.y_coeffs_n14 = None
-        self.p_coeffs_n14 = None
-        self.final_times_n1 = None
-    
     def check_dynamic_feasibility(self, speed_max_system, angular_speed_max_system, horizon_s):
         """Checks whether the current computed spline can be executed in time <= horizon_s (specified in seconds)
         while respecting max speed and angular speed constraints. Returns the batch indices of all valid splines."""
@@ -174,18 +163,28 @@ class Spline3rdOrder(Spline):
         # Compute the horizon required to make sure that we satisfy all control constraints at all times
         return tf.maximum(required_horizon_speed_n1, required_horizon_angular_speed_n1)
     
-    def rescale_spline_horizon_to_dynamically_feasible_horizon(self, speed_max_system, angular_speed_max_system):
+    def rescale_spline_horizon_to_dynamically_feasible_horizon(self, speed_max_system,
+                                                               angular_speed_max_system,
+                                                               minimum_horizon=0.0):
         """
         Rescale the spline horizon to a new horizon without recomputing the spline coefficients.
         """
         # Compute the minimum horizon required to execute the spline while ensuring dynamic feasibility
-        required_horizon_n1 = self.compute_dynamically_feasible_horizon(speed_max_system, angular_speed_max_system)
         
-        # Rescale the speed and angular velocity to be consistent with the new horizon
-        self.rescale_velocity_and_acceleration(self.final_times_n1, required_horizon_n1)
+        required_horizon_n1 = self.compute_dynamically_feasible_horizon(speed_max_system, angular_speed_max_system)
+       
+        # Enforce a minimum horizon
+        required_horizon_n1 = tf.maximum(required_horizon_n1, minimum_horizon)
         
         # Reset the final times
         self.final_times_n1 = required_horizon_n1
+        
+        # Valid horizon for each trajectory in the batch
+        # in discrete time steps
+        self.valid_horizons_n1 = tf.ceil(self.final_times_n1/self.dt)
+
+        # Reevaluate the spline to be consistent with the new horizon
+        self.eval_spline(self.ts_nk)
         
     def find_trajectories_within_a_horizon(self, horizon_s):
         """

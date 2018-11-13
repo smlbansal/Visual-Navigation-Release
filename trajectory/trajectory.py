@@ -11,18 +11,26 @@ class Trajectory(object):
 
     def __init__(self, dt, n, k, position_nk2=None, speed_nk1=None, acceleration_nk1=None, heading_nk1=None,
                  angular_speed_nk1=None, angular_acceleration_nk1=None,
-                 dtype=tf.float32, variable=True, direct_init=False):
+                 dtype=tf.float32, variable=True, direct_init=False,
+                 valid_horizons_n1=None):
 
         # Check dimensions now to make your life easier later
         if position_nk2 is not None:
             assert(n == position_nk2.shape[0])
             assert(k == position_nk2.shape[1])
 
+        # TODO: (Varun) At some point you may want 
+        # dt_n1 if dt differs acros the batch dimension
+
         # Discretization step
         self.dt = dt
 
         # Number of timesteps
         self.k = k
+        if valid_horizons_n1 is None:
+            self.valid_horizons_n1 = tf.ones((n, 1), dtype=tf.float32)*k
+        else:
+            self.valid_horizons_n1 = tf.constant(valid_horizons_n1)
 
         # Batch Size
         self.n = n
@@ -78,7 +86,7 @@ class Trajectory(object):
     @classmethod
     def init_from_numpy_repr(cls, dt, n, k, position_nk2, speed_nk1,
                              acceleration_nk1, heading_nk1, angular_speed_nk1,
-                             angular_acceleration_nk1):
+                             angular_acceleration_nk1, valid_horizons_n1):
         """Utility function to initialize a trajectory object from its numpy
         representation. Useful for loading pickled trajectories"""
         return cls(dt=dt, n=n, k=k, position_nk2=position_nk2,
@@ -86,7 +94,15 @@ class Trajectory(object):
                    heading_nk1=heading_nk1,
                    angular_speed_nk1=angular_speed_nk1,
                    angular_acceleration_nk1=angular_acceleration_nk1,
+                   valid_horizons_n1=valid_horizons_n1,
                    variable=False)
+
+    def update_valid_mask_nk(self):
+        """Update this trajectories valid mask. The valid mask is a mask of 1's
+        and 0's at the trajectories sampling interval where 1's represent
+        trajectory data within the valid horizon and 0's otherwise."""
+        all_valid_nk = tf.broadcast_to(tf.range(self.k, dtype=tf.float32)+1, (self.n, self.k))
+        self.valid_mask_nk = tf.cast(all_valid_nk <= self.valid_horizons_n1, dtype=tf.float32)
 
     def assign_from_trajectory_batch_idx(self, trajectory, batch_idx):
         """Assigns a trajectory object's instance variables from the trajectory stored
@@ -96,16 +112,19 @@ class Trajectory(object):
                                             acceleration_nk1=trajectory.acceleration_nk1()[batch_idx:batch_idx+1],
                                             heading_nk1=trajectory.heading_nk1()[batch_idx:batch_idx+1],
                                             angular_speed_nk1=trajectory.angular_speed_nk1()[batch_idx:batch_idx+1],
-                                            angular_acceleration_nk1=trajectory.angular_acceleration_nk1()[batch_idx:batch_idx+1])
+                                            angular_acceleration_nk1=trajectory.angular_acceleration_nk1()[batch_idx:batch_idx+1],
+                                            valid_horizons_n1=trajectory.valid_horizons_n1[batch_idx:batch_idx+1])
 
     def assign_trajectory_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1,
-                                       heading_nk1, angular_speed_nk1, angular_acceleration_nk1):
+                                       heading_nk1, angular_speed_nk1, angular_acceleration_nk1,
+                                       valid_horizons_n1):
         tf.assign(self.position_nk2(), position_nk2)
         tf.assign(self.speed_nk1(), speed_nk1)
         tf.assign(self.acceleration_nk1(), acceleration_nk1)
         tf.assign(self.heading_nk1(), heading_nk1)
         tf.assign(self.angular_speed_nk1(), angular_speed_nk1)
         tf.assign(self.angular_acceleration_nk1(), angular_acceleration_nk1)
+        self.valid_horizons_n1 = valid_horizons_n1
 
     def gather_across_batch_dim(self, idxs):
         """Given a tensor of indexes to gather in the batch dimension,
@@ -117,6 +136,7 @@ class Trajectory(object):
         self._heading_nk1 = tf.gather(self._heading_nk1, idxs)
         self._angular_speed_nk1 = tf.gather(self._angular_speed_nk1, idxs)
         self._angular_acceleration_nk1 = tf.gather(self._angular_acceleration_nk1, idxs)
+        self.valid_horizons_n1 = tf.gather(self.valid_horizons_n1, idxs)
         return self
 
     def to_numpy_repr(self):
@@ -128,8 +148,8 @@ class Trajectory(object):
                       'acceleration_nk1': self.acceleration_nk1().numpy(),
                       'heading_nk1': self.heading_nk1().numpy(),
                       'angular_speed_nk1': self.angular_speed_nk1().numpy(),
-                      'angular_acceleration_nk1':
-                      self.angular_acceleration_nk1().numpy()}
+                      'angular_acceleration_nk1': self.angular_acceleration_nk1().numpy(),
+                      'valid_horizons_n1': self.valid_horizons_n1.numpy()}
         return numpy_dict
 
     @classmethod
@@ -143,6 +163,7 @@ class Trajectory(object):
         heading_nk1 = tf.concat([traj.heading_nk1() for traj in trajs], axis=0)
         angular_speed_nk1 = tf.concat([traj.angular_speed_nk1() for traj in trajs], axis=0)
         angular_acceleration_nk1 = tf.concat([traj.angular_acceleration_nk1() for traj in trajs], axis=0)
+        valid_horizons_n1 = tf.concat([traj.valid_horizons_n1 for traj in trajs], axis=0)
 
         dt = trajs[0].dt
         k = trajs[0].k
@@ -150,7 +171,8 @@ class Trajectory(object):
         return cls(dt=dt, n=n, k=k, position_nk2=position_nk2,
                    speed_nk1=speed_nk1, acceleration_nk1=acceleration_nk1,
                    heading_nk1=heading_nk1, angular_speed_nk1=angular_speed_nk1,
-                   angular_acceleration_nk1=angular_acceleration_nk1)
+                   angular_acceleration_nk1=angular_acceleration_nk1,
+                   valid_horizons_n1=valid_horizons_n1)
 
     @classmethod
     def gather_across_batch_dim_and_create(cls, traj, idxs):
@@ -167,10 +189,12 @@ class Trajectory(object):
         heading_nk1 = tf.gather(traj.heading_nk1(), idxs)
         angular_speed_nk1 = tf.gather(traj.angular_speed_nk1(), idxs)
         angular_acceleration_nk1 = tf.gather(traj.angular_acceleration_nk1(), idxs)
+        valid_horizons_n1 = tf.gather(traj.valid_horizons_n1, idxs)
         return cls(dt=dt, n=n, k=k, position_nk2=position_nk2,
                    speed_nk1=speed_nk1, acceleration_nk1=acceleration_nk1,
                    heading_nk1=heading_nk1, angular_speed_nk1=angular_speed_nk1,
-                   angular_acceleration_nk1=angular_acceleration_nk1)
+                   angular_acceleration_nk1=angular_acceleration_nk1,
+                   valid_horizons_n1=valid_horizons_n1)
 
     @property
     def trainable_variables(self):
@@ -229,6 +253,7 @@ class Trajectory(object):
                                                     trajectory.angular_acceleration_nk1()],
                                                    axis=1)
         self.k = self.k + trajectory.k
+        self.valid_horizons_n1 = self.valid_horizons_n1 + trajectory.valid_horizons_n1
 
     def clip_along_time_axis(self, horizon):
         """ Utility function for clipping a trajectory along
@@ -244,6 +269,7 @@ class Trajectory(object):
         self._angular_speed_nk1 = self._angular_speed_nk1[:, :horizon]
         self._angular_acceleration_nk1 = self._angular_acceleration_nk1[:, :horizon]
         self.k = horizon
+        self.valid_horizons_n1 = tf.clip_by_value(self.valid_horizons_n1, 0, horizon)
 
     @classmethod
     def copy(cls, traj):
@@ -254,6 +280,7 @@ class Trajectory(object):
                    heading_nk1=traj.heading_nk1()*1.,
                    angular_speed_nk1=traj.angular_speed_nk1()*1.,
                    angular_acceleration_nk1=traj.angular_acceleration_nk1()*1.,
+                   valid_horizons_n1=traj.valid_horizons_n1*1.,
                    variable=False, direct_init=True)
 
     @classmethod
@@ -316,8 +343,10 @@ class SystemConfig(Trajectory):
 
     def __init__(self, dt, n, k, position_nk2=None, speed_nk1=None, acceleration_nk1=None, heading_nk1=None,
                  angular_speed_nk1=None, angular_acceleration_nk1=None,
-                 dtype=tf.float32, variable=True, direct_init=False):
+                 dtype=tf.float32, variable=True, direct_init=False,
+                 valid_horizons_n1=None):
         assert(k == 1)
+        # Don't pass on valid_horizons_n1 as a SystemConfig has no horizon
         super().__init__(dt, n, k, position_nk2, speed_nk1, acceleration_nk1,
                          heading_nk1, angular_speed_nk1,
                          angular_acceleration_nk1, dtype=tf.float32,

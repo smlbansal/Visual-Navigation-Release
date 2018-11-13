@@ -23,6 +23,7 @@ def load_params():
     p.spline_params = DotMap(spline=Spline3rdOrder,
                              max_final_time=6.0,
                              epsilon=1e-5)
+    p.minimum_spline_horizon = 1.5
 
     # System Dynamics params
     p.system_dynamics_params = DotMap(system=DubinsV2,
@@ -33,11 +34,11 @@ def load_params():
     # LQR setting parameters
     p.lqr_params = DotMap(cost_fn=QuadraticRegulatorRef,
                           quad_coeffs=np.array(
-                              [1.0, 1.0, 1.0, 1e-10, 1e-10], dtype=np.float32),
+                              [1.0, 1.0, 1.0, 1.0, 1.0], dtype=np.float32),
                           linear_coeffs=np.zeros((5), dtype=np.float32))
 
     # Velocity binning parameters
-    p.binning_parameters = DotMap(num_bins=3,
+    p.binning_parameters = DotMap(num_bins=61,
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 
     p.verbose = True

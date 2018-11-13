@@ -26,6 +26,8 @@ def create_params():
     p.goal_distance_objective = DotMap(power=2,
                                        goal_cost=25.0,
                                        goal_margin=0.0)
+
+    p.objective_fn_params = DotMap(obj_type='mean')
     return p
 
 
@@ -53,7 +55,7 @@ def test_cost_function():
                                                            mask_grid_mn=obstacle_occupancy_grid)
     
     # Define the cost function
-    objective_function = ObjectiveFunction()
+    objective_function = ObjectiveFunction(p.objective_fn_params)
     objective_function.add_objective(ObstacleAvoidance(params=p.avoid_obstacle_objective, obstacle_map=obstacle_map))
     objective_function.add_objective(GoalDistance(params=p.goal_distance_objective, fmm_map=fmm_map))
     objective_function.add_objective(AngleDistance(params=p.goal_angle_objective, fmm_map=fmm_map))

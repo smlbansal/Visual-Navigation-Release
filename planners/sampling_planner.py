@@ -21,12 +21,14 @@ class SamplingPlanner(Planner):
             3. Return the minimum cost waypoint, trajectory, and cost
         """
         obj_vals, data = self.eval_objective(start_config)
-        waypts, horizons, trajectories, controllers = data
+        waypts, horizons_s, trajectories, controllers = data
 
         min_idx = tf.argmin(obj_vals)
         min_cost = obj_vals[min_idx]
 
-        # TODO- optionally return horizon here?
+        # Convert horizon in seconds to horizon in # of steps
+        min_horizon = int(tf.ceil(horizons_s[min_idx, 0]/self.params.dt).numpy())
+
         self.opt_waypt.assign_from_config_batch_idx(waypts, min_idx)
         self.opt_traj.assign_from_trajectory_batch_idx(trajectories, min_idx)
-        return self.opt_waypt, self.opt_traj, min_cost
+        return self.opt_waypt, self.opt_traj, min_cost, min_horizon

@@ -1,4 +1,4 @@
-import utils.utils as utils
+from utils import utils
 import os
 import numpy as np
 import tensorflow as tf
@@ -14,6 +14,7 @@ class ControlPipelineV0(ControlPipelineBase):
     """
 
     def __init__(self, params):
+        self.waypoint_grid = params.waypoint_params.grid(params.waypoint_params)
         self.start_velocities = np.linspace(
             0.0, params.binning_parameters.max_speed, params.binning_parameters.num_bins)
         self.helper = ControlPipelineV0Helper()
@@ -32,6 +33,7 @@ class ControlPipelineV0(ControlPipelineBase):
 
         # TODO: K & k are currently in egocentric coordinates
         controllers = {'K_array': self.K_arrays[idx], 'k_array': self.k_arrays[idx]}
+        self.trajectories_world[idx].update_valid_mask_nk()
         return self.waypt_configs_world[idx], self.horizons[idx], self.trajectories_world[idx], controllers
 
     def generate_control_pipeline(self, params=None):
@@ -44,6 +46,8 @@ class ControlPipelineV0(ControlPipelineBase):
         with tf.name_scope('generate_control_pipeline'):
             if not self._incorrectly_binned_data_exists():
                 for v0 in self.start_velocities:
+                    if p.verbose:
+                        print('Initial Bin: v0={:.3f}'.format(v0))
                     start_config = self.system_dynamics.init_egocentric_robot_config(dt=p.system_dynamics_params.dt,
                                                                                      n=self.waypoint_grid.n,
                                                                                      v=v0)
@@ -51,6 +55,8 @@ class ControlPipelineV0(ControlPipelineBase):
                     start_config, goal_config, horizons_n1 = self._dynamically_fit_spline(
                         start_config, goal_config)
                     lqr_trajectory, K_array, k_array = self._lqr(start_config)
+                    #TODO: Put the initial bin information in here too
+                    # this will make debugging much easier
                     data_bin = {'start_configs': start_config,
                                 'waypt_configs': goal_config,
                                 'start_speeds': self.spline_trajectory.speed_nk1()[:, 0],
@@ -86,7 +92,8 @@ class ControlPipelineV0(ControlPipelineBase):
                                    final_times_n1=final_times_n1)
         self.spline_trajectory.eval_spline(times_nk, calculate_speeds=True)
         self.spline_trajectory.rescale_spline_horizon_to_dynamically_feasible_horizon(speed_max_system=self.system_dynamics.v_bounds[1],
-                                                                                      angular_speed_max_system=self.system_dynamics.w_bounds[1])
+                                                                                      angular_speed_max_system=self.system_dynamics.w_bounds[1],
+                                                                                      minimum_horizon=p.minimum_spline_horizon)
 
         valid_idxs = self.spline_trajectory.find_trajectories_within_a_horizon(p.planning_horizon_s)
         horizons_n1 = self.spline_trajectory.final_times_n1
@@ -106,9 +113,14 @@ class ControlPipelineV0(ControlPipelineBase):
         self.lqr_solver.cost.update_shape()
         lqr_res = self.lqr_solver.lqr(start_config, self.spline_trajectory,
                                       verbose=False)
+        # The LQR trajectory's valid_horizon is the same as the spline
+        # reference trajectory that it tracks
+        lqr_res['trajectory_opt'].valid_horizons_n1 = 1.*self.spline_trajectory.valid_horizons_n1
         return lqr_res['trajectory_opt'], lqr_res['K_array_opt'], lqr_res['k_array_opt']
 
     def _init_pipeline(self):
+        """Initialize Spline, LQR, and LQR cost functions
+        for use in planning. """
         p = self.params
         self.spline_trajectory = p.spline_params.spline(dt=p.system_dynamics_params.dt,
                                                         n=p.waypoint_params.n,
@@ -152,8 +164,8 @@ class ControlPipelineV0(ControlPipelineBase):
         self.waypt_configs_world = [SystemConfig(
             dt=dt, n=config.n, k=1, variable=True) for config in data['start_configs']]
         self.trajectories_world = [Trajectory(
-            dt=dt, n=config.n, k=self.params.planning_horizon, variable=True) for config in
-            data['start_configs']]
+            dt=dt, n=config.n, k=self.params.planning_horizon, variable=True)
+           for config in data['start_configs']]
 
         if self.params.verbose:
             N = self.params.waypoint_params.n
@@ -174,18 +186,34 @@ class ControlPipelineV0(ControlPipelineBase):
 
         for i in range(len(self.start_velocities)):
             idxs = tf.where(tf.equal(bin_idxs, i))[:, 0]
-            data_bin = self.helper.empty_data_dictionary()
-            data_bin['start_configs'] = SystemConfig.gather_across_batch_dim_and_create(data['start_configs'], idxs)
-            data_bin['waypt_configs'] = SystemConfig.gather_across_batch_dim_and_create(data['waypt_configs'], idxs)
-            data_bin['start_speeds'] = tf.gather(data['start_speeds'], idxs, axis=0)
-            data_bin['spline_trajectories'] = Trajectory.gather_across_batch_dim_and_create(data['spline_trajectories'], idxs)
-            data_bin['horizons'] = tf.gather(data['horizons'], idxs, axis=0)
-            data_bin['lqr_trajectories'] = Trajectory.gather_across_batch_dim_and_create(data['lqr_trajectories'], idxs)
-            data_bin['K_arrays'] = tf.gather(data['K_arrays'], idxs, axis=0)
-            data_bin['k_arrays'] = tf.gather(data['k_arrays'], idxs, axis=0)
+            data_bin = self.helper.gather_across_batch_dim(data, idxs)
+
+            # When rebinning the same waypoint may occur more than once in a given bin
+            # If this happens filter out the data such that each waypoint occurs only once.
+            unique_idxs = self._compute_unique_waypt_idxs(data_bin['waypt_configs'])
+            if unique_idxs.shape[0].value < data_bin['waypt_configs'].n:
+                data_bin = self.helper.gather_across_batch_dim(data_bin, unique_idxs)
+
+            if self.params.verbose:
+                lqr_bins = self._compute_bin_idx_for_start_velocities(data_bin['lqr_trajectories'].speed_nk1()[:, 0, :])
+                percent_correct = 100.*np.sum(lqr_bins.numpy() == i)/len(lqr_bins.numpy())
+                percent_incorrect = 100.*np.sum(lqr_bins.numpy() != i)/len(lqr_bins.numpy())
+                max_bin_error = np.max(np.abs(lqr_bins.numpy()-i))
+                print('{:.3f}% Correct Bin, {:.3f}% Incorrect Bin, Max {:d} bin(s) error'.format(percent_correct, percent_incorrect, max_bin_error))
             self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
 
         return pipeline_data
+
+    def _compute_unique_waypt_idxs(self, waypt_configs):
+        """Return a set of indices of unique elements in
+        waypt_configs."""
+
+        # tensorflow doesnt support unique operation on
+        # multidimensional tensors so use numpy here
+        waypt_config_np = waypt_configs.position_heading_speed_and_angular_speed_nk5()[:, 0].numpy()
+        _, idxs = np.unique(waypt_config_np, axis=0, return_index=True)
+        idxs.sort()
+        return tf.constant(idxs)
 
     def _compute_bin_idx_for_start_velocities(self, start_speeds_n1):
         """Computes the closest starting velocity bin to each speed
@@ -207,7 +235,10 @@ class ControlPipelineV0(ControlPipelineBase):
 
     def _load_incorrectly_binned_data(self):
         filename = self._data_file_name(incorrectly_binned=True)
-        return self._load_and_process_data(filename)
+        pipeline_data = self.helper.empty_data_dictionary()
+        data_bin = self.helper.load_and_process_data(filename)
+        self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
+        return pipeline_data
 
     def _incorrectly_binned_data_exists(self):
         filename = self._data_file_name(incorrectly_binned=True)
@@ -225,18 +256,16 @@ class ControlPipelineV0(ControlPipelineBase):
         base_dir = os.path.join(base_dir, 'planning_horizon_{:d}_dt_{:.2f}'.format(
             p.planning_horizon, p.system_dynamics_params.dt))
 
+        base_dir = os.path.join(base_dir, self.system_dynamics.name)
+        base_dir = os.path.join(base_dir, self.waypoint_grid.descriptor_string)
+        base_dir = os.path.join(base_dir,
+                                '{:d}_velocity_bins'.format(p.binning_parameters.num_bins))
         utils.mkdir_if_missing(base_dir)
-        filename = 'n_{:d}'.format(p.waypoint_params.n)
-        filename += '_theta_bins_{:d}'.format(p.waypoint_params.num_theta_bins)
-        filename += '_bound_min_{:.2f}_{:.2f}_{:.2f}'.format(
-            *p.waypoint_params.bound_min)
-        filename += '_bound_max_{:.2f}_{:.2f}_{:.2f}'.format(
-            *p.waypoint_params.bound_max)
 
         if v0 is not None:
-            filename += '_velocity_{:.3f}{:s}'.format(v0, file_format)
+            filename = 'velocity_{:.3f}{:s}'.format(v0, file_format)
         elif incorrectly_binned:
-            filename += '_incorrectly_binned{:s}'.format(file_format)
+            filename = 'incorrectly_binned{:s}'.format(file_format)
         else:
             assert(False)
         filename = os.path.join(base_dir, filename)
@@ -247,11 +276,8 @@ class ControlPipelineV0(ControlPipelineBase):
         over which to plan trajectories."""
         p = self.params.waypoint_params
 
-        self.waypoint_grid = p.grid(p)
-        waypoints_egocentric = self.waypoint_grid.sample_egocentric_waypoints(
-            vf=vf)
-        waypoints_egocentric = self._ensure_waypoints_valid(
-            waypoints_egocentric)
+        waypoints_egocentric = self.waypoint_grid.sample_egocentric_waypoints(vf=vf)
+        waypoints_egocentric = self._ensure_waypoints_valid(waypoints_egocentric)
         wx_n11, wy_n11, wtheta_n11, wv_n11, ww_n11 = waypoints_egocentric
         waypt_pos_n12 = np.concatenate([wx_n11, wy_n11], axis=2)
         waypoint_egocentric_config = SystemConfig(dt=self.params.dt, n=self.waypoint_grid.n, k=1,

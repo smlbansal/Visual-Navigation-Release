@@ -39,7 +39,7 @@ def test_spline_3rd_order(visualize=False):
 
     p = DotMap(spline_params=DotMap(epsilon=1e-5))
     ts_nk = tf.tile(tf.linspace(0., dt*k, k)[None], [n, 1])
-    spline_traj = Spline3rdOrder(dt=dt, k=k, n=n, params=p)
+    spline_traj = Spline3rdOrder(dt=dt, k=k, n=n, params=p.spline_params)
     spline_traj.fit(start_config, goal_config, factors=None)
     spline_traj.eval_spline(ts_nk, calculate_speeds=True)
 
@@ -92,7 +92,7 @@ def test_spline_rescaling():
     
     # Fit the splines
     p = DotMap(spline_params=DotMap(epsilon=1e-5))
-    spline_trajs = Spline3rdOrder(dt=dt, k=k, n=n, params=p)
+    spline_trajs = Spline3rdOrder(dt=dt, k=k, n=n, params=p.spline_params)
     spline_trajs.fit(start_config, goal_config, final_times_n1, factors=None)
     
     # Evaluate the splines

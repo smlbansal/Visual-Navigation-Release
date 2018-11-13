@@ -93,7 +93,6 @@ class LQRSolver:
                 'k_array_opt': k_array_nTf1,
                 'K_array_opt': K_array_nTfd
             }
-
             return res_dict
 
     def apply_control(self, start_config, trajectory,
@@ -118,9 +117,9 @@ class LQRSolver:
                                          angle_normalize(error_t_n1d[:, :, angle_dims:angle_dims+1]),
                                          error_t_n1d[:, :, angle_dims+1:]],
                                         axis=2)
-                fdback = tf.matmul(K_array_nTfd[:, t],
-                                   tf.transpose(error_t_n1d, perm=[0, 2, 1]))
-                u_n1f = u_ref_n1f + tf.transpose(k_array_nTf1[:, t] + fdback,
+                fdback_nf1 = tf.matmul(K_array_nTfd[:, t],
+                                       tf.transpose(error_t_n1d, perm=[0, 2, 1]))
+                u_n1f = u_ref_n1f + tf.transpose(k_array_nTf1[:, t] + fdback_nf1,
                                                  perm=[0, 2, 1])
                 x_next_n1d = self.fwdSim(x_next_n1d, u_n1f)
                 actions.append(u_n1f)

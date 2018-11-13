@@ -6,6 +6,7 @@ class DubinsV1(Dubins3D):
     """ A discrete time 3 dimensional dubins car with identity saturation
     functions (i.e. no saturation) on linear or angular velocity.
     """
+    name = 'dubins_v1'
 
     def _saturate_linear_velocity(self, vtilde_nk):
         """ Identity saturation function for linear velocity"""

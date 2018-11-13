@@ -12,10 +12,11 @@ class Spline(Trajectory):
     def eval_spline(self, ts_nk, calculate_speeds=True):
         """ Evaluates the spline on points in ts_nk
         where ts_nk is in unnormalized time"""
+        self.ts_nk = ts_nk
         # Compute the normalized time for spline evaluation
         ts_normalized_nk = tf.clip_by_value(ts_nk/self.final_times_n1, 0., 1.)
         self._eval_spline(ts_normalized_nk, calculate_speeds)
-        
+
         # Convert velocities and accelerations to real world time
         self.rescale_velocity_and_acceleration(tf.ones((self.n, 1)), self.final_times_n1)
 

@@ -6,6 +6,7 @@ import copy
 import numpy as np
 import tensorflow as tf
 import dotmap
+import shutil
 
 
 def gpu_config():
@@ -66,7 +67,12 @@ def mkdir_if_missing(dirname):
         os.makedirs(dirname)
 
 
-#Probably can delete
+def delete_if_exists(dirname):
+    if os.path.exists(dirname):
+        shutil.rmtree(dirname)
+
+
+# Probably can delete
 def dump_to_pickle_file(filename, data):
     with open(filename, 'wb') as f:
         pickle.dump(data, f)

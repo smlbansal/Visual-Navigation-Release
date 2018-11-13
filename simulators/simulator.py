@@ -37,12 +37,14 @@ class Simulator:
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_configs = [self.start_config]
         waypt_configs = []
+        waypt_horizons = []
         config_time_idxs = [0]
         while vehicle_trajectory.k < self.params.episode_horizon:
-            waypt_trajectory, next_config, waypt_config = self._iterate(config)
+            waypt_trajectory, next_config, waypt_config, waypt_horizon = self._iterate(config)
             vehicle_trajectory.append_along_time_axis(waypt_trajectory)
             vehicle_configs.append(next_config)
             waypt_configs.append(waypt_config)
+            waypt_horizons.append(waypt_horizon)
             config_time_idxs.append(vehicle_trajectory.k)
             config = next_config
         self.min_obs_distances = self._calculate_min_obs_distances(vehicle_trajectory)
@@ -54,7 +56,7 @@ class Simulator:
         self.system_configs = np.array(vehicle_configs)[keep_idx]
         self.waypt_configs = np.array(waypt_configs)[keep_idx[1:]]
 
-        self.obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
+        self.obj_val = self._compute_objective_value(vehicle_trajectory)
         self.vehicle_trajectory = vehicle_trajectory
 
     def reset(self, seed=-1):
@@ -83,12 +85,13 @@ class Simulator:
         """ Runs the planner for one step from config to generate an optimal
         subtrajectory and the resulting robot config after the robot executes
         the subtrajectory"""
-        min_waypt, min_traj, min_cost = self.planner.optimize(config)
+        min_waypt, min_traj, min_cost, min_horizon = self.planner.optimize(config)
+        horizon = min(min_horizon, self.params.control_horizon)
         min_traj = Trajectory.new_traj_clip_along_time_axis(
-            min_traj, self.params.control_horizon)
+            min_traj, horizon)
         next_config = SystemConfig.init_config_from_trajectory_time_index(
             min_traj, t=-1)
-        return min_traj, next_config, SystemConfig.copy(min_waypt)
+        return min_traj, next_config, SystemConfig.copy(min_waypt), min_horizon
 
     def _reset_start_configuration(self, rng):
         """
@@ -162,6 +165,15 @@ class Simulator:
         self.goal_config = SystemConfig(dt=p.dt, n=1, k=1,
                                         position_nk2=goal_112)
 
+    def _compute_objective_value(self, vehicle_trajectory):
+        p = self.params.objective_fn_params
+        if p.obj_type == 'valid_mean':
+            vehicle_trajectory.update_valid_mask_nk()
+        else:
+            assert(p.obj_type in ['valid_mean', 'mean'])
+        obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
+        return obj_val
+
     def _enforce_episode_termination_conditions(self, vehicle_trajectory):
         """ A utility function to enforce episode termination conditions.
         Clips the vehicle trajectory along the time axis."""
@@ -171,14 +183,14 @@ class Simulator:
             time_idxs.append(self._compute_time_idx_for_termination_condition(vehicle_trajectory,
                                                                               condition))
         idx = np.argmin(time_idxs)
-        vehicle_trajectory.clip_along_time_axis(time_idxs[idx])
+        vehicle_trajectory.clip_along_time_axis(time_idxs[idx].numpy())
         return idx, time_idxs[idx]
 
     def _compute_time_idx_for_termination_condition(self, vehicle_trajectory, condition):
         """ For a given trajectory termination condition (i.e. timeout, collision, etc.)
         computes the earliest time index at which this condition is met. Returns
         episode_horizon+1 otherwise."""
-        time_idx = self.params.episode_horizon
+        time_idx = tf.constant(self.params.episode_horizon)
         if condition == 'Timeout':
             pass
         elif condition == 'Collision':
@@ -230,7 +242,7 @@ class Simulator:
         self.goal_config = p.planner_params.system_dynamics.init_egocentric_robot_config(dt=p.dt,
                                                                                          n=1)
         self.fmm_map = self._init_fmm_map()
-        obj_fn = ObjectiveFunction()
+        obj_fn = ObjectiveFunction(p.objective_fn_params)
         if not p.avoid_obstacle_objective.empty():
             obj_fn.add_objective(ObstacleAvoidance(
                 params=p.avoid_obstacle_objective,

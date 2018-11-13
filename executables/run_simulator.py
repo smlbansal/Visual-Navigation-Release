@@ -10,7 +10,6 @@ logdir = './logs/simulator'
 
 def simulate(plot_controls=False):
     p = utils.load_params('simulator_params')
-    
     print(logdir)
     utils.mkdir_if_missing(logdir)
     utils.log_dict_as_json(p, os.path.join(logdir, 'simulator_params.json'))
