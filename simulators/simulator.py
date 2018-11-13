@@ -13,18 +13,30 @@ import itertools
 class Simulator:
 
     def __init__(self, params):
-        self.params = params
+        self.params = params.simulator.parse_params(params)
         self.rng = np.random.RandomState(params.seed)
         self.obstacle_map = self._init_obstacle_map(self.rng)
         self.obj_fn = self._init_obj_fn()
         self.planner = self._init_planner()
 
+    @staticmethod
+    def parse_params(p):
+        """
+        Parse the parameters to add some additional helpful parameters.
+        """
+        # Parse the dependencies
+        p.planner_params.planner.parse_params(p.planner_params)
+        p.obstacle_map_params.obstacle_map.parse_params(p.obstacle_map_params)
+
+        dt = p.planner_params.dt
+        p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
+        p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
+        return p
+
     def simulate(self):
-        """ A function that simulates an entire episode.
-        The agent starts at self.start_config, repeatedly calling _iterate to
-        generate subtrajectories. Generates a vehicle_trajectory for the
-        episode, calculates its objective value, and sets the episode_type
-        (timeout, collision, success)"""
+        """ A function that simulates an entire episode. The agent starts at self.start_config, repeatedly
+        calling _iterate to generate subtrajectories. Generates a vehicle_trajectory for the episode, calculates its
+        objective value, and sets the episode_type (timeout, collision, success)"""
         config = self.start_config
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_configs = [self.start_config]
@@ -56,12 +68,10 @@ class Simulator:
         # corresponding to unclipped parts of the trajectory
         keep_idx = np.array(config_time_idxs) <= end_time_idx
         self.system_configs = np.array(vehicle_configs)[keep_idx]
-        self.waypt_configs = np.array(
-            waypt_configs)[keep_idx[1:]]
+        self.waypt_configs = np.array(waypt_configs)[keep_idx[1:]]
+        self.waypt_horizons = np.array(waypt_horizons)[keep_idx[1:]][None]
 
         self.obj_val = self._compute_objective_value(vehicle_trajectory)
-        tf.squeeze(
-            self.obj_fn.evaluate_function(vehicle_trajectory))
         self.vehicle_trajectory = vehicle_trajectory
         self.controllers = controllers
 
@@ -72,10 +82,8 @@ class Simulator:
         if seed != -1:
             self.rng.seed(seed)
 
-        # Note: Obstacle map must be reset independently of
-        # the fmm map. Sampling start and goal may depend
-        # on the updated state of the obstacle map. Updating the fmm
-        # map depends on the newly sampled goal
+        # Note: Obstacle map must be reset independently of the fmm map. Sampling start and goal may depend
+        # on the updated state of the obstacle map. Updating the fmm map depends on the newly sampled goal.
         self._reset_obstacle_map(self.rng)
         self._reset_start_configuration(self.rng)
         self._reset_goal_configuration(self.rng)
@@ -116,39 +124,74 @@ class Simulator:
         return traj, controllers
 
     def _reset_start_configuration(self, rng):
+        """
+        Reset the starting configuration of the vehicle.
+        """
         p = self.params.reset_params.start_config
-        assert(p.reset_type == 'random')
-        obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
+        
+        # Reset the position
+        if p.position.reset_type == 'random':
+            # Select a random position on the map that is at least obstacle margin away from the nearest obstacle
+            obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
+            dist_to_obs = 0.
+            while dist_to_obs <= obs_margin:
+                start_112 = self.obstacle_map.sample_point_112(self.rng)
+                dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(start_112))
+        else:
+            raise NotImplementedError('Unknown reset type for the vehicle starting position.')
+        
+        # Reset the heading
+        if p.heading.reset_type == 'zero':
+            heading_111 = np.zeros((1, 1, 1))
+        elif p.heading.reset_type == 'random':
+            heading_111 = rng.uniform(p.heading.bounds[0], p.heading.bounds[1], (1, 1, 1))
+        else:
+            raise NotImplementedError('Unknown reset type for the vehicle starting heading.')
+        
+        # Reset the speed
+        if p.speed.reset_type == 'zero':
+            speed_111 = np.zeros((1, 1, 1))
+        elif p.speed.reset_type == 'random':
+            speed_111 = rng.uniform(p.speed.bounds[0], p.speed.bounds[1], (1, 1, 1))
+        else:
+            raise NotImplementedError('Unknown reset type for the vehicle starting speed.')
+        
+        # Reset the angular speed
+        if p.ang_speed.reset_type == 'zero':
+            ang_speed_111 = np.zeros((1, 1, 1))
+        elif p.ang_speed.reset_type == 'random':
+            ang_speed_111 = rng.uniform(p.ang_speed.bounds[0], p.ang_speed.bounds[1], (1, 1, 1))
+        else:
+            raise NotImplementedError('Unknown reset type for the vehicle starting angular speed.')
 
-        start_112 = self.obstacle_map.sample_point_112(self.rng)
-        dist_to_obs = tf.squeeze(
-            self.obstacle_map.dist_to_nearest_obs(start_112))
-        while dist_to_obs <= obs_margin:
-            start_112 = self.obstacle_map.sample_point_112(self.rng)
-            dist_to_obs = tf.squeeze(
-                self.obstacle_map.dist_to_nearest_obs(start_112))
+        # Initialize the start configuration
         self.start_config = SystemConfig(dt=p.dt, n=1, k=1,
-                                         position_nk2=start_112)
-
+                                         position_nk2=start_112,
+                                         heading_nk1=heading_111,
+                                         speed_nk1=speed_111,
+                                         angular_speed_nk1=ang_speed_111)
+                
     def _reset_goal_configuration(self, rng):
         p = self.params.reset_params.goal_config
-        assert(p.reset_type == 'random')
-        obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
         goal_norm = self.params.goal_dist_norm
         goal_radius = self.params.goal_cutoff_dist
         start_112 = self.start_config.position_nk2()
+        
+        # Reset the goal position
+        if p.position.reset_type == 'random':
+            # Select a random position on the map that is at least obstacle margin away from the nearest obstacle, and
+            # not within the goal margin of the start position.
+            obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
+            dist_to_obs = 0.
+            dist_to_goal = 0.
+            while dist_to_obs <= obs_margin or dist_to_goal <= goal_radius:
+                goal_112 = self.obstacle_map.sample_point_112(self.rng)
+                dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
+                dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
+        else:
+            raise NotImplementedError('Unknown reset type for the vehicle goal position.')
 
-        goal_112 = self.obstacle_map.sample_point_112(self.rng)
-        dist_to_obs = tf.squeeze(
-            self.obstacle_map.dist_to_nearest_obs(goal_112))
-        dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
-        while dist_to_obs <= obs_margin or dist_to_goal <= goal_radius:
-            goal_112 = self.obstacle_map.sample_point_112(self.rng)
-            dist_to_obs = tf.squeeze(
-                self.obstacle_map.dist_to_nearest_obs(goal_112))
-            dist_to_goal = np.linalg.norm(
-                (start_112 - goal_112)[0], ord=goal_norm)
-
+        # Initialize the goal configuration
         self.goal_config = SystemConfig(dt=p.dt, n=1, k=1,
                                         position_nk2=goal_112)
 

@@ -4,20 +4,24 @@ import argparse
 import os
 import importlib
 import datetime
+import logging
 
 from data_sources.data_source import DataSource
 from training_utils.trainer_helper import TrainerHelper
 from models.base import BaseModel
+from utils import utils, log_utils
 
 
-# TODO(Somil, Varun): Setup a logger which has all tha parameters, and all the messages printed during the training
-# process.
 class TrainerFrontendHelper(object):
     """
     A base class for setting up a data collector, trainer or test.
+    Exampple: to run a trainer file:
+    PYTHONPATH='.' python executable/top_view_trainer.py generate-data --job-dir ./tmp/test
+    --params params/top_view_trainer_params.py --d 0
+    
     """
     def run(self):
-        tf.enable_eager_execution()
+        tf.enable_eager_execution(config=utils.gpu_config())
         self.setup_parser()
     
     def setup_parser(self):
@@ -47,10 +51,13 @@ class TrainerFrontendHelper(object):
         self.create_session_dir(args.job_dir)
         
         # Configure the device
-        if args.device == 0:
+        if args.device == -1:
             self.p.device = '/cpu:0'
         else:
             self.p.device = '/gpu:%i' % args.device
+            
+        # Setup the logger and dump the parameters
+        self.setup_logger_and_dump_params(args)
         
         # Run the command
         if args.command == 'generate-data':
@@ -154,6 +161,21 @@ class TrainerFrontendHelper(object):
                                           'session_%s' % (datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')))
         os.mkdir(self.p.session_dir)
     
+    def setup_logger_and_dump_params(self, args):
+        """
+        Dump all the paramaters in params.json in the session directory, and then setup a logger.
+        """
+        # Create a parameter json file
+        utils.log_dict_as_json(self.p, os.path.join(self.p.session_dir, 'params.json'))
+        
+        # Setup a logger
+        # TODO(Somil, Varun): This is a hack for now. Maybe make it more sophisticated.
+        log_utils.setup_logger(filename=os.path.join(self.p.session_dir, 'log.txt'))
+        
+        # Add some basic information to the logger
+        logging.info('Parameter file name: %s' % args.params)
+        logging.info('Command: %s' % args.command)
+        
 
 if __name__ == '__main__':
     TrainerFrontendHelper().run()

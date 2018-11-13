@@ -1,21 +1,48 @@
+from utils import utils
+import numpy as np
 import tensorflow as tf
 from dotmap import DotMap
 
+dependencies = ['simulator_params']
+
 
 def create_params():
-    p = DotMap()
+    # Load the dependencies
+    p = DotMap({dependency: utils.load_params(dependency)
+                                for dependency in dependencies})
     
     # Model parameters
+    num_conv_layers = 2
     p.model = DotMap(
+                     
+                     
                      # Number of inputs to the model
-                     num_inputs=1,
+                     num_inputs=DotMap(occupancy_grid_size=[32, 32],
+                                       num_state_features=2 + 2  # Goal (x, y) position + Vehicle's current speed and
+                                                                 # angular speed
+                     ),
                      
                      # Number of the outputs to the model
-                     num_outputs=1,
+                     num_outputs=3,  # (x, y, theta) waypoint
+        
+                     # Occupancy grid discretization
+                     occupancy_grid_dx=[0.1, 0.1],
                      
                      # Architecture parameters
                      arch=DotMap(
-                                 # Number of hidden layers
+                                 # Number of convolutional layers
+                                 num_conv_layers=num_conv_layers,
+                         
+                                 # Number of CNN filters
+                                 num_conv_filters=16 * np.ones(num_conv_layers, dtype=np.int32),
+                                 
+                                 # Size of CNN filters
+                                 size_conv_filters=3 * np.ones(num_conv_layers, dtype=np.int32),
+                         
+                                 # Max pooling layer filter size
+                                 size_maxpool_filters=2 * np.ones(num_conv_layers, dtype=np.int32),
+                                 
+                                 # Number of fully connected hidden layers
                                  num_hidden_layers=3,
                                  
                                  # Number of neurons per hidden layer
@@ -32,7 +59,7 @@ def create_params():
                                  
                                  # Dropout rate (in case dropout is used)
                                  dropout_rate=0.3,
-                                 )
+                     )
     )
     
     # Data processing parameters
@@ -59,16 +86,16 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=20,
+                        num_epochs=5,
         
                         # Total number of samples in the dataset
-                        num_samples=100000,
+                        num_samples=90,
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
         
                         # Batch size
-                        batch_size=10000,
+                        batch_size=10,
                         
                         # The training optimizer
                         optimizer=tf.train.AdamOptimizer,
@@ -92,15 +119,26 @@ def create_params():
     # Data creation parameters
     p.data_creation = DotMap(
                                 # Number of data points
-                                data_points=100000,
+                                data_points=20000,
         
                                 # Number of data points per file
-                                data_points_per_file=10000,
+                                data_points_per_file=100,
                                 
                                 # Data directory
-                                data_dir='/home/somilb/Documents/Projects/visual_mpc/tmp'
+                                data_dir='/home/ext_drive/somilb/data/topview'
     )
-    
+
+    # Change the simulator parameters for data collection
+    p.simulator_params.episode_horizon_s = p.simulator_params.control_horizon_s * 1.
+    reset_params = p.simulator_params.reset_params
+    reset_params.obstacle_map.params = {'min_n': 5, 'max_n': 5, 'min_r': .3, 'max_r': .8}
+
+    # Don't terminate upon success. Since each episode is only one waypoint
+    # this ensures that you don't clip the zero'th waypoint and have a succesfull
+    # episode with no waypoints followed.
+    p.simulator_params.episode_termination_reasons = ['Timeout', 'Collision']
+    p.simulator_params.episode_termination_colors = ['b', 'r']
+
     # Test parameters
     p.test = DotMap(
                     # Test seed

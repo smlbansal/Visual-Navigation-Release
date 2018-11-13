@@ -43,14 +43,11 @@ class DubinsCar(Dynamics):
         """ Converts traj_world to an egocentric reference frame assuming
         ref_config is the origin. If mode is assign the result is assigned to traj_egocentric. If
         mode is new a new trajectory object is returned."""
-        ref_position_1k2 = ref_config.position_nk2()
-        ref_heading_1k1 = ref_config.heading_nk1()
-        position_nk2 = traj_world.position_nk2()
-        heading_nk1 = traj_world.heading_nk1()
 
-        position_nk2 = position_nk2 - ref_position_1k2
-        position_nk2 = rotate_pos_nk2(position_nk2, -ref_heading_1k1)
-        heading_nk1 = angle_normalize(heading_nk1 - ref_heading_1k1)
+        ego_position_and_heading_nk3 = DubinsCar.convert_position_and_heading_to_ego_coordinates(
+            ref_config.position_and_heading_nk3(), traj_world.position_and_heading_nk3())
+        position_nk2 = ego_position_and_heading_nk3[:, :, :2]
+        heading_nk1 = ego_position_and_heading_nk3[:, :, 2:3]
 
         # Either assign the results to tfe.Variables or
         # create a new trajectory object (use this mode to
@@ -87,14 +84,10 @@ class DubinsCar(Dynamics):
         ref_config is the origin of the egocentric coordinate frame
         in the world coordinate frame. If mode is assign the result is assigned to
         traj_world, else a new trajectory object is created"""
-        ref_position_1k2 = ref_config.position_nk2()
-        ref_heading_1k1 = ref_config.heading_nk1()
-        position_nk2 = traj_egocentric.position_nk2()
-        heading_nk1 = traj_egocentric.heading_nk1()
-
-        position_nk2 = rotate_pos_nk2(position_nk2, ref_heading_1k1)
-        position_nk2 = position_nk2 + ref_position_1k2
-        heading_nk1 = angle_normalize(heading_nk1 + ref_heading_1k1)
+        world_position_and_heading_nk3 = DubinsCar.convert_position_and_heading_to_world_coordinates(
+            ref_config.position_and_heading_nk3(), traj_egocentric.position_and_heading_nk3())
+        position_nk2 = world_position_and_heading_nk3[:, :, :2]
+        heading_nk1 = world_position_and_heading_nk3[:, :, 2:3]
 
         # Either assign the results to tfe.Variables or
         # create a new trajectory object (use this mode to
@@ -139,3 +132,23 @@ class DubinsCar(Dynamics):
         else:
             K_world_nkfd = tf.matmul(K_egocentric_nkfd, rot_matrix_nkdd)
         return K_world_nkfd
+ 
+    @staticmethod
+    def convert_position_and_heading_to_ego_coordinates(ref_position_and_heading_n13,
+                                                        world_position_and_heading_nk3):
+        """ Converts a sequence of position and headings to the ego frame."""
+        position_nk2 = world_position_and_heading_nk3[:, :, :2] - ref_position_and_heading_n13[:, :, :2]
+        position_nk2 = rotate_pos_nk2(position_nk2, -ref_position_and_heading_n13[:, :, 2:3])
+        heading_nk1 = angle_normalize(world_position_and_heading_nk3[:, :, 2:3] -
+                                      ref_position_and_heading_n13[:, :, 2:3])
+        return tf.concat([position_nk2, heading_nk1], axis=2)
+
+    @staticmethod
+    def convert_position_and_heading_to_world_coordinates(ref_position_and_heading_n13,
+                                                          ego_position_and_heading_nk3):
+        """ Converts a sequence of position and headings to the world frame."""
+        position_nk2 = rotate_pos_nk2(ego_position_and_heading_nk3[:, :, :2], ref_position_and_heading_n13[:, :, 2:3])
+        position_nk2 = position_nk2 + ref_position_and_heading_n13[:, :, :2]
+        heading_nk1 = angle_normalize(ego_position_and_heading_nk3[:, :, 2:3] + ref_position_and_heading_n13[:, :, 2:3])
+        return tf.concat([position_nk2, heading_nk1], axis=2)
+>>>>>>> master

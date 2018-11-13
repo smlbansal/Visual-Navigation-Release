@@ -20,9 +20,3 @@ def load_params():
     p.bound_min = [0., -2.5, -np.pi / 2]
     p.bound_max = [2.5, 2.5, np.pi / 2]
     return p
-
-
-def parse_params(p):
-    # Update the number of waypoints based on how many will actually be sampled
-    p.n = p.grid.compute_number_waypoints(p)
-    return p
