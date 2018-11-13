@@ -8,7 +8,8 @@ import argparse
 
 logdir = './logs/simulator'
 
-
+# TODO: the vehicle_trajectory is not exactly the LQR reference trajectory.
+# It is very close though so this may not really be problematic.
 def save_lqr_data(filename, trajectory, controllers):
         """ Saves the LQR controllers (K, k) used to track the current vehicle
         trajectory as well as the current vehicle trajectory."""
@@ -38,8 +39,8 @@ def simulate(plot_controls=False):
         axs0 = axs0[::-1]
         axs1 = axs1[::-1]
 
-    tf.set_random_seed(p.common.seed)
-    np.random.seed(p.common.seed)
+    tf.set_random_seed(p.seed)
+    np.random.seed(p.seed)
 
     sim = p.simulator(params=p)
 

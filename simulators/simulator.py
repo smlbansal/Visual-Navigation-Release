@@ -31,6 +31,7 @@ class Simulator:
         dt = p.planner_params.dt
         p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
         p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
+        p.dt = dt
         return p
 
     def simulate(self):
