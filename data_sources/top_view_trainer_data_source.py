@@ -81,7 +81,7 @@ class TopViewDataSource(DataSource):
         """
         self.goal_ego_config = Trajectory(dt=0, n=1, k=1)
         self.waypoint_ego_config = Trajectory(dt=0, n=1, k=1)
-    
+
     def append_data_to_dictionary(self, data, simulator):
         """
         Append the appropriate data from the simulator to the existing data dictionary.
@@ -90,23 +90,23 @@ class TopViewDataSource(DataSource):
         DubinsCar.to_egocentric_coordinates(simulator.start_config, simulator.waypt_configs[0],
                                             self.waypoint_ego_config)
         DubinsCar.to_egocentric_coordinates(simulator.start_config, simulator.goal_config, self.goal_ego_config)
-        
+
         # Obstacle data
         data['obs_centers_nm2'].append(simulator.obstacle_map.obstacle_centers_m2[tf.newaxis, :, :].numpy())
         data['obs_radii_nm1'].append(simulator.obstacle_map.obstacle_radii_m1[tf.newaxis, :, :].numpy())
-        
+
         # Vehicle data
         data['vehicle_state_n3'].append(simulator.start_config.position_and_heading_nk3().numpy()[:, 0, :])
         data['vehicle_controls_n2'].append(simulator.start_config.speed_and_angular_speed_nk2().numpy()[:, 0, :])
-        
+
         # Goal data
         data['goal_position_n2'].append(simulator.goal_config.position_nk2().numpy()[:, 0, :])
         data['goal_position_ego_n2'].append(self.goal_ego_config.position_nk2().numpy()[:, 0, :])
-        
+
         # Waypoint data
         data['optimal_waypoint_n3'].append(simulator.waypt_configs[0].position_and_heading_nk3().numpy()[:, 0, :])
         data['optimal_waypoint_ego_n3'].append(self.waypoint_ego_config.position_and_heading_nk3().numpy()[:, 0, :])
-        
+
         # Waypoint horizon
         data['waypoint_horizon_n1'].append(simulator.waypt_horizons[0])
 

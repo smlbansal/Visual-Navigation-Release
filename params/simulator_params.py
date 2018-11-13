@@ -81,8 +81,3 @@ def load_params():
 
     p.num_validation_goals = 1
     return p
-
-
-def parse_params(p):
-    # TODO(Varun): Remove the parses function from the parameter and move them to the corresponding main classes.
-    return p

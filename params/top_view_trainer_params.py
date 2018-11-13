@@ -127,12 +127,18 @@ def create_params():
                                 # Data directory
                                 data_dir='./data/topview/test'
     )
-    
+
     # Change the simulator parameters for data collection
     p.simulator_params.episode_horizon_s = p.simulator_params.control_horizon_s * 1.
     reset_params = p.simulator_params.reset_params
     reset_params.obstacle_map.params = {'min_n': 5, 'max_n': 5, 'min_r': .3, 'max_r': .8}
-    
+
+    # Don't terminate upon success. Since each episode is only one waypoint
+    # this ensures that you don't clip the zero'th waypoint and have a succesfull
+    # episode with no waypoints followed.
+    p.simulator_params.episode_termination_reasons = ['Timeout', 'Collision']
+    p.simulator_params.episode_termination_colors = ['b', 'r']
+
     # Test parameters
     p.test = DotMap(
                     # Test seed

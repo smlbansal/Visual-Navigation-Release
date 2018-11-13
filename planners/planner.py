@@ -7,11 +7,24 @@ class Planner:
 
     def __init__(self, obj_fn, params):
         self.obj_fn = obj_fn
-        self.params = params
+        self.params = params.planner.parse_params(params)
 
         self.opt_waypt = SystemConfig(dt=params.dt, n=1, k=1, variable=True)
         self.opt_traj = Trajectory(dt=params.dt, n=1, k=params.planning_horizon, variable=True)
         self.control_pipeline = self._init_control_pipeline()
+
+    @staticmethod
+    def parse_params(p):
+        """
+        Parse the parameters to add some additional helpful parameters.
+        """
+        # Parse the dependencies
+        p.control_pipeline_params.pipeline.parse_params(p.control_pipeline_params)
+
+        p.system_dynamics = p.control_pipeline_params.system_dynamics_params.system
+        p.dt = p.control_pipeline_params.system_dynamics_params.dt
+        p.planning_horizon = p.control_pipeline_params.planning_horizon
+        return p
 
     def optimize(self, start_config):
         """ Optimize the objective over a trajectory

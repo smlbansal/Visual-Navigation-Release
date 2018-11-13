@@ -2,8 +2,17 @@ class WaypointGridBase():
     """An abstract class representing an egocentric waypoint grid
     for a mobile ground robot."""
     def __init__(self, params):
-        self.params = params
+        self.params = params.grid.parse_params(params)
         self.n = self.compute_number_waypoints(params)
+
+    @staticmethod
+    def parse_params(p):
+        """
+        Parse the parameters to add some additional helpful parameters.
+        """
+        # Update the number of waypoints based on how many will actually be sampled
+        p.n = p.grid.compute_number_waypoints(p)
+        return p
 
     def sample_egocentric_waypoints(self, vf=0.):
         """ Samples an egocentric waypoint grid

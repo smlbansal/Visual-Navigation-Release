@@ -25,10 +25,7 @@ def load_params(module_name):
     """Loads a parameter file in ./params/module_name.py"""
     module_name = 'params.{:s}'.format(module_name)
     params = importlib.import_module(module_name)
-    p = params.parse_params(params.load_params())
-
-    common_params = importlib.import_module('params.common_params')
-    p.common = common_params.parse_params(common_params.load_params())
+    p = params.load_params()
     return p
 
 

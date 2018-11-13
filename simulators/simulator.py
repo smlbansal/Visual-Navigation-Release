@@ -13,17 +13,21 @@ import itertools
 class Simulator:
 
     def __init__(self, params):
-        params = self.parse_params(params)
-        self.params = params
+        self.params = params.simulator.parse_params(params)
         self.rng = np.random.RandomState(params.seed)
         self.obstacle_map = self._init_obstacle_map(self.rng)
         self.obj_fn = self._init_obj_fn()
         self.planner = self._init_planner()
 
-    def parse_params(self, p):
+    @staticmethod
+    def parse_params(p):
         """
         Parse the parameters to add some additional helpful parameters.
         """
+        # Parse the dependencies
+        p.planner_params.planner.parse_params(p.planner_params)
+        p.obstacle_map_params.obstacle_map.parse_params(p.obstacle_map_params)
+
         dt = p.planner_params.dt
         p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
         p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
@@ -55,7 +59,7 @@ class Simulator:
         keep_idx = np.array(config_time_idxs) <= end_time_idx
         self.system_configs = np.array(vehicle_configs)[keep_idx]
         self.waypt_configs = np.array(waypt_configs)[keep_idx[1:]]
-        self.waypt_horizons = np.array(waypt_horizons)[keep_idx[1:]]
+        self.waypt_horizons = np.array(waypt_horizons)[keep_idx[1:]][None]
 
         self.obj_val = self._compute_objective_value(vehicle_trajectory)
         self.vehicle_trajectory = vehicle_trajectory

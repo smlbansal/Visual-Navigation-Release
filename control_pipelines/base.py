@@ -11,10 +11,24 @@ class ControlPipelineBase(object):
     """
 
     def __init__(self, params):
-        self.params = params
+        self.params = params.pipeline.parse_params(params)
         self.system_dynamics = params.system_dynamics_params.system(dt=params.system_dynamics_params.dt,
                                                                     params=params.system_dynamics_params)
         self.pipeline_files = self.valid_file_names()
+
+    @staticmethod
+    def parse_params(p):
+        """
+        Parse the parameters to add some additional helpful parameters.
+        """
+        # Parse the dependencies
+        p.waypoint_params.grid.parse_params(p.waypoint_params)
+
+        p.planning_horizon_s = p.spline_params.max_final_time
+        p.planning_horizon = int(
+            np.ceil(p.planning_horizon_s / p.system_dynamics_params.dt))
+        return p
+
 
     def generate_control_pipeline(self, params=None):
         """
