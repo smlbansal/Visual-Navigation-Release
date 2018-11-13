@@ -15,6 +15,10 @@ from utils import utils, log_utils
 class TrainerFrontendHelper(object):
     """
     A base class for setting up a data collector, trainer or test.
+    Exampple: to run a trainer file:
+    PYTHONPATH='.' python executable/top_view_trainer.py generate-data --job-dir ./tmp/test
+    --params params/top_view_trainer_params.py --d 0
+    
     """
     def run(self):
         tf.enable_eager_execution(config=utils.gpu_config())
