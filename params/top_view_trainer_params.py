@@ -58,7 +58,7 @@ def create_params():
                                  use_dropout=True,
                                  
                                  # Dropout rate (in case dropout is used)
-                                 dropout_rate=0.3,
+                                 dropout_rate=0.5,
                      )
     )
     
@@ -86,22 +86,22 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=5,
+                        num_epochs=50,
         
                         # Total number of samples in the dataset
-                        num_samples=90,
+                        num_samples=20000,
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
         
                         # Batch size
-                        batch_size=10,
+                        batch_size=64,
                         
                         # The training optimizer
                         optimizer=tf.train.AdamOptimizer,
         
                         # Learning rate
-                        lr=1e-2,
+                        lr=1e-4,
                         
                         # Learning schedule
                         learning_schedule=1,
@@ -112,20 +112,19 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=4,
-                        ckpt_path='/Users/somil/Documents/research/Projects/model_based_navigation/temp/'
-                                  'session_2018-09-28_17-45-36/checkpoints/ckpt-5'
+                        ckpt_path='/home/ext_drive/somilb/data/topview/ckpts'
     )
     
     # Data creation parameters
     p.data_creation = DotMap(
                                 # Number of data points
-                                data_points=20000,
+                                data_points=50000,
         
                                 # Number of data points per file
                                 data_points_per_file=100,
                                 
                                 # Data directory
-                                data_dir='/home/ext_drive/somilb/data/topview'
+                                data_dir='/home/ext_drive/somilb/data/topview_50k'
     )
 
     # Change the simulator parameters for data collection

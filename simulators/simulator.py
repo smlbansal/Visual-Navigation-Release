@@ -59,7 +59,7 @@ class Simulator:
         keep_idx = np.array(config_time_idxs) <= end_time_idx
         self.system_configs = np.array(vehicle_configs)[keep_idx]
         self.waypt_configs = np.array(waypt_configs)[keep_idx[1:]]
-        self.waypt_horizons = np.array(waypt_horizons)[keep_idx[1:]][None]
+        self.waypt_horizons = np.array(waypt_horizons)[keep_idx[1:]][None, None]
 
         self.obj_val = self._compute_objective_value(vehicle_trajectory)
         self.vehicle_trajectory = vehicle_trajectory
