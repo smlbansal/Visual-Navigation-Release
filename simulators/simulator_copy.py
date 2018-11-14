@@ -40,29 +40,41 @@ class Simulator:
         objective value, and sets the episode_type (timeout, collision, success)"""
         config = self.start_config
         vehicle_trajectory = self.vehicle_trajectory
-        vehicle_data = self.planner.empty_data_dict()
-        #vehicle_configs = [self.start_config]
+        vehicle_configs = [self.start_config]
+        waypt_configs = []
+        waypt_horizons = []
+        lqr_Ks_1kfd = []
+        lqr_ks_1kf1 = []
         config_time_idxs = [0]
         while vehicle_trajectory.k < self.params.episode_horizon:
-            trajectory_segment, next_config, data = self._iterate(config)
-            vehicle_trajectory.append_along_time_axis(trajectory_segment)
-            
-            #for each key in vehicle data append the data inside data
-            
+            waypt_trajectory, next_config, waypt_config, waypt_horizon, min_controllers = self._iterate(config)
+            vehicle_trajectory.append_along_time_axis(waypt_trajectory)
+            vehicle_configs.append(next_config)
+            waypt_configs.append(waypt_config)
+            waypt_horizons.append(waypt_horizon)
+            lqr_Ks_1kfd.append(min_controllers['K_1kfd'])
+            lqr_ks_1kf1.append(min_controllers['k_1kf1'])
             config_time_idxs.append(vehicle_trajectory.k)
             config = next_config
-        
-        # concatenate lqr controllers along time axis
-        # and other stuff if needed
-        vehicle_data = self.planner.process_data()
-        
-        # enforce episode_termination_conditions
-        vehicle_trajectory, vehicle_data = self._enforce_episode_termination_conditions(vehicle_trajectory,
-                                                                                        vehicle_data)
+        controllers = {'K_1kfd': tf.concat(lqr_Ks_1kfd, axis=1),
+                       'k_1kf1': tf.concat(lqr_ks_1kf1, axis=1)}
+        self.min_obs_distances = self._calculate_min_obs_distances(
+            vehicle_trajectory)
+        self.collisions = self._calculate_trajectory_collisions(
+            vehicle_trajectory)
+        vehicle_trajectory, controllers, self.episode_type, end_time_idx = self._enforce_episode_termination_conditions(
+            vehicle_trajectory, controllers)
+
+        # Only keep the system and waypoint configurations
+        # corresponding to unclipped parts of the trajectory
+        keep_idx = np.array(config_time_idxs) <= end_time_idx
+        self.system_configs = np.array(vehicle_configs)[keep_idx]
+        self.waypt_configs = np.array(waypt_configs)[keep_idx[1:]]
+        self.waypt_horizons = np.array(waypt_horizons)[keep_idx[1:]][None, None]
 
         self.obj_val = self._compute_objective_value(vehicle_trajectory)
         self.vehicle_trajectory = vehicle_trajectory
-        self.vehicle_data = vehicle_data
+        self.controllers = controllers
 
     
     def reset(self, seed=-1):
@@ -91,17 +103,12 @@ class Simulator:
         """ Runs the planner for one step from config to generate an optimal
         subtrajectory and the resulting robot config after the robot executes
         the subtrajectory"""
-        data = self.planner.optimize(config)
-        if 'trajectory' not in data.keys():
-            start_pos_nkd = self.system_dynamics.parse_trajectory(config)
-            traj = self.system_dynamics.simulate_T(data['u_nkf'], len(data['u_nkf']))
-        else:
-            traj = data['trajectory']
-
+        min_waypt, min_traj, min_cost, min_horizon, min_controllers = self.planner.optimize(config)
         horizon = min(min_horizon, self.params.control_horizon)
-        traj, data = clip_along_time_axis(traj, data)
-        next_config = SystemConfig.init_config_from_trajectory_time_index(traj, t=-1)
-        return traj, next_config, data
+        min_traj, min_controllers = self._clip_along_time_axis(min_traj, min_controllers, horizon,
+                                                               mode='new')
+        next_config = SystemConfig.init_config_from_trajectory_time_index(min_traj, t=-1)
+        return min_traj, next_config, SystemConfig.copy(min_waypt), min_horizon, min_controllers
 
     def _clip_along_time_axis(self, traj, controllers, horizon, mode='new'):
         """ Clip a trajectory and the associated LQR controllers
