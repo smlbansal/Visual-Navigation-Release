@@ -1,6 +1,6 @@
 from systems.dynamics import Dynamics
 from trajectory.trajectory import Trajectory, SystemConfig
-from utils.angle_utils import angle_normalize, rotate_pos_nk2
+from utils.angle_utils import angle_normalize, rotate_pos_nk2, padded_rotation_matrix
 import tensorflow as tf
 
 
@@ -39,7 +39,7 @@ class DubinsCar(Dynamics):
                             angular_speed_nk1=angular_speed_nk1, variable=False)
 
     @staticmethod
-    def to_egocentric_coordinates(ref_config, traj_world, traj_egocentric, mode='assign'):
+    def to_egocentric_coordinates(ref_config, traj_world, traj_egocentric=None, mode='assign'):
         """ Converts traj_world to an egocentric reference frame assuming
         ref_config is the origin. If mode is assign the result is assigned to traj_egocentric. If
         mode is new a new trajectory object is returned."""
@@ -79,7 +79,7 @@ class DubinsCar(Dynamics):
             assert(mode in ['new', 'assign'])
 
     @staticmethod
-    def to_world_coordinates(ref_config, traj_egocentric, traj_world, mode='assign'):
+    def to_world_coordinates(ref_config, traj_egocentric, traj_world=None, mode='assign'):
         """ Converts traj_egocentric to the world coordinate frame assuming
         ref_config is the origin of the egocentric coordinate frame
         in the world coordinate frame. If mode is assign the result is assigned to
@@ -102,7 +102,7 @@ class DubinsCar(Dynamics):
                                                       valid_horizons_n1=traj_egocentric.valid_horizons_n1)
             return traj_world
         elif mode == 'new':
-            if traj_world.k == 1:
+            if traj_egocentric.k == 1:
                 cls = SystemConfig
             else:
                 cls = Trajectory
@@ -117,7 +117,37 @@ class DubinsCar(Dynamics):
             return traj_world
         else:
             assert(mode in ['new', 'assign'])
-            
+
+    @staticmethod
+    def convert_K_to_world_coordinates(ref_config, K_egocentric_nkfd, K_world_nkfd=None, mode='assign'):
+        """ Converts LQR Feedback matrix K_egocentric_nkfd (n=batch size, k=time, f=action size, d=state size) 
+        to the world coordinate frame assuming ref_config is the origin of the egocentric coordinate frame
+        in the world coordinate frame. If mode is assign the result is assigned to
+        K_world_nkfd, else a new tensor is created."""
+        theta_n11 = -ref_config.heading_nk1()
+        n, k, f, d = [x.value for x in K_egocentric_nkfd.shape]
+        rot_matrix_nkdd = padded_rotation_matrix(theta_n11, shape=(n, k, d), lower_identity=True)
+        if mode == 'assign':
+            tf.assign(K_world_nkfd, tf.matmul(K_egocentric_nkfd, rot_matrix_nkdd))
+        else:
+            K_world_nkfd = tf.matmul(K_egocentric_nkfd, rot_matrix_nkdd)
+        return K_world_nkfd
+
+    @staticmethod
+    def convert_K_to_egocentric_coordinates(ref_config, K_world_nkfd, K_egocentric_nkfd=None, mode='assign'):
+        """ Converts LQR Feedback matrix K_world_nkfd (n=batch size, k=time, f=action size, d=state size) 
+        to the egocentric coordinate frame assuming ref_config is the origin of the egocentric coordinate frame
+        in the world coordinate frame. If mode is assign the result is assigned to
+        K_world_nkfd, else a new tensor is created."""
+        theta_n11 = ref_config.heading_nk1()
+        n, k, f, d = [x.value for x in K_world_nkfd.shape]
+        rot_matrix_nkdd = padded_rotation_matrix(theta_n11, shape=(n, k, d), lower_identity=True)
+        if mode == 'assign':
+            tf.assign(K_world_nkfd, tf.matmul(K_world_nkfd, rot_matrix_nkdd))
+        else:
+            K_world_nkfd = tf.matmul(K_world_nkfd, rot_matrix_nkdd)
+        return K_world_nkfd
+
     @staticmethod
     def convert_position_and_heading_to_ego_coordinates(ref_position_and_heading_n13,
                                                         world_position_and_heading_nk3):

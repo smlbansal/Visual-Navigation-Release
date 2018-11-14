@@ -2,6 +2,7 @@ from utils import utils
 import os
 import numpy as np
 import tensorflow as tf
+import tensorflow.contrib.eager as tfe
 from optCtrl.lqr import LQRSolver
 from trajectory.trajectory import Trajectory, SystemConfig
 from control_pipelines.base import ControlPipelineBase
@@ -30,9 +31,12 @@ class ControlPipelineV0(ControlPipelineBase):
                                                                                   self.waypt_configs_world[idx], mode='assign')
         self.trajectories_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.lqr_trajectories[idx],
                                                                                  self.trajectories_world[idx], mode='assign')
+        self.Ks_world_nkfd[idx] = self.system_dynamics.convert_K_to_world_coordinates(start_config,
+                                                                                      self.K_nkfd[idx],
+                                                                                       self.Ks_world_nkfd[idx],
+                                                                                       mode='assign')
 
-        # TODO: K & k are currently in egocentric coordinates
-        controllers = {'K_array': self.K_arrays[idx], 'k_array': self.k_arrays[idx]}
+        controllers = {'K_nkfd': self.Ks_world_nkfd[idx], 'k_nkf1': self.k_nkf1[idx]}
         self.trajectories_world[idx].update_valid_mask_nk()
         return self.waypt_configs_world[idx], self.horizons[idx], self.trajectories_world[idx], controllers
 
@@ -54,7 +58,7 @@ class ControlPipelineV0(ControlPipelineBase):
                     goal_config = SystemConfig.copy(waypoints_egocentric)
                     start_config, goal_config, horizons_n1 = self._dynamically_fit_spline(
                         start_config, goal_config)
-                    lqr_trajectory, K_array, k_array = self._lqr(start_config)
+                    lqr_trajectory, K_nkfd, k_nkf1 = self._lqr(start_config)
                     #TODO: Put the initial bin information in here too
                     # this will make debugging much easier
                     data_bin = {'start_configs': start_config,
@@ -63,8 +67,8 @@ class ControlPipelineV0(ControlPipelineBase):
                                 'spline_trajectories': Trajectory.copy(self.spline_trajectory),
                                 'horizons': horizons_n1,
                                 'lqr_trajectories': lqr_trajectory,
-                                'K_arrays': K_array,
-                                'k_arrays': k_array}
+                                'K_nkfd': K_nkfd,
+                                'k_nkf1': k_nkf1}
                     self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
                 # This data is incorrectly binned by velocity
                 # so collapse it all into one bin before saving it
@@ -116,7 +120,7 @@ class ControlPipelineV0(ControlPipelineBase):
         # The LQR trajectory's valid_horizon is the same as the spline
         # reference trajectory that it tracks
         lqr_res['trajectory_opt'].valid_horizons_n1 = 1.*self.spline_trajectory.valid_horizons_n1
-        return lqr_res['trajectory_opt'], lqr_res['K_array_opt'], lqr_res['k_array_opt']
+        return lqr_res['trajectory_opt'], lqr_res['K_opt_nkfd'], lqr_res['k_opt_nkf1']
 
     def _init_pipeline(self):
         """Initialize Spline, LQR, and LQR cost functions
@@ -156,8 +160,8 @@ class ControlPipelineV0(ControlPipelineBase):
         self.spline_trajectories = data['spline_trajectories']
         self.horizons = data['horizons']
         self.lqr_trajectories = data['lqr_trajectories']
-        self.K_arrays = data['K_arrays']
-        self.k_arrays = data['k_arrays']
+        self.K_nkfd = data['K_nkfd']
+        self.k_nkf1 = data['k_nkf1']
 
         # Initialize variable tensors for waypoints and trajectories in world coordinates
         dt = self.params.system_dynamics_params.dt
@@ -166,6 +170,8 @@ class ControlPipelineV0(ControlPipelineBase):
         self.trajectories_world = [Trajectory(
             dt=dt, n=config.n, k=self.params.planning_horizon, variable=True)
            for config in data['start_configs']]
+
+        self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(K)) for K in data['K_nkfd']]
 
         if self.params.verbose:
             N = self.params.waypoint_params.n

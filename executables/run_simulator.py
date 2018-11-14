@@ -3,15 +3,28 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import utils
+import pickle
 import argparse
 
 logdir = './logs/simulator'
+
+# TODO: the vehicle_trajectory is not exactly the LQR reference trajectory.
+# It is very close though so this may not really be problematic.
+def save_lqr_data(filename, trajectory, controllers):
+        """ Saves the LQR controllers (K, k) used to track the current vehicle
+        trajectory as well as the current vehicle trajectory."""
+        data = {'trajectory' : trajectory.to_numpy_repr(),
+                'K_1kfd' : controllers['K_1kfd'].numpy(),
+                'k_1kf1' : controllers['k_1kf1'].numpy()}
+        with open(filename, 'wb') as f:
+            pickle.dump(data, f)
 
 
 def simulate(plot_controls=False):
     p = utils.load_params('simulator_params')
     print(logdir)
     utils.mkdir_if_missing(logdir)
+    utils.mkdir_if_missing(os.path.join(logdir, 'lqr_data'))
     utils.log_dict_as_json(p, os.path.join(logdir, 'simulator_params.json'))
 
     sqrt_num_plots = int(np.ceil(np.sqrt(p.num_validation_goals)))
@@ -26,8 +39,8 @@ def simulate(plot_controls=False):
         axs0 = axs0[::-1]
         axs1 = axs1[::-1]
 
-    tf.set_random_seed(p.common.seed)
-    np.random.seed(p.common.seed)
+    tf.set_random_seed(p.seed)
+    np.random.seed(p.seed)
 
     sim = p.simulator(params=p)
 
@@ -40,6 +53,8 @@ def simulate(plot_controls=False):
         if i != 0:
             sim.reset(seed=-1)
         sim.simulate()
+        lqr_filename = os.path.join(logdir, 'lqr_data', 'goal_num_{:d}.pkl'.format(i))
+        save_lqr_data(lqr_filename, sim.vehicle_trajectory, sim.controllers)
         metrics.append(sim.get_metrics())
 
         # Plot Stuff

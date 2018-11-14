@@ -31,6 +31,7 @@ class Simulator:
         dt = p.planner_params.dt
         p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
         p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
+        p.dt = dt
         return p
 
     def simulate(self):
@@ -42,20 +43,30 @@ class Simulator:
         vehicle_configs = [self.start_config]
         waypt_configs = []
         waypt_horizons = []
+        lqr_Ks_1kfd = []
+        lqr_ks_1kf1 = []
         config_time_idxs = [0]
         while vehicle_trajectory.k < self.params.episode_horizon:
-            waypt_trajectory, next_config, waypt_config, waypt_horizon = self._iterate(config)
+            waypt_trajectory, next_config, waypt_config, waypt_horizon, min_controllers = self._iterate(config)
             vehicle_trajectory.append_along_time_axis(waypt_trajectory)
             vehicle_configs.append(next_config)
             waypt_configs.append(waypt_config)
             waypt_horizons.append(waypt_horizon)
+            lqr_Ks_1kfd.append(min_controllers['K_1kfd'])
+            lqr_ks_1kf1.append(min_controllers['k_1kf1'])
             config_time_idxs.append(vehicle_trajectory.k)
             config = next_config
-        self.min_obs_distances = self._calculate_min_obs_distances(vehicle_trajectory)
-        self.collisions = self._calculate_trajectory_collisions(vehicle_trajectory)
-        self.episode_type, end_time_idx = self._enforce_episode_termination_conditions(vehicle_trajectory)
+        controllers = {'K_1kfd': tf.concat(lqr_Ks_1kfd, axis=1),
+                       'k_1kf1': tf.concat(lqr_ks_1kf1, axis=1)}
+        self.min_obs_distances = self._calculate_min_obs_distances(
+            vehicle_trajectory)
+        self.collisions = self._calculate_trajectory_collisions(
+            vehicle_trajectory)
+        vehicle_trajectory, controllers, self.episode_type, end_time_idx = self._enforce_episode_termination_conditions(
+            vehicle_trajectory, controllers)
 
-        # Only keep the system and waypoint configurations corresponding to unclipped parts of the trajectory.
+        # Only keep the system and waypoint configurations
+        # corresponding to unclipped parts of the trajectory
         keep_idx = np.array(config_time_idxs) <= end_time_idx
         self.system_configs = np.array(vehicle_configs)[keep_idx]
         self.waypt_configs = np.array(waypt_configs)[keep_idx[1:]]
@@ -63,7 +74,9 @@ class Simulator:
 
         self.obj_val = self._compute_objective_value(vehicle_trajectory)
         self.vehicle_trajectory = vehicle_trajectory
+        self.controllers = controllers
 
+    
     def reset(self, seed=-1):
         """Reset the simulator. Optionally takes a seed to reset
         the simulator's random state."""
@@ -90,13 +103,26 @@ class Simulator:
         """ Runs the planner for one step from config to generate an optimal
         subtrajectory and the resulting robot config after the robot executes
         the subtrajectory"""
-        min_waypt, min_traj, min_cost, min_horizon = self.planner.optimize(config)
+        min_waypt, min_traj, min_cost, min_horizon, min_controllers = self.planner.optimize(config)
         horizon = min(min_horizon, self.params.control_horizon)
-        min_traj = Trajectory.new_traj_clip_along_time_axis(
-            min_traj, horizon)
-        next_config = SystemConfig.init_config_from_trajectory_time_index(
-            min_traj, t=-1)
-        return min_traj, next_config, SystemConfig.copy(min_waypt), min_horizon
+        min_traj, min_controllers = self._clip_along_time_axis(min_traj, min_controllers, horizon,
+                                                               mode='new')
+        next_config = SystemConfig.init_config_from_trajectory_time_index(min_traj, t=-1)
+        return min_traj, next_config, SystemConfig.copy(min_waypt), min_horizon, min_controllers
+
+    def _clip_along_time_axis(self, traj, controllers, horizon, mode='new'):
+        """ Clip a trajectory and the associated LQR controllers
+        along the time axis to length horizon."""
+        if mode == 'new':
+            traj = Trajectory.new_traj_clip_along_time_axis(traj, horizon)
+        elif mode == 'update':
+            traj.clip_along_time_axis(horizon)
+        else:
+            assert(False)
+
+        controllers = {'K_1kfd': controllers['K_1kfd'][:, :horizon],
+                       'k_1kf1': controllers['k_1kf1'][:, :horizon]}
+        return traj, controllers
 
     def _reset_start_configuration(self, rng):
         """
@@ -159,6 +185,7 @@ class Simulator:
             obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
             dist_to_obs = 0.
             dist_to_goal = 0.
+            #TODO: dist_to_goal should be computed using FMM not l2
             while dist_to_obs <= obs_margin or dist_to_goal <= goal_radius:
                 goal_112 = self.obstacle_map.sample_point_112(self.rng)
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
@@ -179,17 +206,20 @@ class Simulator:
         obj_val = tf.squeeze(self.obj_fn.evaluate_function(vehicle_trajectory))
         return obj_val
 
-    def _enforce_episode_termination_conditions(self, vehicle_trajectory):
+    def _enforce_episode_termination_conditions(self, vehicle_trajectory, controllers):
         """ A utility function to enforce episode termination conditions.
-        Clips the vehicle trajectory along the time axis."""
+        Clips the vehicle trajectory and corresponding LQR controllers along the time axis."""
         p = self.params
         time_idxs = []
         for condition in p.episode_termination_reasons:
             time_idxs.append(self._compute_time_idx_for_termination_condition(vehicle_trajectory,
                                                                               condition))
         idx = np.argmin(time_idxs)
-        vehicle_trajectory.clip_along_time_axis(time_idxs[idx].numpy())
-        return idx, time_idxs[idx]
+        vehicle_trajectory, controllers = self._clip_along_time_axis(vehicle_trajectory,
+                                                                     controllers,
+                                                                     time_idxs[idx].numpy(),
+                                                                     mode='update')
+        return vehicle_trajectory, controllers, idx, time_idxs[idx]
 
     def _compute_time_idx_for_termination_condition(self, vehicle_trajectory, condition):
         """ For a given trajectory termination condition (i.e. timeout, collision, etc.)

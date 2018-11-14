@@ -12,6 +12,7 @@ def simple_mlp(num_inputs, num_outputs, params, dtype=tf.float32):
     for i in range(params.num_hidden_layers):
         x = layers.Dense(params.num_neurons_per_layer, activation=params.hidden_layer_activation_func)(x)
         if params.use_dropout:
+            #TODO: Have a separate use_dropout flag?
             x = layers.Dropout(rate=params.dropout_rate)(x)
     
     # Output layer

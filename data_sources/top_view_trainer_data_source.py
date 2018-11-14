@@ -45,7 +45,6 @@ class TopViewDataSource(DataSource):
             
             # Increase the counter
             counter += 1
-            #TODO: DELETE THIS PRINT
             print(counter*self.p.data_creation.data_points_per_file)
     
     @staticmethod
