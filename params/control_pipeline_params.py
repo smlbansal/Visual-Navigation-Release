@@ -42,5 +42,5 @@ def load_params():
     p.binning_parameters = DotMap(num_bins=61,
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 
-    p.verbose = True
+    p.verbose = False
     return p

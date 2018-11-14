@@ -185,6 +185,7 @@ class Simulator:
             obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
             dist_to_obs = 0.
             dist_to_goal = 0.
+            #TODO: dist_to_goal should be computed using FMM not l2
             while dist_to_obs <= obs_margin or dist_to_goal <= goal_radius:
                 goal_112 = self.obstacle_map.sample_point_112(self.rng)
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
