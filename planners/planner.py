@@ -52,7 +52,3 @@ class Planner:
         else:
             control_pipeline.generate_control_pipeline()
         return control_pipeline
-
-    def render(self, axs, start_config, waypt_config, freq=4, obstacle_map=None):
-        self.control_pipeline.render(axs, start_config, waypt_config, freq,
-                                     obstacle_map)
