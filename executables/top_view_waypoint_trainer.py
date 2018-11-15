@@ -1,4 +1,4 @@
-from training_utils.top_view.top_view_trainer import TopViewTrainer
+from training_utils.top_view_trainer import TopViewTrainer
 from models.top_view.top_view_waypoint_model import TopViewWaypointModel
 
 

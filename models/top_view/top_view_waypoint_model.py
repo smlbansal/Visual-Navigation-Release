@@ -1,9 +1,8 @@
 import tensorflow as tf
-
 from models.top_view.top_view_model import TopViewModel
 
 
-class TopViewWaypointModel(BaseModel):
+class TopViewWaypointModel(TopViewModel):
 
     def create_nn_inputs_and_outputs(self, raw_data):
         """

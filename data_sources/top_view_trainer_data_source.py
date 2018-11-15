@@ -45,6 +45,7 @@ class TopViewDataSource(DataSource):
             
             # Increase the counter
             counter += 1
+            #TODO: Remove this print
             print(counter*self.p.data_creation.data_points_per_file)
     
     @staticmethod
@@ -90,7 +91,8 @@ class TopViewDataSource(DataSource):
         Append the appropriate data from the simulator to the existing data dictionary.
         """
         # Convert the waypoint and the goal information to egocentric frame
-        DubinsCar.to_egocentric_coordinates(simulator.start_config, simulator.waypt_configs[0],
+        DubinsCar.to_egocentric_coordinates(simulator.start_config,
+                                            simulator.vehicle_data['waypoint_config'][0],
                                             self.waypoint_ego_config)
         DubinsCar.to_egocentric_coordinates(simulator.start_config, simulator.goal_config, self.goal_ego_config)
 
@@ -107,11 +109,11 @@ class TopViewDataSource(DataSource):
         data['goal_position_ego_n2'].append(self.goal_ego_config.position_nk2().numpy()[:, 0, :])
 
         # Waypoint data
-        data['optimal_waypoint_n3'].append(simulator.waypt_configs[0].position_and_heading_nk3().numpy()[:, 0, :])
+        data['optimal_waypoint_n3'].append(simulator.vehicle_data['waypoint_config'][0].position_and_heading_nk3().numpy()[:, 0, :])
         data['optimal_waypoint_ego_n3'].append(self.waypoint_ego_config.position_and_heading_nk3().numpy()[:, 0, :])
 
         # Waypoint horizon
-        data['waypoint_horizon_n1'].append(simulator.waypt_horizons[0])
+        data['waypoint_horizon_n1'].append(np.array([simulator.vehicle_data['planning_horizon'][0]])[None])
 
         # Optimal control data
         data['optimal_control_nk2'].append(simulator.vehicle_trajectory.speed_and_angular_speed_nk2().numpy())

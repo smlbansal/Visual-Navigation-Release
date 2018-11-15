@@ -14,7 +14,10 @@ def rotate_pos_nk2(pos_nk2, theta_n11):
     # Broadcast theta_n11 to size nk1. broadcast_to does not track gradients so addition is used
     # here instead
     theta_nk1 = theta_n11 + 0. * pos_nk2[:, :, 0:1]
-    n, k, _ = [x.value for x in theta_nk1.shape]
+    if type(theta_nk1) is np.ndarray:
+        n, k, _ = [x for x in theta_nk1.shape]
+    else:
+        n, k, _ = [x.value for x in theta_nk1.shape]
     rot_matrix_nk22 = padded_rotation_matrix(theta_n11, shape=(n, k, 2))
     pos_rot_nk2 = tf.matmul(rot_matrix_nk22, pos_nk2[:, :, :, None])[:, :, :, 0]
     return pos_rot_nk2

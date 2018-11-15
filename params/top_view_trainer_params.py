@@ -89,7 +89,7 @@ def create_params():
                         num_epochs=50,
         
                         # Total number of samples in the dataset
-                        num_samples=20000,
+                        num_samples=100,
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
@@ -112,19 +112,19 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=4,
-                        ckpt_path='/home/ext_drive/somilb/data/topview/ckpts'
+                        ckpt_path='./tmp/ckpt'
     )
     
     # Data creation parameters
     p.data_creation = DotMap(
                                 # Number of data points
-                                data_points=50000,
+                                data_points=100,
         
                                 # Number of data points per file
                                 data_points_per_file=100,
                                 
                                 # Data directory
-                                data_dir='/home/ext_drive/somilb/data/topview_50k'
+                                data_dir='./data/test/'
     )
 
     # Change the simulator parameters for data collection
