@@ -21,10 +21,17 @@ class ControlPipelineV0(ControlPipelineBase):
         self.helper = ControlPipelineV0Helper()
         super().__init__(params)
 
-    def plan(self, start_config):
+    def plan(self, start_config, goal_config=None):
         """Computes which velocity bin start_config belongs to
         and returns the corresponding waypoints, horizons, lqr_trajectories,
-        and LQR controllers."""
+        and LQR controllers. If goal_config is none, returns 
+        data for all the precomputed waypoints. Else returns data only
+        for the closest waypoint to goal_config"""
+
+        
+        if goal_config is not None:
+            import pdb; pdb.set_trace()
+
         idx = tf.squeeze(self._compute_bin_idx_for_start_velocities(
             start_config.speed_nk1()[:, :, 0])).numpy()
         self.waypt_configs_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.waypt_configs[idx],

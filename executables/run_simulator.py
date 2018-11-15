@@ -10,6 +10,8 @@ logdir = './logs/simulator'
 
 # TODO: the vehicle_trajectory is not exactly the LQR reference trajectory.
 # It is very close though so this may not really be problematic.
+
+#TODO: This wont work anymore as simulator has changed
 def save_lqr_data(filename, trajectory, controllers):
         """ Saves the LQR controllers (K, k) used to track the current vehicle
         trajectory as well as the current vehicle trajectory."""
@@ -54,7 +56,7 @@ def simulate(plot_controls=False):
             sim.reset(seed=-1)
         sim.simulate()
         lqr_filename = os.path.join(logdir, 'lqr_data', 'goal_num_{:d}.pkl'.format(i))
-        save_lqr_data(lqr_filename, sim.vehicle_trajectory, sim.controllers)
+        # save_lqr_data(lqr_filename, sim.vehicle_trajectory, sim.controllers)
         metrics.append(sim.get_metrics())
 
         # Plot Stuff

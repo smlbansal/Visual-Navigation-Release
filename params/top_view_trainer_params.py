@@ -141,7 +141,10 @@ def create_params():
     # Test parameters
     p.test = DotMap(
                     # Test seed
-                    seed=10
+                    seed=10,
+                    simulate_expert=True,
+                    number_tests=50,
+
     )
 
     return p

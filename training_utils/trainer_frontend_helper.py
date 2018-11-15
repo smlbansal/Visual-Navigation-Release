@@ -137,6 +137,7 @@ class TrainerFrontendHelper(object):
     
             # Load the checkpoint
             self.trainer.restore_checkpoint(model=self.model)
+
         
     def create_params(self, param_file):
         """

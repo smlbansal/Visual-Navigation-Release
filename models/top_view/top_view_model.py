@@ -34,27 +34,6 @@ class TopViewModel(BaseModel):
         xx_mk, yy_mk = tf.meshgrid(x_k, y_m, indexing='xy')
         
         self.occupancy_grid_positions_ego_1mk12 = tf.stack([xx_mk, yy_mk], axis=2)[tf.newaxis, :, :, tf.newaxis, :]
-
-    def create_nn_inputs_and_outputs(self, raw_data):
-        """
-        Create the occupancy grid and other inputs for the neural network.
-        """
-        # Create the occupancy grid out of the raw obstacle information
-        occupancy_grid_nmk1 = self.create_occupancy_grid(raw_data['vehicle_state_n3'],
-                                                         raw_data['obs_centers_nm2'],
-                                                         raw_data['obs_radii_nm1'])
-
-        # Concatenate the goal position in an egocentric frame with vehicle's speed information
-        state_features_n4 = tf.concat([raw_data['goal_position_ego_n2'], raw_data['vehicle_controls_n2']], axis=1)
-        
-        # Waypoint to be supervised
-        optimal_waypoints_n3 = raw_data['optimal_waypoint_ego_n3']
-        
-        # Prepare and return the data dictionary
-        data = {}
-        data['inputs'] = [occupancy_grid_nmk1, state_features_n4]
-        data['labels'] = optimal_waypoints_n3
-        return data
     
     def create_occupancy_grid(self, vehicle_state_n3, obs_centers_nl2, obs_radii_nl1):
         """

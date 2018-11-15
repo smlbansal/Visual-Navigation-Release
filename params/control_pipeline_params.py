@@ -17,7 +17,8 @@ def load_params():
     p.pipeline = ControlPipelineV0
 
     # The directory for saving the control pipeline files
-    p.dir = '/home/ext_drive/somilb/data/control_pipelines'
+    # p.dir = '/home/ext_drive/somilb/data/control_pipelines'
+    p.dir = './data/control_pipelines'
 
     # Spline parameters
     p.spline_params = DotMap(spline=Spline3rdOrder,
@@ -41,5 +42,5 @@ def load_params():
     p.binning_parameters = DotMap(num_bins=61,
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 
-    p.verbose = False
+    p.verbose = True
     return p

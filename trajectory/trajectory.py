@@ -272,6 +272,37 @@ class Trajectory(object):
         self.valid_horizons_n1 = tf.clip_by_value(self.valid_horizons_n1, 0, horizon)
 
     @classmethod
+    def concat_along_time_axis(cls, trajectories):
+        """ Concatenates a list of trajectory objects
+        along the time axis. Useful for assembling an entire
+        trajectory from multiple sub-trajectories. """
+
+        # Check all subtrajectories have the same batch size and dt
+        assert([x.n for x in trajectories] == [1]*len(trajectories))
+        assert([x.dt for x in trajectories] == [trajectories[0].dt]*len(trajectories))
+
+        n = trajectories[0].n
+        dt = trajectories[0].dt
+        k = sum([x.k for x in trajectories])
+
+        position_nk2 = tf.concat([x.position_nk2() for x in trajectories], axis=1)
+        speed_nk1 = tf.concat([x.speed_nk1() for x in trajectories], axis=1)
+        acceleration_nk1 = tf.concat([x.acceleration_nk1() for x in trajectories], axis=1)
+        heading_nk1 = tf.concat([x.heading_nk1() for x in trajectories], axis=1)
+        angular_speed_nk1 = tf.concat([x.angular_speed_nk1() for x in trajectories], axis=1)
+        angular_acceleration_nk1 = tf.concat([x.angular_acceleration_nk1() for x in trajectories], axis=1)
+        valid_horizons_n1 = tf.reduce_sum([x.valid_horizons_n1 for x in trajectories], axis=0)
+        return cls(dt=dt, n=n, k =k,
+                   position_nk2=position_nk2,
+                   speed_nk1=speed_nk1,
+                   acceleration_nk1=acceleration_nk1,
+                   heading_nk1=heading_nk1,
+                   angular_speed_nk1=angular_speed_nk1,
+                   angular_acceleration_nk1=angular_acceleration_nk1,
+                   valid_horizons_n1=valid_horizons_n1,
+                   direct_init=True)
+
+    @classmethod
     def copy(cls, traj):
         return cls(dt=traj.dt, n=traj.n, k=traj.k,
                    position_nk2=traj.position_nk2()*1.,

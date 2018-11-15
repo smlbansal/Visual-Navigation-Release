@@ -5,8 +5,9 @@ class Planner:
     """Plans optimal trajectories (by minimizing an objective function)
     through an environment. """
 
-    def __init__(self, obj_fn, params):
-        self.obj_fn = obj_fn
+    def __init__(self, simulator, params):
+        self.simulator = simulator
+        self.obj_fn = self.simulator.obj_fn
         self.params = params.planner.parse_params(params)
 
         self.opt_waypt = SystemConfig(dt=params.dt, n=1, k=1, variable=True)
@@ -33,11 +34,10 @@ class Planner:
         """
         raise NotImplementedError
 
-    def eval_objective(self, start_config):
+    def eval_objective(self, start_config, goal_config=None):
         """ Evaluate the objective function on a trajectory
-        generated through the control pipeline from start_config (world frame).
-        Assumes the control pipeline has been initialized with goal configurations already."""
-        waypts, horizons, trajectories_world, controllers = self.control_pipeline.plan(start_config)
+        generated through the control pipeline from start_config (world frame)."""
+        waypts, horizons, trajectories_world, controllers = self.control_pipeline.plan(start_config, goal_config)
         obj_val = self.obj_fn.evaluate_function(trajectories_world)
         return obj_val, [waypts, horizons, trajectories_world, controllers]
 
@@ -52,3 +52,31 @@ class Planner:
         else:
             control_pipeline.generate_control_pipeline()
         return control_pipeline
+
+    # Static methods for processing data that
+    # a planner will return
+    @staticmethod
+    def empty_data_dict():
+        """Returns a dictionary with keys mapping to empty lists
+        for each datum computed by a planner."""
+        raise NotImplementedError
+
+    @staticmethod
+    def clip_data_along_time_axis(data, horizon, mode='new'):
+        """Clips a data dictionary to length horizon."""
+        raise NotImplementedError
+
+    @staticmethod
+    def process_data(data):
+        """Processes a data dictionary from a full episode
+        in the simulator."""
+        raise NotImplementedError
+
+    @staticmethod
+    def keep_data_before_time(data, data_times, time):
+        """Assumes the elements in data were produced at
+        data_times. Keeps those elements which were produced
+        before time."""
+        raise NotImplementedError
+        
+
