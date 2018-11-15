@@ -81,6 +81,10 @@ def load_from_pickle_file(filename):
     return data
 
 
+def configure_plotting():
+    import matplotlib.pyplot as plt
+    plt.style.use('ggplot')
+
 def subplot2(plt, Y_X, sz_y_sz_x=(10, 10), space_y_x=(0.1, 0.1), T=False):
     Y, X = Y_X
     sz_y, sz_x = sz_y_sz_x

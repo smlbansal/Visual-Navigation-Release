@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from data_sources.data_source import DataSource
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
-from trajectory.trajectory import Trajectory
+from trajectory.trajectory import Trajectory, SystemConfig
 from systems.dubins_car import DubinsCar
 
 
@@ -78,13 +78,13 @@ class TopViewDataSource(DataSource):
         # Optimal control information
         data['optimal_control_nk2'] = []
         return data
-
+elf.params.system_dynamics
     def initialize_configs_for_ego_data(self):
         """
         Creates configuration objects to store the egocentric goal and waypoint.
         """
-        self.goal_ego_config = Trajectory(dt=0, n=1, k=1)
-        self.waypoint_ego_config = Trajectory(dt=0, n=1, k=1)
+        self.goal_ego_config = SystemConfig(dt=0, n=1, k=1)
+        self.waypoint_ego_config = SystemConfig(dt=0, n=1, k=1)
 
     def append_data_to_dictionary(self, data, simulator):
         """

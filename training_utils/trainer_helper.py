@@ -9,7 +9,7 @@ class TrainerHelper(object):
     def __init__(self, params):
         self.p = params.trainer
         self.session_dir = params.session_dir
-        
+    
     def train(self, model, data_source, callback_fn=None):
         """
         Train a given model.
@@ -24,7 +24,11 @@ class TrainerHelper(object):
         # Keep a track of the performance
         epoch_performance_training = []
         epoch_performance_validation = []
-        
+
+        # Instantiate one figure and axis object for plotting losses over training
+        self.losses_fig = plt.figure()
+        self.losses_ax = self.losses_fig.add_subplot(111)
+
         # Begin the training
         for epoch in range(self.p.num_epochs):
             # Shuffle the dataset
@@ -149,8 +153,10 @@ class TrainerHelper(object):
         """
         Plot the loss curves for the training and the validation datasets over epochs.
         """
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+        fig = self.losses_fig
+        ax = self.losses_ax
+        ax.clear()
+
         ax.plot(training_performance, 'r-', label='Training')
         ax.plot(validation_performance, 'b-', label='Validation')
         ax.legend()

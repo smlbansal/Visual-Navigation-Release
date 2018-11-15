@@ -21,8 +21,8 @@ class CircularObstacleMapSimulator(Simulator):
         """ Initializes a new circular obstacle map."""
         p = self.params
         return p.obstacle_map_params.obstacle_map.init_random_map(map_bounds=p.obstacle_map_params.map_bounds,
-                                                               rng=rng,
-                                                               **p.reset_params.obstacle_map.params)
+                                                                  rng=rng,
+                                                                  params=p.reset_params.obstacle_map.params)
 
     def _render_obstacle_map(self, ax):
         p = self.params

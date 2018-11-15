@@ -8,7 +8,6 @@ from trajectory.trajectory import Trajectory, SystemConfig
 from control_pipelines.base import ControlPipelineBase
 from control_pipelines.control_pipeline_v0_helper import ControlPipelineV0Helper
 
-
 class ControlPipelineV0(ControlPipelineBase):
     """
     A control pipeline that generate dynamically feasible spline trajectories of varying horizon.
@@ -28,12 +27,12 @@ class ControlPipelineV0(ControlPipelineBase):
         data for all the precomputed waypoints. Else returns data only
         for the closest waypoint to goal_config"""
 
-        
-        if goal_config is not None:
-            import pdb; pdb.set_trace()
-
+        # Compute the closest velocity bin for this starting configuration
         idx = tf.squeeze(self._compute_bin_idx_for_start_velocities(
             start_config.speed_nk1()[:, :, 0])).numpy()
+
+        # Convert waypoints, trajectories, and LQR feedback matrices
+        # for this velocity bin into world coordinates
         self.waypt_configs_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.waypt_configs[idx],
                                                                                   self.waypt_configs_world[idx], mode='assign')
         self.trajectories_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.lqr_trajectories[idx],
@@ -43,9 +42,25 @@ class ControlPipelineV0(ControlPipelineBase):
                                                                                        self.Ks_world_nkfd[idx],
                                                                                        mode='assign')
 
-        controllers = {'K_nkfd': self.Ks_world_nkfd[idx], 'k_nkf1': self.k_nkf1[idx]}
-        self.trajectories_world[idx].update_valid_mask_nk()
-        return self.waypt_configs_world[idx], self.horizons[idx], self.trajectories_world[idx], controllers
+        # If goal_config is None (i.e. expert), return
+        # all the precomputed trajectories. Otherwise
+        # find the closest waypoint to goal_config and
+        # return information only for this waypoint
+        if goal_config is None:
+            waypt_configs = self.waypt_configs_world[idx]
+            horizons = self.horizons[idx]
+            trajectories = self.trajectories_world[idx]
+            controllers = {'K_nkfd': self.Ks_world_nkfd[idx], 'k_nkf1': self.k_nkf1[idx]}
+        else:
+            waypt_idx = self.helper.compute_closest_waypt_idx(goal_config,
+                                                              self.waypt_configs_world[idx])
+            waypt_configs = self.waypt_configs_world[idx][waypt_idx]
+            horizons = self.horizons[idx][waypt_idx:waypt_idx+1]
+            trajectories = self.trajectories_world[idx][waypt_idx]
+            controllers = {'K_nkfd': self.Ks_world_nkfd[idx][waypt_idx:waypt_idx+1],
+                           'k_nkf1': self.k_nkf1[idx][waypt_idx:waypt_idx+1]}
+        trajectories.update_valid_mask_nk()
+        return waypt_configs, horizons, trajectories, controllers
 
     def generate_control_pipeline(self, params=None):
         p = self.params

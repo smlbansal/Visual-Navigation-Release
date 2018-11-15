@@ -331,6 +331,26 @@ class Trajectory(object):
                    angular_speed_nk1=trajectory.angular_speed_nk1()[:, :horizon],
                    angular_acceleration_nk1=trajectory.angular_acceleration_nk1()[:, :horizon])
 
+    def __getitem__(self, index):
+        """Allow for indexing along the batch dimension similar
+        to a regular tensor. Returns a new object corresponding
+        to the batch index, index"""
+        pos_nk2 = self.position_nk2()[index: index+1]
+        speed_nk1 = self.speed_nk1()[index: index+1]
+        acceleration_nk1 = self.acceleration_nk1()[index: index+1]
+        heading_nk1 = self.heading_nk1()[index: index+1]
+        angular_speed_nk1 = self.angular_speed_nk1()[index: index+1]
+        angular_acceleration_nk1 = self.angular_acceleration_nk1()[index: index+1]
+        valid_horizons_n1 = self.valid_horizons_n1[index: index+1]
+        return self.__class__(dt=self.dt, n=1, k=self.k,
+                              position_nk2=pos_nk2,
+                              speed_nk1=speed_nk1,
+                              acceleration_nk1=acceleration_nk1,
+                              heading_nk1=heading_nk1,
+                              angular_speed_nk1=angular_speed_nk1,
+                              angular_acceleration_nk1=angular_acceleration_nk1,
+                              valid_horizons_n1=valid_horizons_n1, direct_init=True)
+
     def render(self, axs, batch_idx=0, freq=4, plot_heading=False,
                plot_velocity=False, label_start_and_end=False, name=''):
         ax = axs[0]

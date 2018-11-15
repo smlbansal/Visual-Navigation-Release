@@ -1,12 +1,24 @@
 import pickle
-import os
 from trajectory.trajectory import Trajectory, SystemConfig
 import tensorflow as tf
+from utils.angle_utils import angle_normalize
 
 
 class ControlPipelineV0Helper():
     """A collection of useful helper functions
     for ControlPipelineV0."""
+
+    def compute_closest_waypt_idx(self, desired_waypt_config, waypt_configs):
+        """" Given desired_waypoint_config and a list of precomputed waypoints
+        in waypt_configs returns the index of the closest (in wrapped l2 distance)
+        precomputed waypoint."""
+        # TODO: Potentially add linear and angular velocity here
+        diff_pos_nk2 = desired_waypt_config.position_nk2() - waypt_configs.position_nk2()
+        diff_heading_nk1 = angle_normalize(desired_waypt_config.heading_nk1() -
+                                           waypt_configs.heading_nk1())
+        diff = tf.concat([diff_pos_nk2, diff_heading_nk1], axis=2)
+        idx = tf.argmin(tf.norm(diff, axis=2))
+        return idx.numpy()[0]
 
     def prepare_data_for_saving(self, data, idx):
         """Construct a dictionary for saving to a pickle file
@@ -98,5 +110,3 @@ class ControlPipelineV0Helper():
                 'horizons': [], 'lqr_trajectories': [],
                 'K_nkfd': [], 'k_nkf1': []}
         return data
-
-

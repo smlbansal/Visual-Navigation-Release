@@ -10,6 +10,16 @@ class TopViewWaypointTrainer(TopViewTrainer):
     def create_model(self, params=None):
         self.model = TopViewWaypointModel(self.p)
 
+    def _modify_planner_params(self, p):
+        """
+        Modifies a DotMap parameter object
+        with parameters for a NNWaypointPlanner
+        """
+        from planners.nn_waypoint_planner import NNWaypointPlanner
+
+        p.planner_params.planner = NNWaypointPlanner
+        p.planner_params.model = self.model
+
 
 if __name__ == '__main__':
     TopViewWaypointTrainer().run()

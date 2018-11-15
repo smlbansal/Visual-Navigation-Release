@@ -34,7 +34,7 @@ def padded_rotation_matrix(theta_n11, shape, lower_identity=False):
     e = d-2
     assert(d >= 2)
     dtype = theta_n11.dtype
-    theta_nk11 = tf.broadcast_to(theta_n11, (n, k, 1, 1))
+    theta_nk11 = tf.broadcast_to(theta_n11[:, None], (n, k, 1, 1))
 
     first_row_nkd1 = tf.concat([tf.cos(theta_nk11),
                                tf.sin(theta_nk11),
@@ -42,7 +42,7 @@ def padded_rotation_matrix(theta_n11, shape, lower_identity=False):
     second_row_nkd1 = tf.concat([-tf.sin(theta_nk11),
                                 tf.cos(theta_nk11),
                                 tf.zeros((n, k, d - 2, 1), dtype=dtype)], axis=2)
-    
+
     # If lower_identity is true, make the lower right
     # e x e matrix the identity matrix
     if lower_identity:

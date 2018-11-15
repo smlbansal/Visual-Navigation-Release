@@ -27,8 +27,9 @@ class Simulator:
         # Parse the dependencies
         p.planner_params.planner.parse_params(p.planner_params)
         p.obstacle_map_params.obstacle_map.parse_params(p.obstacle_map_params)
+        p.system_dynamics_params.system.parse_params(p.system_dynamics_params)
 
-        dt = p.planner_params.dt
+        dt = p.system_dynamics_params.dt
         p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
         p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
         p.dt = dt
@@ -273,8 +274,8 @@ class Simulator:
 
     def _init_obj_fn(self):
         p = self.params
-        self.goal_config = p.planner_params.system_dynamics.init_egocentric_robot_config(dt=p.dt,
-                                                                                         n=1)
+        self.goal_config = p.system_dynamics_params.system.init_egocentric_robot_config(dt=p.dt,
+                                                                                        n=1)
         self.fmm_map = self._init_fmm_map()
         obj_fn = ObjectiveFunction(p.objective_fn_params)
         if not p.avoid_obstacle_objective.empty():

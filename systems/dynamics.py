@@ -13,6 +13,13 @@ class Dynamics:
         self.isNonlinear = True
         self.isContinuous = False
 
+    @staticmethod
+    def parse_params(p):
+        """
+        Parse the parameters to add some additional helpful parameters.
+        """
+        return p
+
     def simulate(self, x_nkd, u_nkf, t=None):
         """ Apply one action u from state x
         """

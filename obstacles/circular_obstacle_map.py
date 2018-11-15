@@ -16,7 +16,8 @@ class CircularObstacleMap(ObstacleMap):
         self.obstacle_radii_m1 = tf.constant(radii_m1, name='circle_radii', dtype=tf.float32)
 
     @classmethod
-    def init_random_map(cls, map_bounds, rng, min_n, max_n, min_r, max_r):
+    def init_random_map(cls, map_bounds, rng, params):
+        min_n, max_n, min_r, max_r = params.min_n, params.max_n, params.min_r, params.max_r
         assert(min_r > 0 and max_r > 0)
         num_obstacles = rng.randint(min_n, max_n+1)
         return cls(map_bounds=map_bounds,

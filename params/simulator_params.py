@@ -3,7 +3,7 @@ from utils import utils
 import numpy as np
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 
-dependencies = ['planner_params', 'obstacle_map_params']
+dependencies = ['planner_params', 'obstacle_map_params', 'system_dynamics_params']
 
 
 def load_params():
@@ -79,5 +79,5 @@ def load_params():
     p.episode_termination_colors = ['b', 'r', 'g']
     p.waypt_cmap = 'winter'
 
-    p.num_validation_goals = 10
+    p.num_validation_goals = 50
     return p

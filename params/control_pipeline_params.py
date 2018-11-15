@@ -6,7 +6,7 @@ from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from systems.dubins_v2 import DubinsV2
 from control_pipelines.control_pipeline_v0 import ControlPipelineV0
 
-dependencies = ['waypoint_params']
+dependencies = ['waypoint_params', 'system_dynamics_params']
 
 
 def load_params():
@@ -25,12 +25,6 @@ def load_params():
                              epsilon=1e-5)
     p.minimum_spline_horizon = 1.5
 
-    # System Dynamics params
-    p.system_dynamics_params = DotMap(system=DubinsV2,
-                                      dt=.05,
-                                      v_bounds=[0.0, .6],
-                                      w_bounds=[-1.1, 1.1])
-
     # LQR setting parameters
     p.lqr_params = DotMap(cost_fn=QuadraticRegulatorRef,
                           quad_coeffs=np.array(
@@ -41,5 +35,5 @@ def load_params():
     p.binning_parameters = DotMap(num_bins=61,
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 
-    p.verbose = True
+    p.verbose = False
     return p
