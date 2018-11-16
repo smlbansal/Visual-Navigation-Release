@@ -5,12 +5,23 @@ import tensorflow as tf
 
 from data_sources.data_source import DataSource
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
-from trajectory.trajectory import Trajectory, SystemConfig
+from trajectory.trajectory import SystemConfig
 from systems.dubins_car import DubinsCar
 
 
 class TopViewDataSource(DataSource):
-   
+
+    # TODO: Add something like this for train and test as well 
+    @staticmethod
+    def parse_params(p):
+        """
+        Parse the parameters to add some additional helpful parameters.
+        """
+        # Change the simulator parameters for data generation
+        for key, val in p.data_creation.simulator_params.items():
+            setattr(p.simulator_params, key, val)
+        return p
+  
     # TODO: Varun- look into efficiency at some point to see
     # if data collection can be sped up
     def generate_data(self):
