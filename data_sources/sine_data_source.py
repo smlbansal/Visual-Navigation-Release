@@ -9,7 +9,6 @@ class SineDataSource(DataSource):
 
     def generate_data(self):
         # Create the data directory if required
-        #TODO: There is a function in utils that does this
         if not os.path.exists(self.p.data_creation.data_dir):
             os.makedirs(self.p.data_creation.data_dir)
         

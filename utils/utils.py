@@ -99,18 +99,6 @@ def check_dotmap_equality(d1, d2):
     return np.array(equality).all()
 
 
-#TODO: Probably can delete
-def dump_to_pickle_file(filename, data):
-    with open(filename, 'wb') as f:
-        pickle.dump(data, f)
-
-
-def load_from_pickle_file(filename):
-    with open(filename, 'rb') as f:
-        data = pickle.load(f)
-    return data
-
-
 def configure_plotting():
     import matplotlib.pyplot as plt
     plt.style.use('ggplot')
