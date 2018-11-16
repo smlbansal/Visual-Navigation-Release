@@ -8,7 +8,7 @@ class DataSource(object):
     A base class for creating a data source and manipulating that data source.
     """
     def __init__(self, params):
-        self.p = self.parse_params(params)
+        self.p = params
         self.data_tags = None
         self.training_dataset = None
         self.validation_dataset = None
@@ -17,13 +17,6 @@ class DataSource(object):
                                     int((self.p.trainer.training_set_size * self.p.trainer.num_samples) //
                                      self.p.trainer.batch_size)
         self.num_validation_samples = self.p.trainer.num_samples - self.num_training_samples
-
-    @staticmethod
-    def parse_params(p):
-        """
-        Parse the parameters to add some additional helpful parameters.
-        """
-        return p
 
     def generate_data(self):
         """

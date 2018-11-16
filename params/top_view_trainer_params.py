@@ -115,7 +115,13 @@ def create_params():
                         ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/test/session_2018-11-15_14-05-51/checkpoints/ckpt-12',
 
                         # Callback settings
-                        callback_frequency=10
+                        callback_frequency=10,
+
+                        # Custom Simulator Parameters for Training. Add more as needed.
+                        simulator_params=DotMap(
+                                                episode_horizon_s=p.simulator_params.episode_horizon_s
+                        )
+
     )
     
     # Data creation parameters
@@ -129,17 +135,17 @@ def create_params():
                                 # Data directory
                                 data_dir='/home/ext_drive/somilb/data/topview_50k',
 
-                                # Custom Simulator Parameters for Data Creation
-                                simulator_params = DotMap(
-                                                            # Collect 1 data point per episode 
+                                # Custom Simulator Parameters for Data Creation. Add more as needed
+                                simulator_params=DotMap(
+                                                            # Collect 1 data point per episode
                                                             episode_horizon_s=p.simulator_params.control_horizon_s* 1.,
-                                                            
+
                                                             # Don't terminate upon success. Since each episode is only one waypoint
                                                             # this ensures that you don't clip the zero'th waypoint and have a succesfull
                                                             # episode with no waypoints followed.
-                                                       
+
                                                             episode_termination_reasons=['Timeout', 'Collision'],
-                                                            episode_termination_colors = ['b', 'r']
+                                                            episode_termination_colors=['b', 'r']
 
                                 )
     )
@@ -152,8 +158,15 @@ def create_params():
     p.test = DotMap(
                     # Test seed
                     seed=10,
+                    
                     simulate_expert=True,
-                    number_tests=10
+                    
+                    number_tests=10,
+                    
+                    # Custom Simulator Parameters for Testing. Add more as needed
+                    simulator_params=DotMap(
+                                            episode_horizon_s=p.simulator_params.episode_horizon_s
+                    )
     )
 
     return p

@@ -55,7 +55,10 @@ class TrainerFrontendHelper(object):
             self.p.device = '/cpu:0'
         else:
             self.p.device = '/gpu:%i' % args.device
-            
+
+        # Parse parameters
+        self.parse_params(self.p, args)
+
         # Setup the logger and dump the parameters
         self.setup_logger_and_dump_params(args)
 
@@ -71,7 +74,14 @@ class TrainerFrontendHelper(object):
             self.test()
         else:
             raise NotImplementedError('Unknown command')
-        
+ 
+    def parse_params(self, p, args):
+        """
+        Parse the parameters to add some additional
+        helpful information.
+        """
+        return p
+
     def create_data_source(self, params=None):
         """
         Create a data source for the data manipulation.

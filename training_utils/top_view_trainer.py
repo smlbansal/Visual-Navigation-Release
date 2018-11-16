@@ -10,6 +10,31 @@ class TopViewTrainer(TrainerFrontendHelper):
     """
     Create a trainer that regress on the optimal waypoint using the top-view occupancy maps.
     """
+
+    def parse_params(self, p, args):
+        """
+        Parse the parameters based on args.command
+        to add some additional helpful parameters.
+        """
+        if args.command == 'generate-data':
+            # Change the simulator parameters for data gen if needed
+            if hasattr(p.data_creation, 'simulator_params'):
+                for key, val in p.data_creation.simulator_params.items():
+                    setattr(p.simulator_params, key, val)
+        elif args.command == 'train':
+            # Change the simulator parameters for training if needed
+            if hasattr(p.trainer, 'simulator_params'):
+                for key, val in p.trainer.simulator_params.items():
+                    setattr(p.simulator_params, key, val)
+        elif args.command == 'test':
+            # Change the simulator parameters for testing if needed
+            if hasattr(p.test, 'simulator_params'):
+                for key, val in p.test.simulator_params.items():
+                    setattr(p.simulator_params, key, val)
+        else:
+            raise NotImplementedError('Unknown Command')
+        return p
+
     def create_data_source(self, params=None):
         from data_sources.top_view_trainer_data_source import TopViewDataSource
         self.data_source = TopViewDataSource(self.p)
