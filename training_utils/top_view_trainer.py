@@ -79,6 +79,7 @@ class TopViewTrainer(TrainerFrontendHelper):
             self._init_callback_instance_variables()
 
         if epoch % self.p.trainer.callback_frequency == 0:
+            import pdb; pdb.set_trace()
             self.simulator_data['name'] = 'NN_Simulator_Epoch_{:d}'.format(epoch)
             metrics_keyss, metrics_valss = self.simulate([self.simulator_data],
                                                          log_metrics=False)
