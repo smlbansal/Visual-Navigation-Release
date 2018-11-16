@@ -131,7 +131,7 @@ class TrainerHelper(object):
         
         # Pass the control to the callback function
         if callback_fn is not None:
-            callback_fn(epoch)
+            callback_fn(locals())
 
     def adjust_learning_rate(self, epoch):
         """

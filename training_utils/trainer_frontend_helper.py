@@ -133,9 +133,11 @@ class TrainerFrontendHelper(object):
             self.trainer.train(model=self.model, data_source=self.data_source,
                                callback_fn=self.callback_fn)
 
-    def callback_fn(self, epoch):
+    def callback_fn(self, lcl):
         """
-        A callback function that is called after a training epoch
+        A callback function that is called after a training epoch.
+        lcl is a key, value mapping of the current state of the local
+        variables in the trainer.
         """
         return None
 
