@@ -89,7 +89,7 @@ def create_params():
                         num_epochs=50,
         
                         # Total number of samples in the dataset
-                        num_samples=50000,
+                        num_samples=100,
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
@@ -112,7 +112,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=10,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/test/session_2018-11-15_14-05-51/checkpoints/ckpt-12',
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/tmp/session_2018-11-16_12-15-36/checkpoints/ckpt-1',
 
                         # Callback settings
                         callback_frequency=10,

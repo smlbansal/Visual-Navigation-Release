@@ -19,6 +19,7 @@ class TopViewWaypointTrainer(TopViewTrainer):
         from planners.nn_waypoint_planner import NNWaypointPlanner
 
         p.planner_params.planner = NNWaypointPlanner
+        # Simulate 
         p.planner_params.model = self.model
 
     def _summary_dir(self):
