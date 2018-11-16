@@ -115,8 +115,8 @@ class TopViewTrainer(TrainerFrontendHelper):
         # Initialize the simulator_data dictionary to be used in callbacks
         nn_simulator_params = self._nn_simulator_params()
         self.simulator_data = self._init_simulator_data(nn_simulator_params,
-                                                        self.p.callback_number_tests,
-                                                        self.p.callback_seed,
+                                                        self.p.trainer.callback_number_tests,
+                                                        self.p.trainer.callback_seed,
                                                         dirname='callbacks')
 
     def test(self):

@@ -112,7 +112,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=10,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/tmp/session_2018-11-16_12-15-36/checkpoints/ckpt-1',
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/tmp/session_2018-11-16_12-40-02/checkpoints/ckpt-5',
 
                         # Callback settings
                         callback_frequency=10,
@@ -163,7 +163,7 @@ def create_params():
                     
                     simulate_expert=True,
                     
-                    number_tests=10,
+                    number_tests=2,
                     
                     # Custom Simulator Parameters for Testing. Add more as needed
                     simulator_params=DotMap(
