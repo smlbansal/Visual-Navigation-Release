@@ -1,5 +1,6 @@
 from training_utils.top_view_trainer import TopViewTrainer
 from models.top_view.top_view_waypoint_model import TopViewWaypointModel
+import os
 
 
 class TopViewWaypointTrainer(TopViewTrainer):
@@ -19,6 +20,13 @@ class TopViewWaypointTrainer(TopViewTrainer):
 
         p.planner_params.planner = NNWaypointPlanner
         p.planner_params.model = self.model
+
+    def _summary_dir(self):
+        """
+        Returns the directory name for tensorboard
+        summaries
+        """
+        return os.path.join(self.p.session_dir, 'summaries', 'nn_waypoint')
 
 
 if __name__ == '__main__':

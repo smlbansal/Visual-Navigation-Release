@@ -38,6 +38,9 @@ class DubinsCar(Dynamics):
                             heading_nk1=heading_nk1, speed_nk1=speed_nk1,
                             angular_speed_nk1=angular_speed_nk1, variable=False)
 
+    # TODO: Currently calling numpy() here as tfe.DEVICE_PLACEMENT_SILENT
+    # is not working to place non-gpu ops (i.e. mod) on the cpu
+    # turning tensors into numpy arrays is a hack around this.
     @staticmethod
     def to_egocentric_coordinates(ref_config, traj_world, traj_egocentric=None, mode='assign'):
         """ Converts traj_world to an egocentric reference frame assuming
@@ -45,7 +48,8 @@ class DubinsCar(Dynamics):
         mode is new a new trajectory object is returned."""
 
         ego_position_and_heading_nk3 = DubinsCar.convert_position_and_heading_to_ego_coordinates(
-            ref_config.position_and_heading_nk3(), traj_world.position_and_heading_nk3())
+            ref_config.position_and_heading_nk3().numpy(),
+            traj_world.position_and_heading_nk3().numpy())
         position_nk2 = ego_position_and_heading_nk3[:, :, :2]
         heading_nk1 = ego_position_and_heading_nk3[:, :, 2:3]
 
@@ -85,7 +89,8 @@ class DubinsCar(Dynamics):
         in the world coordinate frame. If mode is assign the result is assigned to
         traj_world, else a new trajectory object is created"""
         world_position_and_heading_nk3 = DubinsCar.convert_position_and_heading_to_world_coordinates(
-            ref_config.position_and_heading_nk3(), traj_egocentric.position_and_heading_nk3())
+            ref_config.position_and_heading_nk3().numpy(),
+            traj_egocentric.position_and_heading_nk3().numpy())
         position_nk2 = world_position_and_heading_nk3[:, :, :2]
         heading_nk1 = world_position_and_heading_nk3[:, :, 2:3]
 

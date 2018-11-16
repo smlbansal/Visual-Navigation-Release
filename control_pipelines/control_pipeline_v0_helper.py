@@ -8,14 +8,17 @@ class ControlPipelineV0Helper():
     """A collection of useful helper functions
     for ControlPipelineV0."""
 
+    # TODO: Currently calling numpy() here as tfe.DEVICE_PLACEMENT_SILENT
+    # is not working to place non-gpu ops (i.e. mod) on the cpu
+    # turning tensors into numpy arrays is a hack around this.
     def compute_closest_waypt_idx(self, desired_waypt_config, waypt_configs):
         """" Given desired_waypoint_config and a list of precomputed waypoints
         in waypt_configs returns the index of the closest (in wrapped l2 distance)
         precomputed waypoint."""
         # TODO: Potentially add linear and angular velocity here
         diff_pos_nk2 = desired_waypt_config.position_nk2() - waypt_configs.position_nk2()
-        diff_heading_nk1 = angle_normalize(desired_waypt_config.heading_nk1() -
-                                           waypt_configs.heading_nk1())
+        diff_heading_nk1 = angle_normalize(desired_waypt_config.heading_nk1().numpy() -
+                                           waypt_configs.heading_nk1().numpy())
         diff = tf.concat([diff_pos_nk2, diff_heading_nk1], axis=2)
         idx = tf.argmin(tf.norm(diff, axis=2))
         return idx.numpy()[0]

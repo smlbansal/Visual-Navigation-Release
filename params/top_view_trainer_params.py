@@ -111,8 +111,11 @@ def create_params():
                         lr_decay_factor=None,
         
                         # Checkpoint settings
-                        ckpt_save_frequency=4,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/test/session_2018-11-15_10-06-58/checkpoints/ckpt-12'
+                        ckpt_save_frequency=10,
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/test/session_2018-11-15_14-05-51/checkpoints/ckpt-12',
+
+                        # Callback settings
+                        callback_frequency=10
     )
     
     # Data creation parameters
@@ -124,7 +127,7 @@ def create_params():
                                 data_points_per_file=100,
                                 
                                 # Data directory
-                                data_dir='./data/test/'
+                                data_dir='/home/ext_drive/somilb/data/topview_50k'
     )
 
     # Change the simulator parameters for data collection
@@ -136,6 +139,7 @@ def create_params():
     # Don't terminate upon success. Since each episode is only one waypoint
     # this ensures that you don't clip the zero'th waypoint and have a succesfull
     # episode with no waypoints followed.
+    
     #p.simulator_params.episode_termination_reasons = ['Timeout', 'Collision']
     #p.simulator_params.episode_termination_colors = ['b', 'r']
 

@@ -9,16 +9,32 @@ import dotmap
 import shutil
 
 
-def gpu_config():
+def tf_session_config():
     config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    return config
 
+    # Allows for memory growth so the process only uses
+    # the amount of memory it needs
+    config.gpu_options.allow_growth = True
+
+    # Allows for tensors to be copied onto cpu when no
+    # cuda gpu kernel is available
+    device_policy = tf.contrib.eager.DEVICE_PLACEMENT_SILENT
+
+    tf_config = {'config': config,
+                 'device_policy': device_policy}
+    return tf_config
+    
 
 def ensure_odd(integer):
     if integer % 2 == 0:
         integer += 1
     return integer
+
+
+def render_angle_frequency(p):
+    """Returns a render angle frequency
+    that looks heuristically nice on plots."""
+    return int(p.episode_horizon/25)
 
 
 def load_params(module_name):

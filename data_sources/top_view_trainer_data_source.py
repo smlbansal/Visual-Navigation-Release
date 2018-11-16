@@ -78,7 +78,7 @@ class TopViewDataSource(DataSource):
         # Optimal control information
         data['optimal_control_nk2'] = []
         return data
-elf.params.system_dynamics
+
     def initialize_configs_for_ego_data(self):
         """
         Creates configuration objects to store the egocentric goal and waypoint.

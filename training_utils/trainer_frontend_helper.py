@@ -21,7 +21,7 @@ class TrainerFrontendHelper(object):
     
     """
     def run(self):
-        tf.enable_eager_execution(config=utils.gpu_config())
+        tf.enable_eager_execution(**utils.tf_session_config())
         self.setup_parser()
     
     def setup_parser(self):
@@ -94,8 +94,9 @@ class TrainerFrontendHelper(object):
         """
         Generate the data using the data source.
         """
-        self.create_data_source(params)
-        self.data_source.generate_data()
+        with tf.device(self.p.device):
+            self.create_data_source(params)
+            self.data_source.generate_data()
     
     def train(self):
         """
@@ -111,15 +112,22 @@ class TrainerFrontendHelper(object):
             # First create a data source and load the data
             self.create_data_source()
             self.data_source.load_dataset()
-    
+
             # Create an input and output model
             self.create_model()
-    
+
             # Create a trainer
             self.create_trainer()
-    
+
             # Start the training
-            self.trainer.train(model=self.model, data_source=self.data_source)
+            self.trainer.train(model=self.model, data_source=self.data_source,
+                               callback_fn=self.callback_fn)
+
+    def callback_fn(self, epoch):
+        """
+        A callback function that is called after a training epoch
+        """
+        return None
 
     def test(self):
         """

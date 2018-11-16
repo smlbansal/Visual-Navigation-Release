@@ -39,12 +39,17 @@ class VoxelMap(object):
         # sure that the first element along axis2 represents y-value (since the voxel map's first dimension is y and
         # not x).
         voxel_indices_nk4 = tf.concat([lower_voxel_indices_nk2_xy, upper_voxel_indices_nk2_xy], axis=2)
+        
+        # TODO: Casting as int64 because tfe.DEVICE_PLACEMENT_SILENT
+        # is not working to place non-gpu ops (i.e. gather for (int32, int 32)) on
+        # the cpu. This is potentially slowing things down as it copies to cpu
+        voxel_indices_int64_nk4 = tf.cast(voxel_indices_nk4, dtype=tf.int64)
 
         # Voxel function values at corner points
-        data11_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [1, 0], axis=2))
-        data21_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [1, 2], axis=2))
-        data12_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [3, 0], axis=2))
-        data22_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_nk4, [3, 2], axis=2))
+        data11_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_int64_nk4, [1, 0], axis=2))
+        data21_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_int64_nk4, [1, 2], axis=2))
+        data12_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_int64_nk4, [3, 0], axis=2))
+        data22_nk = tf.gather_nd(self.voxel_function_mn, tf.gather(voxel_indices_int64_nk4, [3, 2], axis=2))
 
         # Define gammas for x interpolation
         gamma1 = upper_voxel_float_nk2[:, :, 0] - voxel_space_position_nk2[:, :, 0]
