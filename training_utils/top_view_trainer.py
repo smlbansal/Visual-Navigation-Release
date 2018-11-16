@@ -126,25 +126,26 @@ class TopViewTrainer(TrainerFrontendHelper):
         # Call the parent test function first to restore a checkpoint
         super(TopViewTrainer, self).test()
 
-        # Initialize the NN Simulator to be tested
-        nn_simulator_params = self._nn_simulator_params()
-        nn_simulator_data = self._init_simulator_data(nn_simulator_params,
-                                                      self.p.test.number_tests,
-                                                      self.p.test.seed,
-                                                      name='NN_Simulator')
-        simulator_datas = [nn_simulator_data]
+        with tf.device(self.p.device):
+            # Initialize the NN Simulator to be tested
+            nn_simulator_params = self._nn_simulator_params()
+            nn_simulator_data = self._init_simulator_data(nn_simulator_params,
+                                                          self.p.test.number_tests,
+                                                          self.p.test.seed,
+                                                          name='NN_Simulator')
+            simulator_datas = [nn_simulator_data]
 
-        # Optionally initialize the Expert Simulator to be tested
-        if self.p.test.simulate_expert:
-            expert_simulator_params = self.p.simulator_params
-            expert_simulator_data = self._init_simulator_data(expert_simulator_params,
-                                                              self.p.test.number_tests,
-                                                              self.p.test.seed,
-                                                              name='Expert_Simulator')
-            simulator_datas.append(expert_simulator_data)
+            # Optionally initialize the Expert Simulator to be tested
+            if self.p.test.simulate_expert:
+                expert_simulator_params = self.p.simulator_params
+                expert_simulator_data = self._init_simulator_data(expert_simulator_params,
+                                                                  self.p.test.number_tests,
+                                                                  self.p.test.seed,
+                                                                  name='Expert_Simulator')
+                simulator_datas.append(expert_simulator_data)
 
-        # Test the simulators
-        self.simulate(simulator_datas, log_metrics=True)
+            # Test the simulators
+            self.simulate(simulator_datas, log_metrics=True)
 
     def simulate(self, simulator_datas, log_metrics=True):
         """
