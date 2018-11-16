@@ -7,6 +7,7 @@ import numpy as np
 import tensorflow as tf
 import dotmap
 import shutil
+from dotmap import DotMap
 
 
 def tf_session_config():
@@ -85,7 +86,20 @@ def delete_if_exists(dirname):
         shutil.rmtree(dirname)
 
 
-# Probably can delete
+def check_dotmap_equality(d1, d2):
+    """Check equality on nested dotmap objects that all keys
+    and values match."""
+    assert(len(set(d1.keys()).difference(set(d2.keys()))) == 0)
+    equality = [True] * len(d1.keys())
+    for i, key in enumerate(d1.keys()):
+        d1_attr = getattr(d1, key)
+        d2_attr = getattr(d2, key)
+        if type(d1_attr) is DotMap:
+            equality[i] = check_dotmap_equality(d1_attr, d2_attr) 
+    return np.array(equality).all()
+
+
+#TODO: Probably can delete
 def dump_to_pickle_file(filename, data):
     with open(filename, 'wb') as f:
         pickle.dump(data, f)

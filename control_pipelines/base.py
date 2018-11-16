@@ -29,6 +29,12 @@ class ControlPipelineBase(object):
             np.ceil(p.planning_horizon_s / p.system_dynamics_params.dt))
         return p
 
+    @classmethod
+    def get_pipeline(cls, params):
+        """Used to instantiate a control pipeline.
+        Can be overidden to ensure that only one
+        pipeline is ever created (see pipeline v0)."""
+        return cls(params)
 
     def generate_control_pipeline(self, params=None):
         """
@@ -45,8 +51,8 @@ class ControlPipelineBase(object):
         if self.does_pipeline_exist():
             self._load_control_pipeline(params=params)
         else:
-            assert(
-                False, 'Control pipeline does not exist! Generate the pipeline first.')
+            assert(False,
+                   'Control pipeline does not exist! Generate the pipeline first.')
 
     def _load_control_pipeline(self, params=None):
         """
@@ -86,6 +92,6 @@ class ControlPipelineBase(object):
         loaded."""
         raise NotImplementedError
 
-    #TODO: Fill this function in
+    # TODO: Fill this function in
     def render(self):
         raise NotImplementedError

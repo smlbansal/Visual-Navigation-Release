@@ -8,17 +8,33 @@ from trajectory.trajectory import Trajectory, SystemConfig
 from control_pipelines.base import ControlPipelineBase
 from control_pipelines.control_pipeline_v0_helper import ControlPipelineV0Helper
 
+
 class ControlPipelineV0(ControlPipelineBase):
     """
     A control pipeline that generate dynamically feasible spline trajectories of varying horizon.
     """
+    pipeline = None
 
     def __init__(self, params):
         self.waypoint_grid = params.waypoint_params.grid(params.waypoint_params)
         self.start_velocities = np.linspace(
             0.0, params.binning_parameters.max_speed, params.binning_parameters.num_bins)
         self.helper = ControlPipelineV0Helper()
+        self.instance_variables_loaded = False
         super().__init__(params)
+
+    @classmethod
+    def get_pipeline(cls, params):
+        """
+        Used to instantiate a control pipeline.
+        Saves memory by ensuring that only one
+        pipeline is ever loaded.
+        """
+        if cls.pipeline is None:
+            cls.pipeline = cls(params)
+        else:
+            assert(utils.check_dotmap_equality(cls.pipeline.params, params))
+        return cls.pipeline
 
     def plan(self, start_config, goal_config=None):
         """Computes which velocity bin start_config belongs to
@@ -161,17 +177,18 @@ class ControlPipelineV0(ControlPipelineBase):
                                     cost=self.cost_fn)
 
     def _load_control_pipeline(self, params=None):
-        # Initialize a dictionary with keys corresponding to
-        # instance variables of the control pipeline and
-        # values corresponding to empty lists
-        pipeline_data = self.helper.empty_data_dictionary()
+        if not self.instance_variables_loaded:
+            # Initialize a dictionary with keys corresponding to
+            # instance variables of the control pipeline and
+            # values corresponding to empty lists
+            pipeline_data = self.helper.empty_data_dictionary()
 
-        for v0, expected_filename in zip(self.start_velocities, self.pipeline_files):
-            filename = self._data_file_name(v0=v0)
-            assert(filename == expected_filename)
-            data_bin = self.helper.load_and_process_data(filename)
-            self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
-        self._set_instance_variables(pipeline_data)
+            for v0, expected_filename in zip(self.start_velocities, self.pipeline_files):
+                filename = self._data_file_name(v0=v0)
+                assert(filename == expected_filename)
+                data_bin = self.helper.load_and_process_data(filename)
+                self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
+            self._set_instance_variables(pipeline_data)
 
     def _set_instance_variables(self, data):
         """Set the control pipelines instance variables from
@@ -194,7 +211,7 @@ class ControlPipelineV0(ControlPipelineBase):
            for config in data['start_configs']]
 
         self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(K)) for K in data['K_nkfd']]
-
+        self.instance_variables_loaded = True
         if self.params.verbose:
             N = self.params.waypoint_params.n
             for v0, start_config in zip(self.start_velocities, self.start_configs):
