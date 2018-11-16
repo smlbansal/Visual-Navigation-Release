@@ -115,8 +115,8 @@ class TopViewTrainer(TrainerFrontendHelper):
         # Initialize the simulator_data dictionary to be used in callbacks
         nn_simulator_params = self._nn_simulator_params()
         self.simulator_data = self._init_simulator_data(nn_simulator_params,
-                                                        self.p.test.number_tests,
-                                                        self.p.test.seed,
+                                                        self.p.callback_number_tests,
+                                                        self.p.callback_seed,
                                                         dirname='callbacks')
 
     def test(self):
@@ -150,7 +150,7 @@ class TopViewTrainer(TrainerFrontendHelper):
         """
         Takes simulator_datas a list of dictionaries of simulator_data. The keys of
         each dictionary are expected to be [name, simulator, fig, axs, dir, n, seed].
-        For each simulator, simulates n goals, plotting trajectories, and recording
+        For each simulator, simulates n goals, plots trajectories, and records
         metrics.
         """
         render_angle_freq = utils.render_angle_frequency(self.p.simulator_params)
@@ -181,7 +181,7 @@ class TopViewTrainer(TrainerFrontendHelper):
             metrics_valss.append(metrics_vals)
             if log_metrics:
                 metrics_filename = os.path.join(self.p.session_dir, dirname,
-                                                '{:s}.json'.format(name.lower())) 
+                                                '{:s}.json'.format(name.lower()))
                 utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)), metrics_filename)
 
             # Save the figure

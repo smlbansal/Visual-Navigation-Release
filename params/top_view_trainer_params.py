@@ -116,6 +116,8 @@ def create_params():
 
                         # Callback settings
                         callback_frequency=10,
+                        callback_number_tests=10,
+                        callback_seed=10,
 
                         # Custom Simulator Parameters for Training. Add more as needed.
                         simulator_params=DotMap(
