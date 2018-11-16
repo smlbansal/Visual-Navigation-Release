@@ -6,6 +6,7 @@ from trajectory.trajectory import Trajectory, SystemConfig
 class NNWaypointPlanner(NNPlanner):
     """ A planner which selects an optimal waypoint using
     a trained neural network. """
+    counter = 0
 
     def __init__(self, simulator, params):
         super().__init__(simulator, params)
@@ -19,9 +20,9 @@ class NNWaypointPlanner(NNPlanner):
 
         model = p.model
         
-        raw_data = self._raw_data()
+        raw_data = self._raw_data(start_config)
         processed_data = model.create_nn_inputs_and_outputs(raw_data)
-        
+
         # Predict the NN output
         nn_output_113 = model.predict_nn_output(processed_data['inputs'], is_training=False)[:, None]
         
@@ -56,3 +57,14 @@ class NNWaypointPlanner(NNPlanner):
                 'k_1kf1': controllers['k_nkf1'][min_idx:min_idx + 1]}
 
         return data
+
+    def save_occupancy_grid(self, grid, start_config):
+        """Save the occupancy grid- useful for debugging."""
+        import matplotlib.pyplot as plt
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.imshow(grid[0, :, :, 0].numpy(), cmap='gray')
+        pos_3 = start_config.position_and_heading_nk3()[0, 0].numpy()
+        fig.suptitle('State: [{:.3f}, {:.3f}, {:.3f}]'.format(pos_3[0], pos_3[1], pos_3[2]))
+        fig.savefig('./tmp/grid/occupancy_grid_{:d}.png'.format(self.counter), bbox_inches='tight')
+        self.counter += 1

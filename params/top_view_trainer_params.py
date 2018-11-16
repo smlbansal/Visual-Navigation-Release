@@ -89,7 +89,7 @@ def create_params():
                         num_epochs=50,
         
                         # Total number of samples in the dataset
-                        num_samples=100,
+                        num_samples=50000,
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
@@ -112,7 +112,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=10,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/tmp/session_2018-11-16_12-40-02/checkpoints/ckpt-5',
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/train/session_2018-11-15_15-39-08/checkpoints/ckpt-4',
 
                         # Callback settings
                         callback_frequency=10,
@@ -161,9 +161,9 @@ def create_params():
                     # Test seed
                     seed=10,
                     
-                    simulate_expert=True,
+                    simulate_expert=False,
                     
-                    number_tests=2,
+                    number_tests=1,
                     
                     # Custom Simulator Parameters for Testing. Add more as needed
                     simulator_params=DotMap(
