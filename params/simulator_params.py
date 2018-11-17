@@ -51,7 +51,7 @@ def load_params():
                                                     # 'random': the heading is initialized randomly within the given
                                                     # bounds.
                                                     reset_type='zero',
-                                                    bounds=[-np.pi / 2, np.pi / 2]
+                                                    bounds=[-np.pi, np.pi-1e-10]
                                                 ),
                                                 speed=DotMap(
                                                     # For description of reset types see heading parameters above.
@@ -61,7 +61,8 @@ def load_params():
                                                 ang_speed=DotMap(
                                                     # For description of reset types see heading parameters above.
                                                     reset_type='zero',
-                                                    bounds=[-0.5, 0.5]
+                                                    bounds=[-0.5, 0.5],
+                                                    gaussian_params=[0.0, .5]  # [mean, variance]
                                                 )
                             ),
                             goal_config=DotMap(

@@ -17,7 +17,7 @@ class TopViewDataSource(DataSource):
         # Create the data directory if required
         if not os.path.exists(self.p.data_creation.data_dir):
             os.makedirs(self.p.data_creation.data_dir)
-        
+
         # Initialize the simulator
         simulator = CircularObstacleMapSimulator(self.p.simulator_params)
         

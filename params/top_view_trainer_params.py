@@ -2,6 +2,7 @@ from utils import utils
 import numpy as np
 import tensorflow as tf
 from dotmap import DotMap
+from copy import deepcopy
 
 dependencies = ['simulator_params']
 
@@ -86,7 +87,7 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=50,
+                        num_epochs=100,
         
                         # Total number of samples in the dataset
                         num_samples=50000,
@@ -120,41 +121,43 @@ def create_params():
                         callback_seed=10,
 
                         # Custom Simulator Parameters for Training. Add more as needed.
-                        simulator_params=DotMap(
-                                                episode_horizon_s=p.simulator_params.episode_horizon_s
-                        )
+                        simulator_params=deepcopy(p.simulator_params)
 
     )
-    
+
     # Data creation parameters
-    p.data_creation = DotMap(
-                                # Number of data points
-                                data_points=100,
-        
-                                # Number of data points per file
-                                data_points_per_file=100,
-                                
-                                # Data directory
-                                data_dir='/home/ext_drive/somilb/data/topview_50k',
 
-                                # Custom Simulator Parameters for Data Creation. Add more as needed
-                                simulator_params=DotMap(
-                                                            # Collect 1 data point per episode
-                                                            episode_horizon_s=p.simulator_params.control_horizon_s* 1.,
+    # Custom Simulator Parameters for Data Creation
+    simulator_params = deepcopy(p.simulator_params)
+    simulator_params.episode_horizon_s = p.simulator_params.control_horizon_s* 1.
 
-                                                            # Don't terminate upon success. Since each episode is only one waypoint
-                                                            # this ensures that you don't clip the zero'th waypoint and have a succesfull
-                                                            # episode with no waypoints followed.
+    # Don't terminate upon success. Since each episode is only one waypoint
+    # this ensures that you don't clip the zero'th waypoint and have a succesfull
+    # episode with no waypoints followed.
+    simulator_params.episode_termination_reasons = ['Timeout', 'Collision']
+    simulator_params.episode_termination_colors = ['b', 'r']
 
-                                                            episode_termination_reasons=['Timeout', 'Collision'],
-                                                            episode_termination_colors=['b', 'r']
-
-                                )
-    )
-
-    reset_params = p.simulator_params.reset_params
+    # Change the reset parameters for the simulator
+    reset_params = simulator_params.reset_params
     reset_params.obstacle_map.params = DotMap(min_n=5, max_n=5,
                                               min_r=.3, max_r=.8)
+    reset_params.start_config.heading.reset_type = 'random'
+    reset_params.start_config.speed.reset_type = 'random'
+    reset_params.start_config.ang_speed.reset_type = 'gaussian' 
+
+    p.data_creation = DotMap(
+                                # Number of data points
+                                data_points=100000,
+        
+                                # Number of data points per file
+                                data_points_per_file=1000,
+                                
+                                # Data directory
+                                data_dir='/home/ext_drive/somilb/data/topview_100k',
+
+                                # Custom Simulator Params
+                                simulator_params = simulator_params
+    )
 
     # Test parameters
     p.test = DotMap(
@@ -166,9 +169,7 @@ def create_params():
                     number_tests=1,
                     
                     # Custom Simulator Parameters for Testing. Add more as needed
-                    simulator_params=DotMap(
-                                            episode_horizon_s=p.simulator_params.episode_horizon_s
-                    )
+                    simulator_params=deepcopy(p.simulator_params)
     )
 
     return p

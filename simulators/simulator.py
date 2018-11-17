@@ -206,6 +206,9 @@ class Simulator:
             ang_speed_111 = np.zeros((1, 1, 1))
         elif p.ang_speed.reset_type == 'random':
             ang_speed_111 = rng.uniform(p.ang_speed.bounds[0], p.ang_speed.bounds[1], (1, 1, 1))
+        elif p.ang_speed.reset_type == 'gaussian':
+            ang_speed_111 = rng.normal(p.ang_speed.gaussian_params[0],
+                                       p.ang_speed.gaussian_params[1], (1, 1, 1))
         else:
             raise NotImplementedError('Unknown reset type for the vehicle starting angular speed.')
 

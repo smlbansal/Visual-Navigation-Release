@@ -17,26 +17,17 @@ class TopViewTrainer(TrainerFrontendHelper):
         to add some additional helpful parameters.
         """
 
-        # Parse the dependencies
-        p.simulator_params.simulator.parse_params(p.simulator_params)
-
         if args.command == 'generate-data':
-            # Change the simulator parameters for data gen if needed
-            if hasattr(p.data_creation, 'simulator_params'):
-                for key, val in p.data_creation.simulator_params.items():
-                    setattr(p.simulator_params, key, val)
+            p.simulator_params = p.data_creation.simulator_params
         elif args.command == 'train':
-            # Change the simulator parameters for training if needed
-            if hasattr(p.trainer, 'simulator_params'):
-                for key, val in p.trainer.simulator_params.items():
-                    setattr(p.simulator_params, key, val)
+            p.simulator_params = p.trainer.simulator_params
         elif args.command == 'test':
-            # Change the simulator parameters for testing if needed
-            if hasattr(p.test, 'simulator_params'):
-                for key, val in p.test.simulator_params.items():
-                    setattr(p.simulator_params, key, val)
+            p.simulator_params = p.test.simulator_params
         else:
             raise NotImplementedError('Unknown Command')
+
+        # Parse the dependencies
+        p.simulator_params.simulator.parse_params(p.simulator_params)
         return p
 
     def create_data_source(self, params=None):
@@ -98,12 +89,12 @@ class TopViewTrainer(TrainerFrontendHelper):
             metrics_keys = metrics_keyss[0]
             metrics_vals = metrics_valss[0]
 
-
             # Log metrics for visualization via tensorboard
             with self.nn_summary_writer.as_default():
                 with tf.contrib.summary.always_record_summaries():
                     for k, v in zip(metrics_keys, metrics_vals):
-                        tf.contrib.summary.scalar('metrics/{:s}'.format(k), v, step=epoch)
+                        tf.contrib.summary.scalar('metrics/{:s}'.format(k.replace(" ", "_")),
+                                                  v, step=epoch)
 
     def _init_callback_instance_variables(self):
         """Initialize instance variables needed for the callback function."""
