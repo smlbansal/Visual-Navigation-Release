@@ -351,15 +351,17 @@ class Trajectory(object):
                               angular_acceleration_nk1=angular_acceleration_nk1,
                               valid_horizons_n1=valid_horizons_n1, direct_init=True)
 
-    def render(self, axs, batch_idx=0, freq=4, plot_heading=False,
+    def render(self, axs, batch_idx=0, freq=4, plot_quiver=True, plot_heading=False,
                plot_velocity=False, label_start_and_end=False, name=''):
         ax = axs[0]
         xs = self._position_nk2[batch_idx, :, 0]
         ys = self._position_nk2[batch_idx, :, 1]
         thetas = self._heading_nk1[batch_idx]
         ax.plot(xs, ys, 'r-')
-        ax.quiver(xs[::freq], ys[::freq],
-                  tf.cos(thetas[::freq]), tf.sin(thetas[::freq]))
+
+        if plot_quiver:
+            ax.quiver(xs[::freq], ys[::freq],
+                      tf.cos(thetas[::freq]), tf.sin(thetas[::freq]))
 
         title_str = '{:s} Trajectory'.format(name)
         if label_start_and_end:
@@ -452,10 +454,13 @@ class SystemConfig(Trajectory):
                                                acceleration_nk1, heading_nk1,
                                                angular_speed_nk1, angular_acceleration_nk1)
 
-    def render(self, ax, batch_idx=0, **kwargs):
-        pos_n12 = self.position_nk2()
-        pos_2 = pos_n12[batch_idx, 0]
-        ax.plot(pos_2[0], pos_2[1], **kwargs)
+    def render(self, ax, batch_idx=0, plot_quiver=False, **kwargs):
+        pos_n13 = self.position_and_heading_nk3()
+        pos_3 = pos_n13[batch_idx, 0]
+        ax.plot(pos_3[0], pos_3[1], **kwargs)
+        if plot_quiver:
+            ax.quiver([pos_3[0]], [pos_3[1]],
+                      tf.cos([pos_3[2]]), tf.sin([pos_3[2]]))
 
     def render_with_boundary(self, ax, batch_idx, boundary_params, **kwargs):
         self.render(ax, batch_idx, **kwargs)

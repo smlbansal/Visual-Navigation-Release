@@ -37,7 +37,8 @@ def load_params():
     p.objective_fn_params = DotMap(obj_type='valid_mean')
     p.reset_params = DotMap(
                             obstacle_map=DotMap(reset_type='random',
-                                                params={'min_n': 4, 'max_n': 7, 'min_r': .3, 'max_r': .8}),
+                                                params=DotMap(min_n=4, max_n=7,
+                                                              min_r=.3, max_r=.8)),
                             start_config=DotMap(
                                                 position=DotMap(
                                                     # There could be different reset types
@@ -80,5 +81,5 @@ def load_params():
     p.episode_termination_colors = ['b', 'r', 'g']
     p.waypt_cmap = 'winter'
 
-    p.num_validation_goals = 50
+    p.num_validation_goals = 100
     return p

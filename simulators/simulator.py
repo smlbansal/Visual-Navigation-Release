@@ -391,10 +391,12 @@ class Simulator:
     def render(self, ax, freq=4):
         p = self.params
         self._render_obstacle_map(ax)
-        self.vehicle_trajectory.render([ax], freq=freq)
 
         if 'waypoint_config' in self.vehicle_data.keys():
+            self.vehicle_trajectory.render([ax], freq=freq, plot_quiver=False)
             self._render_waypoints(ax)
+        else:
+            self.vehicle_trajectory.render([ax], freq=freq, plot_quiver=True)
 
         boundary_params = {'norm': p.goal_dist_norm, 'cutoff':
                            p.goal_cutoff_dist, 'color': 'g'}
@@ -421,7 +423,8 @@ class Simulator:
         for i, (system_config, waypt_config) in enumerate(itertools.zip_longest(system_configs,
                                                                                 waypt_configs)):
             color = cmap(i / len(system_configs))
-            system_config.render(ax, batch_idx=0, marker='o', color=color)
+            system_config.render(ax, batch_idx=0, plot_quiver=True,
+                                 marker='o', color=color)
             if waypt_config is not None:
                 pos_2 = waypt_config.position_nk2()[0, 0].numpy()
                 ax.text(pos_2[0], pos_2[1], str(i), color=color)

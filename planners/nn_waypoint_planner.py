@@ -22,6 +22,10 @@ class NNWaypointPlanner(NNPlanner):
         
         raw_data = self._raw_data(start_config)
         processed_data = model.create_nn_inputs_and_outputs(raw_data)
+        
+        # TODO: This is for debugging
+        #occupancy_grid = processed_data['inputs'][0]
+        #self.save_occupancy_grid(occupancy_grid, start_config, raw_data['goal_position_ego_n2'])
 
         # Predict the NN output
         nn_output_113 = model.predict_nn_output(processed_data['inputs'], is_training=False)[:, None]
@@ -50,21 +54,24 @@ class NNWaypointPlanner(NNPlanner):
         min_horizon = int(tf.ceil(horizons_s[min_idx, 0]/self.params.dt).numpy())
 
         data = {'system_config': SystemConfig.copy(start_config),
-                'waypoint_config': self.opt_waypt,
-                'trajectory': self.opt_traj,
+                'waypoint_config': SystemConfig.copy(self.opt_waypt),
+                'trajectory': Trajectory.copy(self.opt_traj),
                 'planning_horizon': min_horizon,
                 'K_1kfd': controllers['K_nkfd'][min_idx:min_idx + 1],
                 'k_1kf1': controllers['k_nkf1'][min_idx:min_idx + 1]}
 
         return data
 
-    def save_occupancy_grid(self, grid, start_config):
+    def save_occupancy_grid(self, grid, start_config, goal_ego_config):
         """Save the occupancy grid- useful for debugging."""
         import matplotlib.pyplot as plt
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.imshow(grid[0, :, :, 0].numpy(), cmap='gray')
         pos_3 = start_config.position_and_heading_nk3()[0, 0].numpy()
-        fig.suptitle('State: [{:.3f}, {:.3f}, {:.3f}]'.format(pos_3[0], pos_3[1], pos_3[2]))
+        start_str = 'State: [{:.3f}, {:.3f}, {:.3f}]'.format(pos_3[0], pos_3[1], pos_3[2])
+        goal_ego_str = 'Goal Ego: [[{:.3f}, {:.3f}]'.format(goal_ego_config[0, 0],
+                                                            goal_ego_config[0, 1])
+        fig.suptitle('{:s}\n{:s}'.format(start_str, goal_ego_str))
         fig.savefig('./tmp/grid/occupancy_grid_{:d}.png'.format(self.counter), bbox_inches='tight')
         self.counter += 1

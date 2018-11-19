@@ -46,8 +46,8 @@ class SamplingPlanner(Planner):
         min_horizon = int(tf.ceil(horizons_s[min_idx, 0] / self.params.dt).numpy())
 
         data = {'system_config': SystemConfig.copy(start_config),
-                'waypoint_config': self.opt_waypt,
-                'trajectory': self.opt_traj,
+                'waypoint_config': SystemConfig.copy(self.opt_waypt),
+                'trajectory': Trajectory.copy(self.opt_traj),
                 'planning_horizon': min_horizon,
                 'K_1kfd': controllers['K_nkfd'][min_idx:min_idx + 1],
                 'k_1kf1': controllers['k_nkf1'][min_idx:min_idx + 1]}

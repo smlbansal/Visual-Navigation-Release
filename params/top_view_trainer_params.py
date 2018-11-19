@@ -10,10 +10,10 @@ dependencies = ['simulator_params']
 def create_params():
     # Load the dependencies
     p = DotMap({dependency: utils.load_params(dependency)
-                                for dependency in dependencies})
+                for dependency in dependencies})
     
     # Model parameters
-    num_conv_layers = 2
+    num_conv_layers = 3
     p.model = DotMap(
                      
                      
@@ -35,7 +35,7 @@ def create_params():
                                  num_conv_layers=num_conv_layers,
                          
                                  # Number of CNN filters
-                                 num_conv_filters=16 * np.ones(num_conv_layers, dtype=np.int32),
+                                 num_conv_filters=32 * np.ones(num_conv_layers, dtype=np.int32),
                                  
                                  # Size of CNN filters
                                  size_conv_filters=3 * np.ones(num_conv_layers, dtype=np.int32),
@@ -44,7 +44,7 @@ def create_params():
                                  size_maxpool_filters=2 * np.ones(num_conv_layers, dtype=np.int32),
                                  
                                  # Number of fully connected hidden layers
-                                 num_hidden_layers=3,
+                                 num_hidden_layers=5,
                                  
                                  # Number of neurons per hidden layer
                                  num_neurons_per_layer=128,
@@ -59,7 +59,7 @@ def create_params():
                                  use_dropout=True,
                                  
                                  # Dropout rate (in case dropout is used)
-                                 dropout_rate=0.5,
+                                 dropout_rate=0.2,
                      )
     )
     
@@ -87,10 +87,10 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=100,
+                        num_epochs=200,
         
                         # Total number of samples in the dataset
-                        num_samples=50000,
+                        num_samples=int(100e3),
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
@@ -113,7 +113,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=10,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/train/session_2018-11-15_15-39-08/checkpoints/ckpt-4',
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/train/session_2018-11-18_18-59-56/checkpoints/ckpt-20',
 
                         # Callback settings
                         callback_frequency=10,
