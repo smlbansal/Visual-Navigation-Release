@@ -23,17 +23,22 @@ class TopViewDataSource(DataSource):
         
         # Generate the data
         counter = 1
-        for _ in range(0, self.p.data_creation.data_points, self.p.data_creation.data_points_per_file):
+        num_points = 0
+        while num_points < self.p.data_creation.data_points:
             # Reset the data dictionary
             data = self.reset_data_dictionary()
-            
-            for _ in range(0, self.p.data_creation.data_points_per_file):
+           
+            while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
                 # Reset the simulator
                 simulator.reset()
                 
                 # Run the planner for one step
                 simulator.simulate()
-                
+
+                # Ensure that the episode simulated is valid
+                if not simulator.valid_episode:
+                    continue
+
                 # Append the data to the current data dictionary
                 self.append_data_to_dictionary(data, simulator)
                 
@@ -42,8 +47,8 @@ class TopViewDataSource(DataSource):
             
             # Increase the counter
             counter += 1
-            #TODO: Remove this print
-            print(data['vehicle_state_nk3'].shape[0])
+            num_points += self._num_data_points(data)
+            print(num_points)
     
     @staticmethod
     def reset_data_dictionary():
@@ -75,6 +80,16 @@ class TopViewDataSource(DataSource):
         # Optimal control information
         data['optimal_control_nk2'] = []
         return data
+
+    def _num_data_points(self, data):
+        """
+        Returns the number of data points inside
+        data.
+        """
+        if len(data['vehicle_state_nk3']) == 0:
+            return 0
+        ns = [x.shape[0] for x in data['vehicle_state_nk3']]
+        return np.sum(ns)
 
     def append_data_to_dictionary(self, data, simulator):
         """

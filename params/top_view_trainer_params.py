@@ -87,10 +87,10 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=5,
+                        num_epochs=200,
         
                         # Total number of samples in the dataset
-                        num_samples=156,
+                        num_samples=48058,
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
@@ -113,7 +113,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=10,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/train/session_2018-11-18_18-59-56/checkpoints/ckpt-20',
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/train_old/session_2018-11-18_18-59-56/checkpoints/ckpt-16',
 
                         # Callback settings
                         callback_frequency=10,
@@ -140,13 +140,13 @@ def create_params():
 
     p.data_creation = DotMap(
                                 # Number of data points
-                                data_points=100,
+                                data_points=int(100e3),
         
                                 # Number of data points per file
-                                data_points_per_file=75,
+                                data_points_per_file=1000,
                                 
                                 # Data directory
-                                data_dir='/home/ext_drive/somilb/data/topview_full_episode',
+                                data_dir='/home/ext_drive/somilb/data/topview_full_episode_100k',
 
                                 # Custom Simulator Params
                                 simulator_params = simulator_params
@@ -157,9 +157,9 @@ def create_params():
                     # Test seed
                     seed=10,
                     
-                    simulate_expert=False,
+                    simulate_expert=True,
                     
-                    number_tests=1,
+                    number_tests=50,
                     
                     # Custom Simulator Parameters for Testing. Add more as needed
                     simulator_params=deepcopy(p.simulator_params)
