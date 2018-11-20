@@ -378,7 +378,6 @@ class Simulator:
     def _render_obstacle_map(self, ax):
         raise NotImplementedError
 
-    #TODO: Fix this to work with new structure
     def render(self, ax, freq=4):
         p = self.params
         self._render_obstacle_map(ax)
@@ -411,14 +410,15 @@ class Simulator:
         system_configs = self.vehicle_data['system_config']
         waypt_configs = self.vehicle_data['waypoint_config']
         cmap = matplotlib.cm.get_cmap(self.params.waypt_cmap)
-        for i, (system_config, waypt_config) in enumerate(itertools.zip_longest(system_configs,
-                                                                                waypt_configs)):
-            color = cmap(i / len(system_configs))
+        for i, (system_config, waypt_config) in enumerate(zip(system_configs, waypt_configs)):
+            color = cmap(i / system_configs.n)
             system_config.render(ax, batch_idx=0, plot_quiver=True,
                                  marker='o', color=color)
-            if waypt_config is not None:
-                pos_2 = waypt_config.position_nk2()[0, 0].numpy()
-                ax.text(pos_2[0], pos_2[1], str(i), color=color)
+
+            # Render the waypoint's number at each
+            # waypoint's location
+            pos_2 = waypt_config.position_nk2()[0, 0].numpy()
+            ax.text(pos_2[0], pos_2[1], str(i), color=color)
 
     def render_velocities(self, ax0, ax1):
         speed_k = self.vehicle_trajectory.speed_nk1()[0, :, 0].numpy()
