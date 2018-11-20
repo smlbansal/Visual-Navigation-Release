@@ -34,8 +34,8 @@ class NNPlanner(Planner):
         data['obs_radii_nm1'] = simulator.obstacle_map.obstacle_radii_m1[tf.newaxis, :, :].numpy()
 
         # Vehicle Data
-        data['vehicle_state_n3'] = start_config.position_and_heading_nk3().numpy()[:, 0, :]
-        data['vehicle_controls_n2'] = start_config.speed_and_angular_speed_nk2().numpy()[:, 0, :]
+        data['vehicle_state_nk3'] = start_config.position_and_heading_nk3().numpy()
+        data['vehicle_controls_nk2'] = start_config.speed_and_angular_speed_nk2().numpy()
 
         # Goal Data
         data['goal_position_n2'] = simulator.goal_config.position_nk2().numpy()[:, 0, :]

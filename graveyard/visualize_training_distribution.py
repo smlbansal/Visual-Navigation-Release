@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pickle
 import numpy as np
 
-data_dir = '/home/ext_drive/somilb/data/topview_100k'
+data_dir = '/home/ext_drive/somilb/data/topview_full_episode'
 
 
 def main():
@@ -15,9 +15,10 @@ def main():
         full_filename = os.path.join(data_dir, filename)
         with open(full_filename, 'rb') as f:
             data = pickle.load(f)
-        collected_data.append(data['vehicle_controls_n2'])    
-    collected_data_n2 = np.concatenate(collected_data, axis=0)
-    
+        collected_data.append(data['vehicle_controls_nk2'])    
+    collected_data_nk2 = np.concatenate(collected_data, axis=0)
+    collected_data_n2 = collected_data_nk2.reshape(-1, 2)
+
     collected_v = collected_data_n2[:, 0]
     collected_w = collected_data_n2[:, 1]
 
