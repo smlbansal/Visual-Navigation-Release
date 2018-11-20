@@ -54,11 +54,11 @@ class Simulator:
             data_times.append(vehicle_trajectory.k)
             config = next_config
 
-        vehicle_trajectory, vehicle_data, self.episode_type = self._enforce_episode_termination_conditions(vehicle_trajectory,
-                                                                                                           vehicle_data)
-        self.obj_val = self._compute_objective_value(vehicle_trajectory)
-        self.vehicle_trajectory = vehicle_trajectory
-        self.vehicle_data = vehicle_data
+        episode_data = self._enforce_episode_termination_conditions(vehicle_trajectory,
+                                                                    vehicle_data)
+
+        self.vehicle_trajectory, self.vehicle_data, self.episode_type, self.valid_episode = episode_data
+        self.obj_val = self._compute_objective_value(self.vehicle_trajectory)
 
     def _iterate(self, config):
         """ Runs the planner for one step from config to generate a
@@ -102,7 +102,14 @@ class Simulator:
         idx = np.argmin(time_idxs)
         vehicle_trajectory.clip_along_time_axis(time_idxs[idx].numpy())
         data = self.planner.mask_and_concat_data_along_batch_dim(data, k=vehicle_trajectory.k)
-        return vehicle_trajectory, data, idx
+        
+        # If all of the data was masked then
+        # the episode simulated is not valid
+        valid_episode = True
+        if data['system_config'] is None:
+            valid_episode = False
+
+        return vehicle_trajectory, data, idx, valid_episode
 
     def _compute_time_idx_for_termination_condition(self, vehicle_trajectory, condition):
         """ For a given trajectory termination condition (i.e. timeout, collision, etc.)
