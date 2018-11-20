@@ -49,7 +49,7 @@ class SamplingPlanner(Planner):
                 'waypoint_config': SystemConfig.copy(self.opt_waypt),
                 'trajectory': Trajectory.copy(self.opt_traj),
                 'planning_horizon': min_horizon,
-                'K_1kfd': controllers['K_nkfd'][min_idx:min_idx + 1],
-                'k_1kf1': controllers['k_nkf1'][min_idx:min_idx + 1]}
+                'K_nkfd': controllers['K_nkfd'][min_idx:min_idx + 1],
+                'k_nkf1': controllers['k_nkf1'][min_idx:min_idx + 1]}
 
         return data

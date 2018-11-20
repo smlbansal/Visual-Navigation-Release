@@ -194,11 +194,12 @@ class TrainerFrontendHelper(object):
         
         # Setup a logger
         # TODO(Somil, Varun): This is a hack for now. Maybe make it more sophisticated.
-        log_utils.setup_logger(filename=os.path.join(self.p.session_dir, 'log.txt'))
+        #TODO: Put this back
+        #log_utils.setup_logger(filename=os.path.join(self.p.session_dir, 'log.txt'))
         
         # Add some basic information to the logger
-        logging.info('Parameter file name: %s' % args.params)
-        logging.info('Command: %s' % args.command)
+        #logging.info('Parameter file name: %s' % args.params)
+        #logging.info('Command: %s' % args.command)
         
 
 if __name__ == '__main__':

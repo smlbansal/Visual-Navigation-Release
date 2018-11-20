@@ -21,9 +21,6 @@ class TopViewDataSource(DataSource):
         # Initialize the simulator
         simulator = CircularObstacleMapSimulator(self.p.simulator_params)
         
-        # Initialize the trajectory objects to save the goal and waypoint egocentric configurations
-        self.initialize_configs_for_ego_data()
-        
         # Generate the data
         counter = 1
         for _ in range(0, self.p.data_creation.data_points, self.p.data_creation.data_points_per_file):
@@ -46,7 +43,7 @@ class TopViewDataSource(DataSource):
             # Increase the counter
             counter += 1
             #TODO: Remove this print
-            print(counter*self.p.data_creation.data_points_per_file)
+            print(data['vehicle_state_nk3'].shape[0])
     
     @staticmethod
     def reset_data_dictionary():
@@ -61,8 +58,8 @@ class TopViewDataSource(DataSource):
         data['obs_radii_nm1'] = []
         
         # Start configuration information
-        data['vehicle_state_n3'] = []
-        data['vehicle_controls_n2'] = []
+        data['vehicle_state_nk3'] = []
+        data['vehicle_controls_nk2'] = []
 
         # Goal configuration information
         data['goal_position_n2'] = []
@@ -79,44 +76,50 @@ class TopViewDataSource(DataSource):
         data['optimal_control_nk2'] = []
         return data
 
-    def initialize_configs_for_ego_data(self):
-        """
-        Creates configuration objects to store the egocentric goal and waypoint.
-        """
-        self.goal_ego_config = SystemConfig(dt=0, n=1, k=1)
-        self.waypoint_ego_config = SystemConfig(dt=0, n=1, k=1)
-
     def append_data_to_dictionary(self, data, simulator):
         """
         Append the appropriate data from the simulator to the existing data dictionary.
         """
-        # Convert the waypoint and the goal information to egocentric frame
-        DubinsCar.to_egocentric_coordinates(simulator.start_config,
-                                            simulator.vehicle_data['waypoint_config'][0],
-                                            self.waypoint_ego_config)
-        DubinsCar.to_egocentric_coordinates(simulator.start_config, simulator.goal_config, self.goal_ego_config)
+        # Batch Dimension
+        n = simulator.vehicle_data['system_config'].n
 
         # Obstacle data
-        data['obs_centers_nm2'].append(simulator.obstacle_map.obstacle_centers_m2[tf.newaxis, :, :].numpy())
-        data['obs_radii_nm1'].append(simulator.obstacle_map.obstacle_radii_m1[tf.newaxis, :, :].numpy())
+        obs_center_1m2 = simulator.obstacle_map.obstacle_centers_m2[tf.newaxis, :, :].numpy()
+        obs_radii_1m1 = simulator.obstacle_map.obstacle_radii_m1[tf.newaxis, :, :].numpy()
+
+        _, m, _ = obs_center_1m2.shape
+
+        data['obs_centers_nm2'].append(np.broadcast_to(obs_center_1m2, (n, m, 2)))
+        data['obs_radii_nm1'].append(np.broadcast_to(obs_radii_1m1, (n, m, 1)))
 
         # Vehicle data
-        data['vehicle_state_n3'].append(simulator.start_config.position_and_heading_nk3().numpy()[:, 0, :])
-        data['vehicle_controls_n2'].append(simulator.start_config.speed_and_angular_speed_nk2().numpy()[:, 0, :])
+        data['vehicle_state_nk3'].append(simulator.vehicle_data['trajectory'].position_and_heading_nk3().numpy())
+        data['vehicle_controls_nk2'].append(simulator.vehicle_data['trajectory'].speed_and_angular_speed_nk2().numpy())
 
-        # Goal data
-        data['goal_position_n2'].append(simulator.goal_config.position_nk2().numpy()[:, 0, :])
-        data['goal_position_ego_n2'].append(self.goal_ego_config.position_nk2().numpy()[:, 0, :])
+        # Convert to egocentric coordinates
+        start_nk3 = simulator.vehicle_data['system_config'].position_and_heading_nk3().numpy()
+
+        goal_n13 = np.broadcast_to(simulator.goal_config.position_and_heading_nk3().numpy(), (n, 1, 3))
+        waypoint_n13 = simulator.vehicle_data['waypoint_config'].position_and_heading_nk3().numpy()
+
+        goal_ego_n13 = DubinsCar.convert_position_and_heading_to_ego_coordinates(start_nk3,
+                                                                                 goal_n13)
+        waypoint_ego_n13 = DubinsCar.convert_position_and_heading_to_ego_coordinates(start_nk3,
+                                                                                     waypoint_n13)
+
+        # Goal Data
+        data['goal_position_n2'].append(goal_n13[:, 0, :2])
+        data['goal_position_ego_n2'].append(goal_ego_n13[:, 0, :2])
 
         # Waypoint data
-        data['optimal_waypoint_n3'].append(simulator.vehicle_data['waypoint_config'][0].position_and_heading_nk3().numpy()[:, 0, :])
-        data['optimal_waypoint_ego_n3'].append(self.waypoint_ego_config.position_and_heading_nk3().numpy()[:, 0, :])
+        data['optimal_waypoint_n3'].append(waypoint_n13[:, 0])
+        data['optimal_waypoint_ego_n3'].append(waypoint_ego_n13[:, 0])
 
         # Waypoint horizon
-        data['waypoint_horizon_n1'].append(np.array([simulator.vehicle_data['planning_horizon'][0]])[None])
+        data['waypoint_horizon_n1'].append(simulator.vehicle_data['planning_horizon_n1'])
 
         # Optimal control data
-        data['optimal_control_nk2'].append(simulator.vehicle_trajectory.speed_and_angular_speed_nk2().numpy())
+        data['optimal_control_nk2'].append(simulator.vehicle_data['trajectory'].speed_and_angular_speed_nk2().numpy())
         return data
 
     def prepare_and_save_the_data_dictionary(self, data, counter):
@@ -132,3 +135,7 @@ class TopViewDataSource(DataSource):
         filename = os.path.join(self.p.data_creation.data_dir, 'file%i.pkl' % counter)
         with open(filename, 'wb') as handle:
             pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def _waypoint_ego_n3(self, waypoint_config, start_config):
+        import pdb; pdb.set_trace()
+        test = 5

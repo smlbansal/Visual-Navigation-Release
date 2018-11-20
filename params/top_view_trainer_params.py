@@ -87,10 +87,10 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=200,
+                        num_epochs=5,
         
                         # Total number of samples in the dataset
-                        num_samples=int(100e3),
+                        num_samples=156,
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
@@ -129,31 +129,24 @@ def create_params():
 
     # Custom Simulator Parameters for Data Creation
     simulator_params = deepcopy(p.simulator_params)
-    simulator_params.episode_horizon_s = p.simulator_params.control_horizon_s* 1.
-
-    # Don't terminate upon success. Since each episode is only one waypoint
-    # this ensures that you don't clip the zero'th waypoint and have a succesfull
-    # episode with no waypoints followed.
-    simulator_params.episode_termination_reasons = ['Timeout', 'Collision']
-    simulator_params.episode_termination_colors = ['b', 'r']
 
     # Change the reset parameters for the simulator
     reset_params = simulator_params.reset_params
     reset_params.obstacle_map.params = DotMap(min_n=5, max_n=5,
                                               min_r=.3, max_r=.8)
     reset_params.start_config.heading.reset_type = 'random'
-    reset_params.start_config.speed.reset_type = 'random'
-    reset_params.start_config.ang_speed.reset_type = 'gaussian' 
+    reset_params.start_config.speed.reset_type = 'zero'
+    reset_params.start_config.ang_speed.reset_type = 'zero' 
 
     p.data_creation = DotMap(
                                 # Number of data points
-                                data_points=100000,
+                                data_points=100,
         
                                 # Number of data points per file
-                                data_points_per_file=1000,
+                                data_points_per_file=75,
                                 
                                 # Data directory
-                                data_dir='/home/ext_drive/somilb/data/topview_100k',
+                                data_dir='/home/ext_drive/somilb/data/topview_full_episode',
 
                                 # Custom Simulator Params
                                 simulator_params = simulator_params

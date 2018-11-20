@@ -54,12 +54,8 @@ class Simulator:
             data_times.append(vehicle_trajectory.k)
             config = next_config
 
-        vehicle_data = self.planner.process_data(vehicle_data)
-
         vehicle_trajectory, vehicle_data, self.episode_type = self._enforce_episode_termination_conditions(vehicle_trajectory,
-                                                                                                           vehicle_data,
-                                                                                                           data_times)
-
+                                                                                                           vehicle_data)
         self.obj_val = self._compute_objective_value(vehicle_trajectory)
         self.vehicle_trajectory = vehicle_trajectory
         self.vehicle_data = vehicle_data
@@ -97,21 +93,15 @@ class Simulator:
         self.planner.clip_data_along_time_axis(data, horizon)
         return traj, data
 
-    def _enforce_episode_termination_conditions(self, vehicle_trajectory, data, data_times):
-        """ A utility function to enforce episode termination conditions.
-        Clips the vehicle trajectory and corresponding LQR controllers along the time axis."""
+    def _enforce_episode_termination_conditions(self, vehicle_trajectory, data):
         p = self.params
         time_idxs = []
         for condition in p.episode_termination_reasons:
             time_idxs.append(self._compute_time_idx_for_termination_condition(vehicle_trajectory,
                                                                               condition))
         idx = np.argmin(time_idxs)
-        vehicle_trajectory, data = self._clip_along_time_axis(vehicle_trajectory,
-                                                              data,
-                                                              time_idxs[idx].numpy(),
-                                                              mode='update')
-
-        data = self.planner.keep_data_before_time(data, data_times, time_idxs[idx].numpy())
+        vehicle_trajectory.clip_along_time_axis(time_idxs[idx].numpy())
+        data = self.planner.mask_and_concat_data_along_batch_dim(data, k=vehicle_trajectory.k)
         return vehicle_trajectory, data, idx
 
     def _compute_time_idx_for_termination_condition(self, vehicle_trajectory, condition):
@@ -388,6 +378,7 @@ class Simulator:
     def _render_obstacle_map(self, ax):
         raise NotImplementedError
 
+    #TODO: Fix this to work with new structure
     def render(self, ax, freq=4):
         p = self.params
         self._render_obstacle_map(ax)
