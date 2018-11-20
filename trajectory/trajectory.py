@@ -157,6 +157,9 @@ class Trajectory(object):
         """Concatenates a list of trajectory objects
         across the batch dimension, returning a new 
         trajectory object."""
+        if len(trajs) == 0:
+            return None
+
         position_nk2 = tf.concat([traj.position_nk2() for traj in trajs], axis=0)
         speed_nk1 = tf.concat([traj.speed_nk1() for traj in trajs], axis=0)
         acceleration_nk1 = tf.concat([traj.acceleration_nk1() for traj in trajs], axis=0)
@@ -335,6 +338,9 @@ class Trajectory(object):
         """Allow for indexing along the batch dimension similar
         to a regular tensor. Returns a new object corresponding
         to the batch index, index"""
+        if index >= self.n:
+            raise IndexError
+
         pos_nk2 = self.position_nk2()[index: index+1]
         speed_nk1 = self.speed_nk1()[index: index+1]
         acceleration_nk1 = self.acceleration_nk1()[index: index+1]
