@@ -23,10 +23,6 @@ class NNWaypointPlanner(NNPlanner):
         raw_data = self._raw_data(start_config)
         processed_data = model.create_nn_inputs_and_outputs(raw_data)
         
-        # TODO: This is for debugging
-        #occupancy_grid = processed_data['inputs'][0]
-        #self.save_occupancy_grid(occupancy_grid, start_config, raw_data['goal_position_ego_n2'])
-
         # Predict the NN output
         nn_output_113 = model.predict_nn_output(processed_data['inputs'], is_training=False)[:, None]
         
@@ -34,9 +30,14 @@ class NNWaypointPlanner(NNPlanner):
         waypoint_ego_config = SystemConfig(dt=self.params.dt, n=1, k=1,
                                            position_nk2=nn_output_113[:, :, :2],
                                            heading_nk1=nn_output_113[:, :, 2:3])
-        self.params.system_dynamics.to_world_coordinates(self.simulator.start_config,
+        self.params.system_dynamics.to_world_coordinates(start_config,
                                                          waypoint_ego_config,
                                                          self.waypoint_world_config)
+
+        # TODO: This is for debugging
+        #occupancy_grid = processed_data['inputs'][0]
+        #self.save_occupancy_grid(occupancy_grid, start_config, raw_data['goal_position_ego_n2'],
+        #                         waypoint_ego_config, self.waypoint_world_config)
 
         # Evaluate the objective and retrieve Control Pipeline data
         obj_vals, data = self.eval_objective(start_config, self.waypoint_world_config)
@@ -57,21 +58,38 @@ class NNWaypointPlanner(NNPlanner):
                 'waypoint_config': SystemConfig.copy(self.opt_waypt),
                 'trajectory': Trajectory.copy(self.opt_traj),
                 'planning_horizon': min_horizon,
-                'K_1kfd': controllers['K_nkfd'][min_idx:min_idx + 1],
-                'k_1kf1': controllers['k_nkf1'][min_idx:min_idx + 1]}
+                'K_nkfd': controllers['K_nkfd'][min_idx:min_idx + 1],
+                'k_nkf1': controllers['k_nkf1'][min_idx:min_idx + 1]}
 
         return data
 
-    def save_occupancy_grid(self, grid, start_config, goal_ego_config):
+    def save_occupancy_grid(self, grid, start_config, goal_ego_config,
+                           waypoint_ego_config, waypoint_world_config):
         """Save the occupancy grid- useful for debugging."""
         import matplotlib.pyplot as plt
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.imshow(grid[0, :, :, 0].numpy(), cmap='gray')
+        ax.contour(grid[0, :, :, 0].numpy(), extent=[0.0, 3.2, -1.6, 1.6])
+        
+        waypoint_ego_config.render(ax, plot_quiver=True)
+
+        # Figure Title
         pos_3 = start_config.position_and_heading_nk3()[0, 0].numpy()
         start_str = 'State: [{:.3f}, {:.3f}, {:.3f}]'.format(pos_3[0], pos_3[1], pos_3[2])
-        goal_ego_str = 'Goal Ego: [[{:.3f}, {:.3f}]'.format(goal_ego_config[0, 0],
+        goal_ego_str = 'Goal Ego: [{:.3f}, {:.3f}]'.format(goal_ego_config[0, 0],
                                                             goal_ego_config[0, 1])
-        fig.suptitle('{:s}\n{:s}'.format(start_str, goal_ego_str))
+        waypt_ego_config = waypoint_ego_config.position_and_heading_nk3()[0, 0]
+        waypoint_ego_str = 'Waypt Ego: [{:.3f}, {:.3f}, {:.3f}]'.format(waypt_ego_config[0],
+                                                                        waypt_ego_config[1],
+                                                                        waypt_ego_config[2])
+
+        waypt_world_config = waypoint_world_config.position_and_heading_nk3()[0, 0]
+        waypoint_world_str = 'Waypt World: [{:.3f}, {:.3f}, {:.3f}]'.format(waypt_world_config[0],
+                                                                            waypt_world_config[1],
+                                                                            waypt_world_config[2])
+        fig.suptitle('{:s}\n{:s}\n{:s}\n{:s}'.format(start_str,
+                                                     goal_ego_str,
+                                                     waypoint_ego_str,
+                                                     waypoint_world_str))
         fig.savefig('./tmp/grid/occupancy_grid_{:d}.png'.format(self.counter), bbox_inches='tight')
         self.counter += 1
