@@ -150,7 +150,3 @@ class TopViewDataSource(DataSource):
         filename = os.path.join(self.p.data_creation.data_dir, 'file%i.pkl' % counter)
         with open(filename, 'wb') as handle:
             pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    def _waypoint_ego_n3(self, waypoint_config, start_config):
-        import pdb; pdb.set_trace()
-        test = 5

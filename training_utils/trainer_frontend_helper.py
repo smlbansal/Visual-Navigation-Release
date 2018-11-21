@@ -48,7 +48,7 @@ class TrainerFrontendHelper(object):
         self.p = self.create_params(args.params)
 
         # Create the job and session directories
-        self.create_session_dir(args.job_dir)
+        self.create_session_dir(args)
         
         # Configure the device
         if args.device == -1:
@@ -171,20 +171,28 @@ class TrainerFrontendHelper(object):
         spec.loader.exec_module(foo)
         return foo.create_params()
         
-    def create_session_dir(self, job_dir):
+    def create_session_dir(self, args):
         """
         Create the job and the session directories.
         """
+        # Store the test data with the data
+        # of the trained network you are testing
+        if args.command == 'test':
+            trainer_dir = self.p.trainer.ckpt_path.split('checkpoints')[0]
+            checkpoint_number = int(self.p.trainer.ckpt_path.split('checkpoints')[1].split('-')[1])
+            job_dir = os.path.join(trainer_dir, 'test', 'checkpoint_{:d}'.format(checkpoint_number))
+        else:
+            job_dir = args.job_dir
+
         # Create the job directory if required
-        if not os.path.exists(job_dir):
-            os.makedirs(job_dir)
+        utils.mkdir_if_missing(job_dir)
         self.p.job_dir = job_dir
 
         # Create the session directory
         self.p.session_dir = os.path.join(self.p.job_dir,
                                           'session_%s' % (datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')))
         os.mkdir(self.p.session_dir)
-    
+
     def setup_logger_and_dump_params(self, args):
         """
         Dump all the paramaters in params.json in the session directory, and then setup a logger.
