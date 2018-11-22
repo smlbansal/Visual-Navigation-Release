@@ -41,7 +41,6 @@ class TopViewDataSource(DataSource):
 
                 # Append the data to the current data dictionary
                 self.append_data_to_dictionary(data, simulator)
-                
             # Prepare the dictionary for saving purposes
             self.prepare_and_save_the_data_dictionary(data, counter)
             
@@ -86,10 +85,15 @@ class TopViewDataSource(DataSource):
         Returns the number of data points inside
         data.
         """
-        if len(data['vehicle_state_nk3']) == 0:
-            return 0
-        ns = [x.shape[0] for x in data['vehicle_state_nk3']]
-        return np.sum(ns)
+        if type(data['vehicle_state_nk3']) is list:
+            if len(data['vehicle_state_nk3']) == 0:
+                return 0
+            ns = [x.shape[0] for x in data['vehicle_state_nk3']]
+            return np.sum(ns)
+        elif type(data['vehicle_state_nk3']) is np.ndarray:
+            return data['vehicle_state_nk3'].shape[0]
+        else:
+            raise NotImplementedError
 
     def append_data_to_dictionary(self, data, simulator):
         """
