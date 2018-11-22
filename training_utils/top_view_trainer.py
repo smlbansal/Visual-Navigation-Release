@@ -83,7 +83,8 @@ class TopViewTrainer(TrainerFrontendHelper):
                 tf.contrib.summary.scalar('losses/validation', validation_loss[-1], step=epoch)
 
         if epoch % self.p.trainer.callback_frequency == 0:
-            self.simulator_data['name'] = 'NN_Simulator_Epoch_{:d}'.format(epoch)
+            self.simulator_data['name'] = '{:s}_Epoch_{:d}'.format(self.simulator_name,
+                                                                   epoch)
             metrics_keyss, metrics_valss = self.simulate([self.simulator_data],
                                                          log_metrics=False)
             metrics_keys = metrics_keyss[0]
@@ -127,7 +128,7 @@ class TopViewTrainer(TrainerFrontendHelper):
             nn_simulator_data = self._init_simulator_data(nn_simulator_params,
                                                           self.p.test.number_tests,
                                                           self.p.test.seed,
-                                                          name='NN_Simulator')
+                                                          name=self.simulator_name)
             simulator_datas = [nn_simulator_data]
 
             # Optionally initialize the Expert Simulator to be tested

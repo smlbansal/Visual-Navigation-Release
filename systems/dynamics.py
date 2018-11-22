@@ -25,7 +25,7 @@ class Dynamics:
         """
         raise NotImplementedError
 
-    def simulate_T(self, x_n1d, u_nkf, T):
+    def simulate_T(self, x_n1d, u_nkf, T, pad_mode='zero'):
         """ Apply T actions from state x_n1d
         return the resulting trajectory object.
         """
@@ -34,7 +34,7 @@ class Dynamics:
             x_n1d = self.simulate(x_n1d, u_nkf[:, t:t+1])
             states.append(x_n1d)
         trajectory = self.assemble_trajectory(tf.concat(states, axis=1), u_nkf,
-                                              pad_mode='zero')
+                                              pad_mode=pad_mode)
         return trajectory
 
     def affine_factors(self, trajectory_hat):

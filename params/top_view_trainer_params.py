@@ -25,6 +25,7 @@ def create_params():
                      
                      # Number of the outputs to the model
                      num_outputs=3,  # (x, y, theta) waypoint
+                     #num_outputs=60,  # (v, omega) for 30 timesteps
         
                      # Occupancy grid discretization
                      occupancy_grid_dx=[0.1, 0.1],
@@ -90,7 +91,7 @@ def create_params():
                         num_epochs=200,
         
                         # Total number of samples in the dataset
-                        num_samples=48058,
+                        num_samples=200,
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
@@ -113,7 +114,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=10,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/train_old/session_2018-11-18_18-59-56/checkpoints/ckpt-16',
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/train/session_2018-11-20_13-00-00/checkpoints/ckpt-20',
 
                         # Callback settings
                         callback_frequency=10,
@@ -136,7 +137,7 @@ def create_params():
                                               min_r=.3, max_r=.8)
     reset_params.start_config.heading.reset_type = 'random'
     reset_params.start_config.speed.reset_type = 'zero'
-    reset_params.start_config.ang_speed.reset_type = 'zero' 
+    reset_params.start_config.ang_speed.reset_type = 'zero'
 
     p.data_creation = DotMap(
                                 # Number of data points

@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from planners.planner import Planner
 from trajectory.trajectory import SystemConfig
 
@@ -41,8 +42,8 @@ class NNPlanner(Planner):
         data['goal_position_n2'] = simulator.goal_config.position_nk2().numpy()[:, 0, :]
         data['goal_position_ego_n2'] = self.goal_ego_config.position_nk2().numpy()[:, 0, :]
 
-        # Label Data
-        data['optimal_waypoint_ego_n3'] = None
-        data['waypoint_horizon_n1'] = None
-        data['optimal_control_nk2'] = None
+        # Dummy Labels
+        data['optimal_waypoint_ego_n3'] = np.ones((1, 3), dtype=np.float32)
+        data['waypoint_horizon_n1'] = np.ones((1, 1), dtype=np.float32)
+        data['optimal_control_nk2'] = np.ones((1, 1, 2), dtype=np.float32)
         return data

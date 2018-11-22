@@ -7,6 +7,7 @@ class TopViewControlTrainer(TopViewTrainer):
     """
     Create a trainer that regress on the optimal control using the top-view occupancy maps.
     """
+    simulator_name = 'NN_Control_Simulator'
 
     def create_model(self, params=None):
         self.model = TopViewControlModel(self.p)

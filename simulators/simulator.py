@@ -7,7 +7,6 @@ from objectives.obstacle_avoidance import ObstacleAvoidance
 from trajectory.trajectory import SystemConfig, Trajectory
 from utils.fmm_map import FmmMap
 import matplotlib
-import itertools
 
 
 class Simulator:
@@ -16,6 +15,7 @@ class Simulator:
         self.params = params.simulator.parse_params(params)
         self.rng = np.random.RandomState(params.seed)
         self.obstacle_map = self._init_obstacle_map(self.rng)
+        self.system_dynamics = self._init_system_dynamics()
         self.obj_fn = self._init_obj_fn()
         self.planner = self._init_planner()
 
@@ -45,7 +45,6 @@ class Simulator:
         data_times = [0]
         while vehicle_trajectory.k < self.params.episode_horizon:
             trajectory_segment, next_config, data = self._iterate(config)
-
             # Append to Vehicle Data
             for key in vehicle_data.keys():
                 vehicle_data[key].append(data[key])
@@ -64,12 +63,16 @@ class Simulator:
         """ Runs the planner for one step from config to generate a
         subtrajectory, the resulting robot config after the robot executes
         the subtrajectory, and relevant planner data"""
+
+        # Optimize will return data, a dictionary with either
+        # an optimal subtrajectory mapped to the key 'trajectory'
+        # or a sequence of optimal controls mapped to the key
+        # 'optimal_control_nk2'
         data = self.planner.optimize(config)
+
         if 'trajectory' not in data.keys():
-            raise NotImplementedError  # TODO: Make sure this works
-            start_pos_nkd = self.system_dynamics.parse_trajectory(config)
-            traj = self.system_dynamics.simulate_T(data['u_nkf'], len(data['u_nkf']))
-            min_horizon = len(data['u_nkf'])
+            traj = self._simulate_control(config, data['optimal_control_nk2'])
+            min_horizon = data['optimal_control_nk2'].shape[1].value
         else:
             traj = data['trajectory']
             min_horizon = data['planning_horizon']
@@ -78,6 +81,15 @@ class Simulator:
         traj, data = self._clip_along_time_axis(traj, data, horizon)
         next_config = SystemConfig.init_config_from_trajectory_time_index(traj, t=-1)
         return traj, next_config, data
+
+    def _simulate_control(self, start_config, control_nk2):
+        """ Returns a trajectory resulting from simulating
+        control_nk2 from start_config using self.system_dynamics."""
+        x_n1d, _ = self.system_dynamics.parse_trajectory(start_config)
+        T = control_nk2.shape[1].value
+        trajectory = self.system_dynamics.simulate_T(x_n1d, control_nk2,
+                                                     T, pad_mode='repeat')
+        return trajectory
 
     def _clip_along_time_axis(self, traj, data, horizon, mode='new'):
         """ Clip a trajectory and the associated LQR controllers
@@ -269,8 +281,8 @@ class Simulator:
         raise NotImplementedError
 
     def _init_system_dynamics(self):
-        p = self.params
-        return p._system_dynamics(dt=p.dt, params=p.system_dynamics_params)
+        p = self.params.system_dynamics_params
+        return p.system(dt=p.dt, params=p)
 
     def _init_obj_fn(self):
         p = self.params
@@ -319,7 +331,6 @@ class Simulator:
     def _dist_to_goal(self, trajectory):
         """Calculate the FMM distance between
         each state in trajectory and the goal."""
-        p = self.params
         for objective in self.obj_fn.objectives:
             if isinstance(objective, GoalDistance):
                 dist_to_goal_nk = objective.compute_dist_to_goal_nk(trajectory)

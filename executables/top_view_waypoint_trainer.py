@@ -7,6 +7,7 @@ class TopViewWaypointTrainer(TopViewTrainer):
     """
     Create a trainer that regress on the optimal waypoint using the top-view occupancy maps.
     """
+    simulator_name = 'NN_Waypoint_Simulator'
 
     def create_model(self, params=None):
         self.model = TopViewWaypointModel(self.p)
@@ -19,7 +20,6 @@ class TopViewWaypointTrainer(TopViewTrainer):
         from planners.nn_waypoint_planner import NNWaypointPlanner
 
         p.planner_params.planner = NNWaypointPlanner
-        # Simulate 
         p.planner_params.model = self.model
 
     def _summary_dir(self):

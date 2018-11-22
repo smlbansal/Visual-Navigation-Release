@@ -25,7 +25,7 @@ class BaseModel(object):
         """
         # Create the NN inputs and labels
         processed_data = self.create_nn_inputs_and_outputs(raw_data)
-        
+
         # Predict the NN output
         nn_output = self.predict_nn_output(processed_data['inputs'], is_training=is_training)
         
