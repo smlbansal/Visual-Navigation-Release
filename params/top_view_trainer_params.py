@@ -24,8 +24,8 @@ def create_params():
                      ),
                      
                      # Number of the outputs to the model
-                     num_outputs=3,  # (x, y, theta) waypoint
-                     #num_outputs=60,  # (v, omega) for 30 timesteps
+                     #num_outputs=3,  # (x, y, theta) waypoint
+                     num_outputs=60,  # (v, omega) for 30 timesteps
         
                      # Occupancy grid discretization
                      occupancy_grid_dx=[0.1, 0.1],
@@ -88,10 +88,10 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=200,
+                        num_epochs=400,
         
                         # Total number of samples in the dataset
-                        num_samples=200,
+                        num_samples=int(100e3),
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
@@ -103,7 +103,7 @@ def create_params():
                         optimizer=tf.train.AdamOptimizer,
         
                         # Learning rate
-                        lr=1e-4,
+                        lr=1e-5,
                         
                         # Learning schedule
                         learning_schedule=1,
@@ -117,8 +117,8 @@ def create_params():
                         ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/train/session_2018-11-20_13-00-00/checkpoints/ckpt-20',
 
                         # Callback settings
-                        callback_frequency=10,
-                        callback_number_tests=10,
+                        callback_frequency=20,
+                        callback_number_tests=20,
                         callback_seed=10,
 
                         # Custom Simulator Parameters for Training. Add more as needed.
