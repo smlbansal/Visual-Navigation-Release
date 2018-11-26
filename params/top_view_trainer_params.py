@@ -24,8 +24,8 @@ def create_params():
                      ),
                      
                      # Number of the outputs to the model
-                     #num_outputs=3,  # (x, y, theta) waypoint
-                     num_outputs=60,  # (v, omega) for 30 timesteps
+                     num_outputs=3,  # (x, y, theta) waypoint
+                     #num_outputs=60,  # (v, omega) for 30 timesteps
         
                      # Occupancy grid discretization
                      occupancy_grid_dx=[0.1, 0.1],
@@ -114,7 +114,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=10,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/train/session_2018-11-20_13-00-00/checkpoints/ckpt-20',
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/nn_waypoint/train_full_episode_100k/session_2018-11-23_09-42-56/checkpoints/ckpt-40',
 
                         # Callback settings
                         callback_frequency=20,
@@ -158,9 +158,11 @@ def create_params():
                     # Test seed
                     seed=10,
                     
-                    simulate_expert=True,
+                    simulate_expert=False,
                     
-                    number_tests=50,
+                    number_tests=10,
+
+                    plot_controls=True,
                     
                     # Custom Simulator Parameters for Testing. Add more as needed
                     simulator_params=deepcopy(p.simulator_params)

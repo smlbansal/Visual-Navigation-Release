@@ -53,10 +53,13 @@ class ControlPipelineV0(ControlPipelineBase):
                                                                                   self.waypt_configs_world[idx], mode='assign')
         self.trajectories_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.lqr_trajectories[idx],
                                                                                  self.trajectories_world[idx], mode='assign')
-        self.Ks_world_nkfd[idx] = self.system_dynamics.convert_K_to_world_coordinates(start_config,
-                                                                                      self.K_nkfd[idx],
-                                                                                       self.Ks_world_nkfd[idx],
-                                                                                       mode='assign')
+        # Converting K to world coordinates is slow
+        # so only set this to true when LQR data is needed
+        if self.params.convert_K_to_world_coordinates:
+            self.Ks_world_nkfd[idx] = self.system_dynamics.convert_K_to_world_coordinates(start_config,
+                                                                                          self.K_nkfd[idx],
+                                                                                          self.Ks_world_nkfd[idx],
+                                                                                          mode='assign')
 
         # If goal_config is None (i.e. expert), return
         # all the precomputed trajectories. Otherwise

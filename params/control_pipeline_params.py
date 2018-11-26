@@ -35,5 +35,9 @@ def load_params():
     p.binning_parameters = DotMap(num_bins=61,
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 
+    # Converting K to world coordinates is slow
+    # so only set this to true when LQR data is needed
+    p.convert_K_to_world_coordinates = False
+
     p.verbose = False
     return p

@@ -42,7 +42,6 @@ class Simulator:
         config = self.start_config
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_data = self.planner.empty_data_dict()
-        data_times = [0]
         while vehicle_trajectory.k < self.params.episode_horizon:
             trajectory_segment, next_config, data = self._iterate(config)
             # Append to Vehicle Data
@@ -50,7 +49,6 @@ class Simulator:
                 vehicle_data[key].append(data[key])
 
             vehicle_trajectory.append_along_time_axis(trajectory_segment)
-            data_times.append(vehicle_trajectory.k)
             config = next_config
 
         episode_data = self._enforce_episode_termination_conditions(vehicle_trajectory,
@@ -95,14 +93,20 @@ class Simulator:
         """ Clip a trajectory and the associated LQR controllers
         along the time axis to length horizon."""
 
-        if mode == 'new':
-            traj = Trajectory.new_traj_clip_along_time_axis(traj, horizon)
-        elif mode == 'update':
-            traj.clip_along_time_axis(horizon)
-        else:
-            assert(False)
-
         self.planner.clip_data_along_time_axis(data, horizon)
+
+        # Avoid duplicating new trajectory objects
+        # as this is unnecesarily slow
+        if 'trajectory' in data:
+            traj = data['trajectory']
+        else:
+            if mode == 'new':
+                traj = Trajectory.new_traj_clip_along_time_axis(traj, horizon)
+            elif mode == 'update':
+                traj.clip_along_time_axis(horizon)
+            else:
+                assert(False)
+
         return traj, data
 
     def _enforce_episode_termination_conditions(self, vehicle_trajectory, data):
