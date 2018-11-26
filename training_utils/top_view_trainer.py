@@ -34,7 +34,7 @@ class TopViewTrainer(TrainerFrontendHelper):
         from data_sources.top_view_trainer_data_source import TopViewDataSource
         self.data_source = TopViewDataSource(self.p)
 
-    def _init_simulator_data(self, p, num_tests, seed, name='', dirname=''):
+    def _init_simulator_data(self, p, num_tests, seed, name='', dirname='', plot_controls=False):
         """Initializes a simulator_data dictionary based on the params in p,
         num_test, name, and dirname. This can be later passed to the simulate
         function to test a simulator."""
@@ -58,6 +58,21 @@ class TopViewTrainer(TrainerFrontendHelper):
                           'dir': dirname,
                           'n': num_tests,
                           'seed': seed}
+
+        if plot_controls:
+            fig_v, _, axs_v = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
+                                                   (8, 8), (.4, .4))
+            fig_w, _, axs_w = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
+                                                   (8, 8), (.4, .4))
+
+
+            axs_v = axs_v[::-1]
+            axs_w = axs_w[::-1]
+
+            simulator_data['ctrl_plots'] = {'fig_v': fig_v,
+                                            'axs_v': axs_v,
+                                            'fig_w': fig_w,
+                                            'axs_w': axs_w}
 
         return simulator_data
 
@@ -128,7 +143,8 @@ class TopViewTrainer(TrainerFrontendHelper):
             nn_simulator_data = self._init_simulator_data(nn_simulator_params,
                                                           self.p.test.number_tests,
                                                           self.p.test.seed,
-                                                          name=self.simulator_name)
+                                                          name=self.simulator_name,
+                                                          plot_controls=self.p.test.plot_controls)
             simulator_datas = [nn_simulator_data]
 
             # Optionally initialize the Expert Simulator to be tested
@@ -137,7 +153,8 @@ class TopViewTrainer(TrainerFrontendHelper):
                 expert_simulator_data = self._init_simulator_data(expert_simulator_params,
                                                                   self.p.test.number_tests,
                                                                   self.p.test.seed,
-                                                                  name='Expert_Simulator')
+                                                                  name='Expert_Simulator',
+                                                                  plot_controls=self.p.test.plot_controls)
                 simulator_datas.append(expert_simulator_data)
 
             # Test the simulators
@@ -150,14 +167,9 @@ class TopViewTrainer(TrainerFrontendHelper):
         For each simulator, simulates n goals, plots trajectories, and records
         metrics.
         """
-        render_angle_freq = utils.render_angle_frequency(self.p.simulator_params)
         metrics_keyss, metrics_valss = [], []
         for data in simulator_datas:
-            name = data['name']
             simulator = data['simulator']
-            fig = data['fig']
-            axs = data['axs']
-            dirname = data['dir']
             n = data['n']
             seed = data['seed']
             metrics = []
@@ -167,25 +179,81 @@ class TopViewTrainer(TrainerFrontendHelper):
                     simulator.reset(seed=-1)
                 simulator.simulate()
                 metrics.append(simulator.get_metrics())
-                axs[i].clear()
-                simulator.render(axs[i], freq=render_angle_freq)
-                axs[i].set_title('#{:d}, {:s}'.format(i, axs[i].get_title()))
+                self._plot_episode(i, data)
 
-            # Collect and log the metrics
-            metrics_keys, metrics_vals = simulator.collect_metrics(metrics,
-                                                                   termination_reasons=self.p.simulator_params.episode_termination_reasons)
+            # Collect and Process the metrics
+            metrics_keys, metrics_vals = self._process_metrics(data, metrics, log_metrics)
             metrics_keyss.append(metrics_keys)
             metrics_valss.append(metrics_vals)
-            if log_metrics:
-                metrics_filename = os.path.join(self.p.session_dir, dirname,
-                                                '{:s}.json'.format(name.lower()))
-                utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)), metrics_filename)
 
-            # Save the figure
-            fig.suptitle(name)
-            figname = os.path.join(self.p.session_dir, dirname, '{:s}.png'.format(name.lower()))
-            fig.savefig(figname, bbox_inches='tight')
+            # Save the figure(s)
+            self._save_figures(data)
         return metrics_keyss, metrics_valss
+
+    def _process_metrics(self, data, metrics, log_metrics=True):
+        simulator = data['simulator']
+        name = data['name']
+        dirname = data['dir']
+
+        # Collect and log the metrics
+        metrics_keys, metrics_vals = simulator.collect_metrics(metrics,
+                                                               termination_reasons=self.p.simulator_params.episode_termination_reasons)
+        if log_metrics:
+            metrics_filename = os.path.join(self.p.session_dir, dirname,
+                                            '{:s}.json'.format(name.lower()))
+            utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)), metrics_filename)
+        return metrics_keys, metrics_vals
+
+    def _plot_episode(self, i, data):
+        """
+        Render a vehicle trajectory and optionally the associated
+        control profiles.
+        """
+        render_angle_freq = utils.render_angle_frequency(self.p.simulator_params)
+
+        axs = data['axs']
+        simulator = data['simulator']
+
+        axs[i].clear()
+        simulator.render(axs[i], freq=render_angle_freq)
+        axs[i].set_title('#{:d}, {:s}'.format(i, axs[i].get_title()))
+
+        if 'ctrl_plots' in data:
+            axs_v = data['ctrl_plots']['axs_v']
+            axs_w = data['ctrl_plots']['axs_w']
+
+            axs_v[i].clear()
+            axs_w[i].clear()
+
+            simulator.render_velocities(axs_v[i], axs_w[i])
+            axs_v[i].set_title('#{:d}, {:s}'.format(i, axs_v[i].get_title()))
+            axs_w[i].set_title('#{:d}, {:s}'.format(i, axs_w[i].get_title()))
+
+    def _save_figures(self, data):
+        """
+        Save figures with vehicle trajectories and
+        optionally control profiles as well.
+        """
+        fig = data['fig']
+        name = data['name']
+        dirname = data['dir']
+        fig.suptitle(name)
+        figname = os.path.join(self.p.session_dir, dirname, '{:s}.png'.format(name.lower()))
+        fig.savefig(figname, bbox_inches='tight')
+
+        if 'ctrl_plots' in data:
+            fig_v = data['ctrl_plots']['fig_v']
+            fig_w = data['ctrl_plots']['fig_w']
+
+            fig_v.suptitle('{:s} Linear Velocity'.format(name))
+            figname = os.path.join(self.p.session_dir, dirname,
+                                   '{:s}_linear_velocity.png'.format(name.lower()))
+            fig_v.savefig(figname, bbox_inches='tight')
+
+            fig_w.suptitle('{:s} Angular Velocity'.format(name))
+            figname = os.path.join(self.p.session_dir, dirname,
+                                   '{:s}_angular_velocity.png'.format(name.lower()))
+            fig_w.savefig(figname, bbox_inches='tight')
 
     def _nn_simulator_params(self):
         """
