@@ -22,6 +22,8 @@ def load_params(goals_n5):
     # The directory for saving the control pipeline files
     p.dir = './tmp/visualize_control_pipelines'
 
+    p.minimum_spline_horizon = 1.5
+
     # Spline parameters
     p.spline_params = DotMap(spline=Spline3rdOrder,
                              max_final_time=6.0,
@@ -42,14 +44,11 @@ def load_params(goals_n5):
     p.waypoint_params = DotMap(grid=UserDefinedGrid,
                                goals_n5=goals_n5)
 
-    p.waypoint_params = waypoint_params.parse_params(p.waypoint_params)
-
     # Velocity binning parameters (TODO- make this work for other velocities)
     p.binning_parameters = DotMap(num_bins=1,
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 
     p.verbose = True
-    p = control_pipeline_params.parse_params(p)
     return p
 
 
@@ -84,7 +83,7 @@ def visualize():
 
 def main():
     plt.style.use('ggplot')
-    tf.enable_eager_execution(config=utils.gpu_config())
+    tf.enable_eager_execution(**utils.tf_session_config())
     visualize()
    
 

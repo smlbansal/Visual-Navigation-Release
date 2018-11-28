@@ -35,6 +35,18 @@ class Simulator:
         p.dt = dt
         return p
 
+    # TODO: Varun. Make the planner interface at a trajectory level
+    # vehicle_data should store trajectory segments
+    # vehicle trajectory should be created from trajectory segments (to avoid duplication)
+    # Create a function create_vehicle_trajectory_from_segments
+    # which takes vehicle_data and start_config
+    # appending all the segments (but skipping the first element) to start config
+    
+    # TODO: Dont clip the vehicle trajectory object, but store the time index of when
+    # the episode ends. Use this when plotting stuff
+    # TODO: Does clipping the vehicle_data on success ever mess up data collection?
+    # TODO: Do simulated vs LQR generated trajectories match the standard of
+    # trajectory length??
     def simulate(self):
         """ A function that simulates an entire episode. The agent starts at self.start_config, repeatedly
         calling _iterate to generate subtrajectories. Generates a vehicle_trajectory for the episode, calculates its
@@ -57,6 +69,8 @@ class Simulator:
         self.vehicle_trajectory, self.vehicle_data, self.episode_type, self.valid_episode = episode_data
         self.obj_val = self._compute_objective_value(self.vehicle_trajectory)
 
+    # TODO: Varun make the planner interface at a trajectory level
+    # TODO: Varun. Call _simulate control for control_horizon steps
     def _iterate(self, config):
         """ Runs the planner for one step from config to generate a
         subtrajectory, the resulting robot config after the robot executes

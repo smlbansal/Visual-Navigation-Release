@@ -45,9 +45,13 @@ class TopViewTrainer(TrainerFrontendHelper):
         simulator = p.simulator(p)
 
         # Create Figures/ Axes
-        sqrt_num_plots = int(np.ceil(np.sqrt(num_tests)))
-        fig, _, axs = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
-                                     (8, 8), (.4, .4))
+        #sqrt_num_plots = int(np.ceil(np.sqrt(num_tests)))
+        if plot_controls:
+            # Each row has 2 more subplots for linear and angular velocity respectively
+            fig, _, axs = utils.subplot2(plt, (num_tests, 3), (8, 8), (.4, .4))
+        else:
+            fig, _, axs = utils.subplot2(plt, (num_tests, 1), (8, 8), (.4, .4))
+
         axs = axs[::-1]
 
         # Construct data dictionray
@@ -59,20 +63,20 @@ class TopViewTrainer(TrainerFrontendHelper):
                           'n': num_tests,
                           'seed': seed}
 
-        if plot_controls:
-            fig_v, _, axs_v = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
-                                                   (8, 8), (.4, .4))
-            fig_w, _, axs_w = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
-                                                   (8, 8), (.4, .4))
+        #if plot_controls:
+        #    fig_v, _, axs_v = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
+        #                                           (8, 8), (.4, .4))
+        #    fig_w, _, axs_w = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
+        #                                           (8, 8), (.4, .4))
 
 
-            axs_v = axs_v[::-1]
-            axs_w = axs_w[::-1]
-
-            simulator_data['ctrl_plots'] = {'fig_v': fig_v,
-                                            'axs_v': axs_v,
-                                            'fig_w': fig_w,
-                                            'axs_w': axs_w}
+         #   axs_v = axs_v[::-1]
+ #           axs_w = axs_w[::-1]
+#
+  #          simulator_data['ctrl_plots'] = {'fig_v': fig_v,
+    #                                        'axs_v': axs_v,
+   #                                         'fig_w': fig_w,
+     #                                       'axs_w': axs_w}
 
         return simulator_data
 
@@ -130,6 +134,8 @@ class TopViewTrainer(TrainerFrontendHelper):
                                                         self.p.trainer.callback_seed,
                                                         dirname='callbacks')
 
+    #TODO: Change the shape of the plot to be long and vertical
+    # each row should have a trajectory and optionally a v,w plot
     def test(self):
         """
         Test a trained network. Optionally test the expert policy as well.
@@ -158,9 +164,10 @@ class TopViewTrainer(TrainerFrontendHelper):
                 simulator_datas.append(expert_simulator_data)
 
             # Test the simulators
-            self.simulate(simulator_datas, log_metrics=True)
+            self.simulate(simulator_datas, log_metrics=True,
+                          plot_controls=self.p.test.plot_controls)
 
-    def simulate(self, simulator_datas, log_metrics=True):
+    def simulate(self, simulator_datas, log_metrics=True, plot_controls=False):
         """
         Takes simulator_datas a list of dictionaries of simulator_data. The keys of
         each dictionary are expected to be [name, simulator, fig, axs, dir, n, seed].
@@ -179,7 +186,7 @@ class TopViewTrainer(TrainerFrontendHelper):
                     simulator.reset(seed=-1)
                 simulator.simulate()
                 metrics.append(simulator.get_metrics())
-                self._plot_episode(i, data)
+                self._plot_episode(i, data, plot_controls=plot_controls)
 
             # Collect and Process the metrics
             metrics_keys, metrics_vals = self._process_metrics(data, metrics, log_metrics)
@@ -204,7 +211,7 @@ class TopViewTrainer(TrainerFrontendHelper):
             utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)), metrics_filename)
         return metrics_keys, metrics_vals
 
-    def _plot_episode(self, i, data):
+    def _plot_episode(self, i, data, plot_controls=False):
         """
         Render a vehicle trajectory and optionally the associated
         control profiles.
@@ -214,20 +221,25 @@ class TopViewTrainer(TrainerFrontendHelper):
         axs = data['axs']
         simulator = data['simulator']
 
-        axs[i].clear()
-        simulator.render(axs[i], freq=render_angle_freq)
-        axs[i].set_title('#{:d}, {:s}'.format(i, axs[i].get_title()))
+        if plot_controls:
+            ax_traj = axs[3*i]
+            axs_v = axs[3*i+1]
+            axs_w = axs[3*i+2]
 
-        if 'ctrl_plots' in data:
-            axs_v = data['ctrl_plots']['axs_v']
-            axs_w = data['ctrl_plots']['axs_w']
+            ax_traj.clear()
+            axs_v.clear()
+            axs_w.clear()
 
-            axs_v[i].clear()
-            axs_w[i].clear()
+            simulator.render(ax_traj, freq=render_angle_freq)
+            simulator.render_velocities(axs_v, axs_w)
 
-            simulator.render_velocities(axs_v[i], axs_w[i])
-            axs_v[i].set_title('#{:d}, {:s}'.format(i, axs_v[i].get_title()))
-            axs_w[i].set_title('#{:d}, {:s}'.format(i, axs_w[i].get_title()))
+            ax_traj.set_title('#{:d}, {:s}'.format(i, ax_traj.get_title()))
+            axs_v.set_title('#{:d}, {:s}'.format(i, axs_v.get_title()))
+            axs_w.set_title('#{:d}, {:s}'.format(i, axs_w.get_title()))
+        else:
+            axs[i].clear()
+            simulator.render(axs[i], freq=render_angle_freq)
+            axs[i].set_title('#{:d}, {:s}'.format(i, axs[i].get_title()))
 
     def _save_figures(self, data):
         """
@@ -238,22 +250,8 @@ class TopViewTrainer(TrainerFrontendHelper):
         name = data['name']
         dirname = data['dir']
         fig.suptitle(name)
-        figname = os.path.join(self.p.session_dir, dirname, '{:s}.png'.format(name.lower()))
+        figname = os.path.join(self.p.session_dir, dirname, '{:s}.pdf'.format(name.lower()))
         fig.savefig(figname, bbox_inches='tight')
-
-        if 'ctrl_plots' in data:
-            fig_v = data['ctrl_plots']['fig_v']
-            fig_w = data['ctrl_plots']['fig_w']
-
-            fig_v.suptitle('{:s} Linear Velocity'.format(name))
-            figname = os.path.join(self.p.session_dir, dirname,
-                                   '{:s}_linear_velocity.png'.format(name.lower()))
-            fig_v.savefig(figname, bbox_inches='tight')
-
-            fig_w.suptitle('{:s} Angular Velocity'.format(name))
-            figname = os.path.join(self.p.session_dir, dirname,
-                                   '{:s}_angular_velocity.png'.format(name.lower()))
-            fig_w.savefig(figname, bbox_inches='tight')
 
     def _nn_simulator_params(self):
         """

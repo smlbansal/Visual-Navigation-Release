@@ -91,7 +91,7 @@ def create_params():
                         num_epochs=400,
         
                         # Total number of samples in the dataset
-                        num_samples=int(100e3),
+                        num_samples=int(10e3),
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
@@ -103,7 +103,7 @@ def create_params():
                         optimizer=tf.train.AdamOptimizer,
         
                         # Learning rate
-                        lr=1e-5,
+                        lr=1e-4,
                         
                         # Learning schedule
                         learning_schedule=1,
@@ -114,7 +114,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=10,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/nn_waypoint/train_full_episode_100k/session_2018-11-23_09-42-56/checkpoints/ckpt-40',
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/nn_waypoint/train_full_episode_10k/session_2018-11-27_14-54-14/checkpoints/ckpt-40',
 
                         # Callback settings
                         callback_frequency=20,
@@ -153,6 +153,10 @@ def create_params():
                                 simulator_params = simulator_params
     )
 
+    # Custom Simulator Parameters for Testing
+    simulator_params = deepcopy(p.simulator_params)
+    #simulator_params.control_horizon_s = simulator_params.system_dynamics_params.dt
+
     # Test parameters
     p.test = DotMap(
                     # Test seed
@@ -160,12 +164,12 @@ def create_params():
                     
                     simulate_expert=False,
                     
-                    number_tests=10,
+                    number_tests=100,
 
                     plot_controls=True,
                     
                     # Custom Simulator Parameters for Testing. Add more as needed
-                    simulator_params=deepcopy(p.simulator_params)
+                    simulator_params=simulator_params
     )
 
     return p
