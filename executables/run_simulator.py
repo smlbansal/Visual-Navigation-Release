@@ -74,6 +74,7 @@ def simulate(plot_controls=False):
     tf.set_random_seed(p.seed)
     np.random.seed(p.seed)
 
+    import pdb; pdb.set_trace()
     sim = p.simulator(params=p)
 
     metrics = []

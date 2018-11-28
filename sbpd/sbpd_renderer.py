@@ -1,6 +1,6 @@
 from mp_env.render import swiftshader_renderer as sr
 from mp_env import sbpd, map_utils as mu
-from src import utils, depth_utils as du
+from utils import depth_utils as du
 import numpy as np
 
 
@@ -14,8 +14,8 @@ class SBPDRenderer():
     def __init__(self, params):
         self.p = params
 
-        d = sbpd.get_dataset(dataset_name, 'all')
-        self.building = d.load_data(building_name, self.p.robot_params, flip)
+        d = sbpd.get_dataset(self.p.dataset_name, 'all')
+        self.building = d.load_data(self.p.building_name, self.p.robot_params, self.p.flip)
         r_obj = sr.get_r_obj(self.p.camera_params)
         self.building.set_r_obj(r_obj)
         self.building.load_building_into_scene()
@@ -26,16 +26,16 @@ class SBPDRenderer():
         Used to instantiate a renderer object. Ensures that only one renderer
         object ever exists in memory.
         """
-        r = ImageRenderer.renderer
-        if ImageRenderer.renderer is not None:
-            dn, bn, f, c, rem = r.p.dataset_name, r.p.building_name, r.p.flip, r.p.modalities
+        r = SBPDRenderer.renderer
+        if SBPDRenderer.renderer is not None:
+            dn, bn, f, c = r.p.dataset_name, r.p.building_name, r.p.flip, r.p.modalities
             if dn == params.dataset_name and bn == params.building_name and f == params.flip and c == params.modalities:
                 return r
             else:
                 assert(False, "Renderer settings are different than previously instantiated renderer")
 
-        ImageRenderer.renderer = ImageRenderer(params)
-        return ImageRenderer.renderer
+        SBPDRenderer.renderer = SBPDRenderer(params)
+        return SBPDRenderer.renderer
 
     def _get_rgb_image(self, starts, thetas):
         """
