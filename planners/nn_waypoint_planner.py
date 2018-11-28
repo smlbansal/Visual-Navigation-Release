@@ -54,6 +54,7 @@ class NNWaypointPlanner(NNPlanner):
         # Convert horizon in seconds to horizon in # of steps
         min_horizon = int(tf.ceil(horizons_s[min_idx, 0]/self.params.dt).numpy())
 
+        #TODO: Add the image here
         data = {'system_config': SystemConfig.copy(start_config),
                 'waypoint_config': SystemConfig.copy(self.opt_waypt),
                 'trajectory': Trajectory.copy(self.opt_traj),

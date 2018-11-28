@@ -30,6 +30,8 @@ class NNPlanner(Planner):
         # Convert Goal to Egocentric Coordinates
         self.params.system_dynamics.to_egocentric_coordinates(start_config, simulator.goal_config, self.goal_ego_config)
         
+        # TODO Varun Check if using sbpd or circular obstacle map here
+
         # Obstacle Data
         data['obs_centers_nm2'] = simulator.obstacle_map.obstacle_centers_m2[tf.newaxis, :, :].numpy()
         data['obs_radii_nm1'] = simulator.obstacle_map.obstacle_radii_m1[tf.newaxis, :, :].numpy()
