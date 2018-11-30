@@ -107,7 +107,7 @@ class Simulator:
         """
         Return the robot's observation from configuration config.
         """
-        return None
+        return [None]*config.n
 
     def _clip_along_time_axis(self, traj, data, horizon, mode='new'):
         """ Clip a trajectory and the associated LQR controllers

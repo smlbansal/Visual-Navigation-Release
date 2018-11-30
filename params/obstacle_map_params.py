@@ -1,22 +1,17 @@
 from dotmap import DotMap
 from utils import utils
-from obstacles.sbpd_map import SBPDMap
+from obstacles.circular_obstacle_map import CircularObstacleMap
 
-dependencies = ['renderer_params']
+dependencies = []
 
 
 def load_params():
     # Load the dependencies
     p = DotMap({dependency: utils.load_params(dependency) for dependency in dependencies})
 
-    p.obstacle_map = SBPDMap
+    p.obstacle_map = CircularObstacleMap
 
-    # Origin is always 0,0 for SBPD
-    p.map_origin_2 = [0, 0]
-
-    # Threshold distance from the obstacles to sample the start and the goal positions.
-    p.sampling_thres = 2
-
-    # Number of grid steps around the start position to use for plotting
-    p.plotting_grid_steps = 100
+    # [[min_x, min_y], [max_x, max_y]]
+    p.map_bounds = [[0.0, 0.0], [8.0, 8.0]]
+    p.dx = .05  # grid discretization for FmmMap and Obstacle Occupancy Grid
     return p

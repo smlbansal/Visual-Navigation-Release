@@ -20,7 +20,7 @@ class CircularObstacleMapSimulator(Simulator):
         map the underlying obstacle map may change so
         create a new fmm_map object.
         """
-        self._init_fmm_map()
+        self.fmm_map = self._init_fmm_map()
         self._update_obj_fn()
 
     def _init_obstacle_map(self, rng):
@@ -28,7 +28,8 @@ class CircularObstacleMapSimulator(Simulator):
         p = self.params
         return p.obstacle_map_params.obstacle_map.init_random_map(map_bounds=p.obstacle_map_params.map_bounds,
                                                                   rng=rng,
-                                                                  params=p.reset_params.obstacle_map.params)
+                                                                  reset_params=p.reset_params.obstacle_map.params,
+                                                                  params=p.obstacle_map_params)
 
     def _render_obstacle_map(self, ax):
         p = self.params

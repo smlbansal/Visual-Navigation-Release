@@ -12,7 +12,8 @@ def load_params():
     p = DotMap({dependency: utils.load_params(dependency)
                 for dependency in dependencies})
 
-    p.simulator = SBPDSimulator
+    #p.simulator = SBPDSimulator
+    p.simulator = CircularObstacleMapSimulator
 
     p.seed = 1  # seed for the simulator (different than for numpy and tf)
 
@@ -87,5 +88,5 @@ def load_params():
     p.episode_termination_colors = ['b', 'r', 'g']
     p.waypt_cmap = 'winter'
 
-    p.num_validation_goals = 30
+    p.num_validation_goals = 4
     return p

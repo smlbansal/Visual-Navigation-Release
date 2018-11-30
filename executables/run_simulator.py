@@ -67,7 +67,7 @@ v = []
 w = []
 
 
-def simulate(plot_controls=False):
+def simulate(plot_controls, log_fpv_images, save_lqr, plot_velocity_hist):
     p = utils.load_params('simulator_params')
     print(logdir)
     utils.mkdir_if_missing(logdir)
@@ -105,14 +105,15 @@ def simulate(plot_controls=False):
         axs = axss[i]
         sim.render(axs, freq=render_angle_freq, render_velocities=plot_controls,
                    prepend_title=prepend_title)
-    
-        log_images(i, sim, logdir)
+   
+        if log_fpv_images:
+            log_images(i, sim, logdir)
 
     plot_velocity_profile_hisotogram(v, w)
     metrics_keys, metrics_vals = sim.collect_metrics(metrics,
                                                      termination_reasons=p.simulator_params.episode_termination_reasons)
     fig.suptitle('{:s}'.format(sim.name))
-    figname = os.path.join(logdir, '{:s}.png'.format(sim.name.lower()))
+    figname = os.path.join(logdir, '{:s}.pdf'.format(sim.name.lower()))
     fig.savefig(figname, bbox_inches='tight')
 
     utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)),
@@ -126,8 +127,15 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--plot_controls', type=bool, default=False)
+    parser.add_argument('--log_fpv_images', type=bool, default=False)
+    parser.add_argument('--save_lqr', type=bool, default=False)
+    parser.add_argument('--plot_velocity_hist', type=bool, default=False)
     args = parser.parse_args()
-    simulate(plot_controls=args.plot_controls)
+    simulate(plot_controls=args.plot_controls,
+             log_fpv_images=args.log_fpv_images,
+             save_lqr=args.save_lqr,
+             plot_velocity_hist=args.plot_velocity_hist
+             )
 
 
 if __name__ == '__main__':

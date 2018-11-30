@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 class CircularObstacleMap(ObstacleMap):
-    def __init__(self, map_bounds, centers_m2, radii_m1):
+    def __init__(self, map_bounds, centers_m2, radii_m1, params):
         """ initialize a circular obstacle grid
         with map bounds [(x_min,y_min), (x_max,y_max)]
         circle centers centers_m2=[[x_1,y_1],...,[x_2,y_2]] and radii radii_m1=[[r1],[r2],...]
@@ -14,6 +14,8 @@ class CircularObstacleMap(ObstacleMap):
         self.num_obstacles = len(radii_m1)
         self.obstacle_centers_m2 = tf.constant(centers_m2, name='circle_centers', dtype=tf.float32)
         self.obstacle_radii_m1 = tf.constant(radii_m1, name='circle_radii', dtype=tf.float32)
+
+        self.p = self.parse_params(params)
 
     @staticmethod
     def parse_params(p):
@@ -34,13 +36,14 @@ class CircularObstacleMap(ObstacleMap):
         return p
 
     @classmethod
-    def init_random_map(cls, map_bounds, rng, params):
-        min_n, max_n, min_r, max_r = params.min_n, params.max_n, params.min_r, params.max_r
+    def init_random_map(cls, map_bounds, rng, reset_params, params):
+        min_n, max_n, min_r, max_r = reset_params.min_n, reset_params.max_n, reset_params.min_r, reset_params.max_r
         assert(min_r > 0 and max_r > 0)
         num_obstacles = rng.randint(min_n, max_n+1)
         return cls(map_bounds=map_bounds,
                    centers_m2=rng.uniform(map_bounds[0], map_bounds[1], (num_obstacles, 2)),
-                   radii_m1=rng.uniform(min_r, max_r, (num_obstacles, 1)))
+                   radii_m1=rng.uniform(min_r, max_r, (num_obstacles, 1)),
+                   params=params)
 
     def dist_to_nearest_obs(self, pos_nk2):
         with tf.name_scope('dist_to_obs'):
@@ -59,19 +62,19 @@ class CircularObstacleMap(ObstacleMap):
     def create_occupancy_grid(self):
         """ Creates an occupancy grid where 0 and 1 represent free
             and occupied space respectively. """
-        mb = p.map_bounds
-        Nx, Ny = p.map_size_2
+        mb = self.p.map_bounds
+        Nx, Ny = self.p.map_size_2
         xx, yy = np.meshgrid(np.linspace(mb[0][0], mb[1][0], Nx),
                              np.linspace(mb[0][1], mb[1][1], Ny),
                              indexing='xy')
 
-        xx = tf.constant(xx, dtype=tf.float32)
-        yy = tf.constant(yy, dtype=tf.float32)
-        
-        grid_nn2 = tf.stack([xs_nn, ys_nn], axis=2)
-        dists_nn = self.dist_to_nearest_obs(grid_nn2)
-        occupancy_grid_nn = tf.nn.relu(tf.sign(dists_nn*-1))
-        return occupancy_grid_nn
+        xs_nm = tf.constant(xx, dtype=tf.float32)
+        ys_nm = tf.constant(yy, dtype=tf.float32)
+
+        grid_nm2 = tf.stack([xs_nm, ys_nm], axis=2)
+        dists_nm = self.dist_to_nearest_obs(grid_nm2)
+        occupancy_grid_nm = tf.nn.relu(tf.sign(dists_nm*-1))
+        return occupancy_grid_nm
 
     def render(self, ax):
         for i in range(self.num_obstacles):
