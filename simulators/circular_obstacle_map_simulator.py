@@ -3,7 +3,7 @@ from simulators.simulator import Simulator
 
 
 class CircularObstacleMapSimulator(Simulator):
-    name = 'Ciruclar Obstacle Map Simulator'
+    name = 'Circular_Obstacle_Map_Simulator'
 
     def __init__(self, params):
         assert(params.obstacle_map_params.obstacle_map is CircularObstacleMap)

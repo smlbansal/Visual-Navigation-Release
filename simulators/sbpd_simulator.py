@@ -3,7 +3,7 @@ from simulators.simulator import Simulator
 
 
 class SBPDSimulator(Simulator):
-    name = 'SBPD Simulator'
+    name = 'SBPD_Simulator'
 
     def __init__(self, params):
         assert(params.obstacle_map_params.obstacle_map is SBPDMap)

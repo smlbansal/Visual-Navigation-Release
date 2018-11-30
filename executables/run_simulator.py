@@ -57,7 +57,16 @@ def log_images(i, sim, logdir):
     axs = axs[::-1]
     for idx, img in enumerate(imgs):
         ax = axs[idx]
-        ax.imshow(img.astype(np.int32))
+        if img.shape[0] == 1:  # plot a topview image
+            size = img[0].shape[0]*sim.params.obstacle_map_params.dx
+            ax.imshow(img[0], cmap='gray', extent=(0, size, -size/2.0, size/2.0))
+
+            # Plot the robot position and heading for convenience
+            ax.plot(0, 0, 'r.', markersize=30)
+            ax.quiver(0, 0, 1., 0., color='red')
+
+        else:
+            ax.imshow(img.astype(np.int32))
         ax.set_title('Image {:d}'.format(idx))
         ax.grid('off')
     filename = os.path.join(logdir, 'fpv.png')
@@ -94,30 +103,32 @@ def simulate(plot_controls, log_fpv_images, save_lqr, plot_velocity_hist):
         if i != 0:
             sim.reset(seed=-1)
         sim.simulate()
-        metrics.append(sim.get_metrics())
+        if sim.valid_episode:
+            metrics.append(sim.get_metrics())
 
-        ### Debugging stuff
-        v.append(sim.vehicle_trajectory.speed_nk1().numpy())
-        w.append(sim.vehicle_trajectory.angular_speed_nk1().numpy())
+            # Plot Stuff
+            prepend_title = '#{:d}, '.format(i)
+            axs = axss[i]
+            sim.render(axs, freq=render_angle_freq, render_velocities=plot_controls,
+                       prepend_title=prepend_title)
+       
+            if log_fpv_images:
+                log_images(i, sim, logdir)
 
-        # Plot Stuff
-        prepend_title = '#{:d}, '.format(i)
-        axs = axss[i]
-        sim.render(axs, freq=render_angle_freq, render_velocities=plot_controls,
-                   prepend_title=prepend_title)
-   
-        if log_fpv_images:
-            log_images(i, sim, logdir)
+            if plot_velocity_hist:
+                v.append(sim.vehicle_trajectory.speed_nk1().numpy())
+                w.append(sim.vehicle_trajectory.angular_speed_nk1().numpy())
 
-    plot_velocity_profile_hisotogram(v, w)
     metrics_keys, metrics_vals = sim.collect_metrics(metrics,
                                                      termination_reasons=p.simulator_params.episode_termination_reasons)
     fig.suptitle('{:s}'.format(sim.name))
     figname = os.path.join(logdir, '{:s}.pdf'.format(sim.name.lower()))
-    fig.savefig(figname, bbox_inches='tight')
+    fig.savefig(figname, bbox_inches='tight', pad_inches=0)
 
     utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)),
                            os.path.join(logdir, 'metrics.json'))
+    if plot_velocity_hist:
+        plot_velocity_profile_hisotogram(v, w)
 
 
 def main():

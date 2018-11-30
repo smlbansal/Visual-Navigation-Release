@@ -30,22 +30,22 @@ class SBPDRenderer():
         else:
             assert(False)
 
-    @staticmethod
-    def get_renderer(params):
+    @classmethod
+    def get_renderer(cls, params):
         """
         Used to instantiate a renderer object. Ensures that only one renderer
-        object ever exists in memory.
+        object ever exists as they are very memory intensive.
         """
-        r = SBPDRenderer.renderer
-        if SBPDRenderer.renderer is not None:
+        r = cls.renderer
+        if r is not None:
             dn, bn, f, c = r.p.dataset_name, r.p.building_name, r.p.flip, r.p.modalities
             if dn == params.dataset_name and bn == params.building_name and f == params.flip and c == params.modalities:
                 return r
             else:
                 assert(False, "Renderer settings are different than previously instantiated renderer")
 
-        SBPDRenderer.renderer = SBPDRenderer(params)
-        return SBPDRenderer.renderer
+        cls.renderer = cls(params)
+        return cls.renderer
 
     def render_images(self, starts_n2, thetas_n1):
         """
@@ -82,10 +82,16 @@ class SBPDRenderer():
         in starts and thetas.
         """
         traversible_map = self.building.map.traversible * 1.
+        
+        # In the topview the positive x axis points to the right and 
+        # the positive y axis points up. The robot is located at
+        # (0, (crop_size-1)/2) (in pixel coordinates) facing directly to the right
         x_axis = np.concatenate([np.cos(thetas), np.sin(thetas)], axis=1)
-        y_axis = np.concatenate([np.cos(thetas + np.pi / 2.), np.sin(thetas + np.pi / 2.)], axis=1)
+        y_axis = -np.concatenate([np.cos(thetas + np.pi / 2.), np.sin(thetas + np.pi / 2.)], axis=1)
+        robot_loc = np.array([0, (crop_size-1.)/2.])
         crops = mu.generate_egocentric_maps([traversible_map], [1.0], [crop_size],
-                                            starts, x_axis, y_axis, dst_theta=np.pi / 2.0)
+                                            starts, x_axis, y_axis, dst_theta=0.,
+                                            dst_loc=robot_loc)
 
         # Invert the crops so that 1.0 corresponds to occupied space
         # and 0.0 corresponds to free space

@@ -12,8 +12,8 @@ def load_params():
     p = DotMap({dependency: utils.load_params(dependency)
                 for dependency in dependencies})
 
-    #p.simulator = SBPDSimulator
-    p.simulator = CircularObstacleMapSimulator
+    p.simulator = SBPDSimulator
+    #p.simulator = CircularObstacleMapSimulator
 
     p.seed = 1  # seed for the simulator (different than for numpy and tf)
 
