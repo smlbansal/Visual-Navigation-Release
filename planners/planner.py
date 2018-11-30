@@ -57,6 +57,7 @@ class Planner:
         """Returns a dictionary with keys mapping to empty lists
         for each datum computed by a planner."""
         data = {'system_config': [],
+                'observation_n': [],
                 'waypoint_config': [],
                 'trajectory': [],
                 'planning_horizon': [],
@@ -88,6 +89,7 @@ class Planner:
         data_times = np.cumsum([traj.k for traj in data['trajectory']])
         valid_mask = (data_times <= k)
         data['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[valid_mask])
+        data['observation_n'] = np.array(data['observation_n'])[valid_mask] 
         data['waypoint_config'] = SystemConfig.concat_across_batch_dim(np.array(data['waypoint_config'])[valid_mask])
         data['trajectory'] = Trajectory.concat_across_batch_dim(np.array(data['trajectory'])[valid_mask])
         data['planning_horizon_n1'] = np.array(data['planning_horizon'])[valid_mask][:, None]

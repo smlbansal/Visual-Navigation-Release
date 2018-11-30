@@ -15,6 +15,24 @@ class CircularObstacleMap(ObstacleMap):
         self.obstacle_centers_m2 = tf.constant(centers_m2, name='circle_centers', dtype=tf.float32)
         self.obstacle_radii_m1 = tf.constant(radii_m1, name='circle_radii', dtype=tf.float32)
 
+    @staticmethod
+    def parse_params(p):
+        """
+        Parse the parameters to add some additional helpful parameters.
+        """
+        mb = p.map_bounds
+        dx = p.dx
+        origin_x = int(mb[0][0] / dx)
+        origin_y = int(mb[0][1] / dx)
+        p.map_origin_2 = np.array(
+            [origin_x, origin_y], dtype=np.int32)
+
+        Nx = int((mb[1][0] - mb[0][0]) / dx)
+        Ny = int((mb[1][1] - mb[0][1]) / dx)
+        p.map_size_2 = [Nx, Ny]
+
+        return p
+
     @classmethod
     def init_random_map(cls, map_bounds, rng, params):
         min_n, max_n, min_r, max_r = params.min_n, params.max_n, params.min_r, params.max_r
@@ -38,9 +56,18 @@ class CircularObstacleMap(ObstacleMap):
         goal_y = rng.uniform(mb[0][1], mb[1][1])
         return np.array([goal_x, goal_y], dtype=np.float32)[None, None]
 
-    def create_occupancy_grid(self, xs_nn, ys_nn):
+    def create_occupancy_grid(self):
         """ Creates an occupancy grid where 0 and 1 represent free
             and occupied space respectively. """
+        mb = p.map_bounds
+        Nx, Ny = p.map_size_2
+        xx, yy = np.meshgrid(np.linspace(mb[0][0], mb[1][0], Nx),
+                             np.linspace(mb[0][1], mb[1][1], Ny),
+                             indexing='xy')
+
+        xx = tf.constant(xx, dtype=tf.float32)
+        yy = tf.constant(yy, dtype=tf.float32)
+        
         grid_nn2 = tf.stack([xs_nn, ys_nn], axis=2)
         dists_nn = self.dist_to_nearest_obs(grid_nn2)
         occupancy_grid_nn = tf.nn.relu(tf.sign(dists_nn*-1))

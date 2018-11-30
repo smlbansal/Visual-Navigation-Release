@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 from planners.planner import Planner
 from trajectory.trajectory import Trajectory, SystemConfig
 
@@ -46,6 +45,7 @@ class SamplingPlanner(Planner):
         min_horizon = int(tf.ceil(horizons_s[min_idx, 0] / self.params.dt).numpy())
 
         data = {'system_config': SystemConfig.copy(start_config),
+                'observation_n': self.simulator.get_observation(start_config)[0],
                 'waypoint_config': SystemConfig.copy(self.opt_waypt),
                 'trajectory': Trajectory.copy(self.opt_traj),
                 'planning_horizon': min_horizon,

@@ -2,7 +2,7 @@ from dotmap import DotMap
 from utils import utils
 from obstacles.sbpd_map import SBPDMap
 
-dependencies = ['camera_params']
+dependencies = ['renderer_params']
 
 
 def load_params():
@@ -11,9 +11,12 @@ def load_params():
 
     p.obstacle_map = SBPDMap
 
-    p.image_renderer = DotMap(dataset_name='sbpd',
-    						  building_name='area3',
-    						  flip=False)
+    # Origin is always 0,0 for SBPD
+    p.map_origin_2 = [0, 0]
 
-    p.dx = .05  # grid discretization for FmmMap and Obstacle Occupancy Grid
+    # Threshold distance from the obstacles to sample the start and the goal positions.
+    p.sampling_thres = 2
+
+    # Number of grid steps around the start position to use for plotting
+    p.plotting_grid_steps = 100
     return p

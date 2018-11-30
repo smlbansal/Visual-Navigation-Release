@@ -2,6 +2,7 @@ from dotmap import DotMap
 from utils import utils
 import numpy as np
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
+from simulators.sbpd_simulator import SBPDSimulator
 
 dependencies = ['planner_params', 'obstacle_map_params', 'system_dynamics_params']
 
@@ -11,7 +12,7 @@ def load_params():
     p = DotMap({dependency: utils.load_params(dependency)
                 for dependency in dependencies})
 
-    p.simulator = CircularObstacleMapSimulator
+    p.simulator = SBPDSimulator
 
     p.seed = 1  # seed for the simulator (different than for numpy and tf)
 
@@ -66,11 +67,16 @@ def load_params():
                                                     gaussian_params=[0.0, .5]  # [mean, variance]
                                                 )
                             ),
+                            # 'random max dist': the goal position is initialized randomly on the
+                                                    # map but at least at a distance of the obstacle margin from the
+                                                    # obstacle and at most max_dist from the start.
+
                             goal_config=DotMap(
                                                 position=DotMap(
                                                     # For description of reset types see position parameters in the
                                                     # start_config above.
-                                                    reset_type='random'
+                                                    reset_type='random_max_dist',
+                                                    max_dist=6.0
                                                 )
                             )
     )
@@ -81,5 +87,5 @@ def load_params():
     p.episode_termination_colors = ['b', 'r', 'g']
     p.waypt_cmap = 'winter'
 
-    p.num_validation_goals = 100
+    p.num_validation_goals = 30
     return p

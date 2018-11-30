@@ -6,7 +6,7 @@ import numpy as np
 
 class SBPDRenderer():
     """
-    An image renderer to render images from the 
+    An image renderer to render images from the
     SBPD dataset.
     """
     renderer = None
@@ -16,9 +16,19 @@ class SBPDRenderer():
 
         d = sbpd.get_dataset(self.p.dataset_name, 'all')
         self.building = d.load_data(self.p.building_name, self.p.robot_params, self.p.flip)
-        r_obj = sr.get_r_obj(self.p.camera_params)
-        self.building.set_r_obj(r_obj)
-        self.building.load_building_into_scene()
+
+        assert(len(self.p.camera_params.modalities) == 1)
+        # Instantiating a camera/ shader object is only needed
+        # for rgb and depth images
+        if 'rgb' in self.p.camera_params.modalities or 'depth' in self.p.camera_params.modalities:
+            r_obj = sr.get_r_obj(self.p.camera_params)
+            self.building.set_r_obj(r_obj)
+            self.building.load_building_into_scene()
+        elif 'occupancy_grid' in self.p.camera_params.modalities:
+            # MP Env only allows for square top views to be generated currently
+            assert(self.p.camera_params.width == self.p.camera_params.height)
+        else:
+            assert(False)
 
     @staticmethod
     def get_renderer(params):
@@ -36,6 +46,23 @@ class SBPDRenderer():
 
         SBPDRenderer.renderer = SBPDRenderer(params)
         return SBPDRenderer.renderer
+
+    def render_images(self, starts_n2, thetas_n1):
+        """
+        Render the corresponding image from
+        the x, y positions in starts_2n facing heading
+        thetas_1n
+        """
+        p = self.p.camera_params
+        if 'occupancy_grid' in p.modalities:
+            imgs = self._get_topview(starts_n2, thetas_n1, crop_size=p.width)
+        elif 'rgb' in p.modalities:
+            imgs = self._get_rgb_image(starts_n2, thetas_n1)
+        elif 'depth' in p.modalities:
+            raise NotImplementedError
+        else:
+            assert(False)
+        return imgs
 
     def _get_rgb_image(self, starts, thetas):
         """
@@ -59,6 +86,10 @@ class SBPDRenderer():
         y_axis = np.concatenate([np.cos(thetas + np.pi / 2.), np.sin(thetas + np.pi / 2.)], axis=1)
         crops = mu.generate_egocentric_maps([traversible_map], [1.0], [crop_size],
                                             starts, x_axis, y_axis, dst_theta=np.pi / 2.0)
+
+        # Invert the crops so that 1.0 corresponds to occupied space
+        # and 0.0 corresponds to free space
+        crops = [np.logical_not(crop)*1.0 for crop in crops]
         return crops
 
     def _get_depth_image(self, starts, thetas, xy_resolution, map_size):
@@ -85,6 +116,6 @@ class SBPDRenderer():
         isvalid = [x[0, ...] for x in np.split(isvalid, isvalid.shape[0], 0)]
         return imgs, count, isvalid
 
-    def _get_config(self):
+    def get_config(self):
         resolution, traversible = self.building.env.resolution, self.building.traversible
         return resolution, traversible

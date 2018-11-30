@@ -103,6 +103,12 @@ class Simulator:
                                                      T, pad_mode='repeat')
         return trajectory
 
+    def get_observation(self, config):
+        """
+        Return the robot's observation from configuration config.
+        """
+        return None
+
     def _clip_along_time_axis(self, traj, data, horizon, mode='new'):
         """ Clip a trajectory and the associated LQR controllers
         along the time axis to length horizon."""
@@ -259,11 +265,23 @@ class Simulator:
             obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
             dist_to_obs = 0.
             dist_to_goal = 0.
-            # TODO: dist_to_goal should be computed using FMM not l2
             while dist_to_obs <= obs_margin or dist_to_goal <= goal_radius:
                 goal_112 = self.obstacle_map.sample_point_112(self.rng)
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
                 dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
+        elif p.position.reset_type == 'random_max_dist':
+            # Select a random position on the map that is at least obstacle margin away from the
+            # nearest obstacle, not within the goal margin of the start position, and at most
+            # max_dist away from the start position (in terms of l2 distance)
+            obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
+            dist_to_obs = 0.
+            dist_to_goal = 0.
+            while (dist_to_obs <= obs_margin or dist_to_goal <= goal_radius
+                   or dist_to_goal >= p.position.max_dist):
+                goal_112 = self.obstacle_map.sample_point_112(self.rng)
+                dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
+                dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
+
         else:
             raise NotImplementedError('Unknown reset type for the vehicle goal position.')
 
@@ -303,10 +321,13 @@ class Simulator:
         return p.system(dt=p.dt, params=p)
 
     def _init_obj_fn(self):
+        """
+        Initialize the objective function.
+        Use fmm_map = None as this is undefined
+        until a goal configuration is specified.
+        """
         p = self.params
-        self.goal_config = p.system_dynamics_params.system.init_egocentric_robot_config(dt=p.dt,
-                                                                                        n=1)
-        self.fmm_map = self._init_fmm_map()
+        
         obj_fn = ObjectiveFunction(p.objective_fn_params)
         if not p.avoid_obstacle_objective.empty():
             obj_fn.add_objective(ObstacleAvoidance(
@@ -315,23 +336,16 @@ class Simulator:
         if not p.goal_distance_objective.empty():
             obj_fn.add_objective(GoalDistance(
                 params=p.goal_distance_objective,
-                fmm_map=self.fmm_map))
+                fmm_map=None))
         if not p.goal_angle_objective.empty():
             obj_fn.add_objective(AngleDistance(
                 params=p.goal_angle_objective,
-                fmm_map=self.fmm_map))
+                fmm_map=None))
         return obj_fn
 
     def _init_fmm_map(self):
         p = self.params
-        mb = p.obstacle_map_params.map_bounds
-        Nx, Ny = p.obstacle_map_params.map_size_2
-        xx, yy = np.meshgrid(np.linspace(mb[0][0], mb[1][0], Nx),
-                             np.linspace(mb[0][1], mb[1][1], Ny),
-                             indexing='xy')
-        self.obstacle_occupancy_grid = self.obstacle_map.create_occupancy_grid(
-            tf.constant(xx, dtype=tf.float32),
-            tf.constant(yy, dtype=tf.float32))
+        self.obstacle_occupancy_grid = self.obstacle_map.create_occupancy_grid()
         return FmmMap.create_fmm_map_based_on_goal_position(
             goal_positions_n2=self.goal_config.position_nk2()[0],
             map_size_2=np.array(p.obstacle_map_params.map_size_2),
@@ -411,11 +425,24 @@ class Simulator:
             out_vals.append(np.sum(episode_types == i) / num_episodes)
         return out_keys, out_vals
 
+    def render(self, axs, freq=4, render_velocities=False, prepend_title=''):
+        if type(axs) is list or type(axs) is np.ndarray:
+            self._render_trajectory(axs[0], freq)
+
+            if render_velocities:
+                self._render_velocities(axs[1], axs[2])
+            [ax.set_title('{:s}{:s}'.format(prepend_title, ax.get_title())) for ax in axs]
+        else:
+            self._render_trajectory(axs, freq)
+            ax.set_title('{:s}{:s}'.format(prepend_title, ax.get_title()))
+
+
     def _render_obstacle_map(self, ax):
         raise NotImplementedError
 
-    def render(self, ax, freq=4):
+    def _render_trajectory(self, ax, freq=4):
         p = self.params
+
         self._render_obstacle_map(ax)
 
         if 'waypoint_config' in self.vehicle_data.keys():
@@ -456,7 +483,7 @@ class Simulator:
             pos_2 = waypt_config.position_nk2()[0, 0].numpy()
             ax.text(pos_2[0], pos_2[1], str(i), color=color)
 
-    def render_velocities(self, ax0, ax1):
+    def _render_velocities(self, ax0, ax1):
         speed_k = self.vehicle_trajectory.speed_nk1()[0, :, 0].numpy()
         angular_speed_k = self.vehicle_trajectory.angular_speed_nk1()[
             0, :, 0].numpy()

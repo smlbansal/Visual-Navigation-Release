@@ -1,5 +1,6 @@
 from dotmap import DotMap
 from utils import utils
+from obstacles.sbpd_map import SBPDMap
 
 dependencies = []
 
@@ -8,16 +9,20 @@ def load_params():
     # Load the dependencies
     p = DotMap({dependency: utils.load_params(dependency) for dependency in dependencies})
 
-    p.modalities = ['topview']
-    p.width = 32
-    p.height = 32
-    p.z_near = .01
-    p.z_far = 20.0
-    p.fov_horizontal = 60.
-    p.fov_vertical = 49.5
-    p.img_channels = 3
-    p.im_resize = 1.
+    p.dataset_name = 'sbpd'
+    p.building_name = 'area3'
+    p.flip = False
 
+    p.camera_params = DotMap(modalities=['rgb'],  # occupancy grid, rgb, or depth
+                             width=64,
+                             height=64,  # the remaining params are for rgb and depth only
+                             z_near=.01,
+                             z_far=20.0,
+                             fov_horizontal=60.,
+                             fov_vertical=49.5,
+                             img_channels=3,
+                             im_resize=1.)
+    
     # The robot is modeled as a solid cylinder
     # of height, 'height', with radius, 'radius',
     # base at height 'base' above the ground
@@ -31,4 +36,5 @@ def load_params():
                             sensor_height=80,
                             camera_elevation_degree=-15,
                             delta_theta=1.0)
+
     return p

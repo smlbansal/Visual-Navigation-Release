@@ -3,6 +3,7 @@ from simulators.simulator import Simulator
 
 
 class CircularObstacleMapSimulator(Simulator):
+    name = 'Ciruclar Obstacle Map Simulator'
 
     def __init__(self, params):
         assert(params.obstacle_map_params.obstacle_map is CircularObstacleMap)
@@ -14,7 +15,12 @@ class CircularObstacleMapSimulator(Simulator):
         self.obstacle_map = self._init_obstacle_map(rng)
 
     def _update_fmm_map(self):
-        self.fmm_map = self._init_fmm_map()
+        """
+        Update the fmm goal position map. For the circular obstacle
+        map the underlying obstacle map may change so
+        create a new fmm_map object.
+        """
+        self._init_fmm_map()
         self._update_obj_fn()
 
     def _init_obstacle_map(self, rng):

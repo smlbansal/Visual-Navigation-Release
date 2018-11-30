@@ -211,6 +211,7 @@ class TopViewTrainer(TrainerFrontendHelper):
             utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)), metrics_filename)
         return metrics_keys, metrics_vals
 
+    #TODO: Not needed anymore
     def _plot_episode(self, i, data, plot_controls=False):
         """
         Render a vehicle trajectory and optionally the associated

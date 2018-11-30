@@ -49,6 +49,20 @@ def plot_velocity_profile_hisotogram(v, w):
     fig.savefig(os.path.join(data_dir, 'velocity_profiles.png'), bbox_inches='tight')
 
 
+def log_images(i, sim, logdir):
+    logdir = os.path.join(logdir, str(i))
+    utils.mkdir_if_missing(logdir)
+    imgs = sim.vehicle_data['observation_n']
+    fig, _, axs = utils.subplot2(plt, (len(imgs), 1), (8, 8), (.4, .4)) 
+    axs = axs[::-1]
+    for idx, img in enumerate(imgs):
+        ax = axs[idx]
+        ax.imshow(img.astype(np.int32))
+        ax.set_title('Image {:d}'.format(idx))
+        ax.grid('off')
+    filename = os.path.join(logdir, 'fpv.png')
+    fig.savefig(filename, bbox_inches='tight')
+
 v = []
 w = []
 
@@ -59,22 +73,16 @@ def simulate(plot_controls=False):
     utils.mkdir_if_missing(logdir)
     utils.log_dict_as_json(p, os.path.join(logdir, 'simulator_params.json'))
 
-    sqrt_num_plots = int(np.ceil(np.sqrt(p.num_validation_goals)))
-    fig, _, axs = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
-                                 (8, 8), (.4, .4))
-    axs = axs[::-1]
     if plot_controls:
-        fig0, _, axs0 = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
-                                       (8, 8), (.4, .4))
-        fig1, _, axs1 = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
-                                       (8, 8), (.4, .4))
-        axs0 = axs0[::-1]
-        axs1 = axs1[::-1]
+        fig, axss, _ = utils.subplot2(plt, (p.num_validation_goals, 3),
+                                      (8, 8), (.4, .4))
+    else:
+        fig, axss, _ = utils.subplot2(plt, (p.num_validation_goals, 1),
+                                      (8, 8), (.4, .4))
 
     tf.set_random_seed(p.seed)
     np.random.seed(p.seed)
 
-    import pdb; pdb.set_trace()
     sim = p.simulator(params=p)
 
     metrics = []
@@ -93,35 +101,19 @@ def simulate(plot_controls=False):
         w.append(sim.vehicle_trajectory.angular_speed_nk1().numpy())
 
         # Plot Stuff
-        axs[i].clear()
-        sim.render(axs[i], freq=render_angle_freq)
-        axs[i].set_title('#{:d}, {:s}'.format(i, axs[i].get_title()))
-
-        if plot_controls:
-            axs0[i].clear()
-            axs1[i].clear()
-            sim.render_velocities(axs0[i], axs1[i])
-            axs0[i].set_title('#{:d}, {:s}'.format(i, axs0[i].get_title()))
-            axs1[i].set_title('#{:d}, {:s}'.format(i, axs1[i].get_title()))
-
+        prepend_title = '#{:d}, '.format(i)
+        axs = axss[i]
+        sim.render(axs, freq=render_angle_freq, render_velocities=plot_controls,
+                   prepend_title=prepend_title)
     
+        log_images(i, sim, logdir)
+
     plot_velocity_profile_hisotogram(v, w)
     metrics_keys, metrics_vals = sim.collect_metrics(metrics,
                                                      termination_reasons=p.simulator_params.episode_termination_reasons)
-    fig.suptitle('Circular Obstacle Map Simulator')
-    figname = os.path.join(logdir, 'circular_obstacle_map.png')
+    fig.suptitle('{:s}'.format(sim.name))
+    figname = os.path.join(logdir, '{:s}.png'.format(sim.name.lower()))
     fig.savefig(figname, bbox_inches='tight')
-
-    if plot_controls:
-        fig0.suptitle('Circular Obstacle Map Simulator Velocity Profile')
-        figname = os.path.join(
-            logdir, 'circular_obstacle_map_velocity_profile.png')
-        fig0.savefig(figname, bbox_inches='tight')
-
-        fig1.suptitle('Circular Obstacle Map Simulator Omega Profile')
-        figname = os.path.join(
-            logdir, 'circular_obstacle_map_omega_profile.png')
-        fig1.savefig(figname, bbox_inches='tight')
 
     utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)),
                            os.path.join(logdir, 'metrics.json'))
