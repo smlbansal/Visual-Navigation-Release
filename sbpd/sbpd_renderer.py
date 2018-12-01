@@ -89,14 +89,14 @@ class SBPDRenderer():
         x_axis = np.concatenate([np.cos(thetas), np.sin(thetas)], axis=1)
         y_axis = -np.concatenate([np.cos(thetas + np.pi / 2.), np.sin(thetas + np.pi / 2.)], axis=1)
         robot_loc = np.array([0, (crop_size-1.)/2.])
-        crops = mu.generate_egocentric_maps([traversible_map], [1.0], [crop_size],
-                                            starts, x_axis, y_axis, dst_theta=0.,
-                                            dst_loc=robot_loc)
+        crops_n1mk = mu.generate_egocentric_maps([traversible_map], [1.0], [crop_size],
+                                                 starts, x_axis, y_axis, dst_theta=0.,
+                                                 dst_loc=robot_loc)
 
         # Invert the crops so that 1.0 corresponds to occupied space
         # and 0.0 corresponds to free space
-        crops = [np.logical_not(crop)*1.0 for crop in crops]
-        return crops
+        crops_nmk1 = [np.logical_not(crop_1mk[0, :, :, None])*1.0 for crop_1mk in crops_n1mk]
+        return crops_nmk1
 
     def _get_depth_image(self, starts, thetas, xy_resolution, map_size):
         """

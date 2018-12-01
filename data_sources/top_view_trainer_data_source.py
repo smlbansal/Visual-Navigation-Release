@@ -19,14 +19,14 @@ class TopViewDataSource(DataSource):
             os.makedirs(self.p.data_creation.data_dir)
 
         # Initialize the simulator
-        simulator = CircularObstacleMapSimulator(self.p.simulator_params)
+        simulator = self.p.simulator_params.simulator(self.p.simulator_params)
         
         # Generate the data
         counter = 1
         num_points = 0
         while num_points < self.p.data_creation.data_points:
             # Reset the data dictionary
-            data = self.reset_data_dictionary()
+            data = self.reset_data_dictionary(self.p)
            
             while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
                 # Reset the simulator
@@ -36,11 +36,10 @@ class TopViewDataSource(DataSource):
                 simulator.simulate()
 
                 # Ensure that the episode simulated is valid
-                if not simulator.valid_episode:
-                    continue
+                if simulator.valid_episode:
+                    # Append the data to the current data dictionary
+                    self.append_data_to_dictionary(data, simulator)
 
-                # Append the data to the current data dictionary
-                self.append_data_to_dictionary(data, simulator)
             # Prepare the dictionary for saving purposes
             self.prepare_and_save_the_data_dictionary(data, counter)
             
@@ -50,16 +49,17 @@ class TopViewDataSource(DataSource):
             print(num_points)
     
     @staticmethod
-    def reset_data_dictionary():
+    def reset_data_dictionary(params):
         """
         Create a dictionary to store the data.
         """
         # Data dictionary to store the data
         data = {}
-        
-        # Obstacle information
-        data['obs_centers_nm2'] = []
-        data['obs_radii_nm1'] = []
+
+        if params.simulator_params.simulator is CircularObstacleMapSimulator:
+            # Obstacle information
+            data['obs_centers_nm2'] = []
+            data['obs_radii_nm1'] = []
         
         # Start configuration information
         data['vehicle_state_nk3'] = []
@@ -102,14 +102,15 @@ class TopViewDataSource(DataSource):
         # Batch Dimension
         n = simulator.vehicle_data['system_config'].n
 
-        # Obstacle data
-        obs_center_1m2 = simulator.obstacle_map.obstacle_centers_m2[tf.newaxis, :, :].numpy()
-        obs_radii_1m1 = simulator.obstacle_map.obstacle_radii_m1[tf.newaxis, :, :].numpy()
+        if self.p.simulator_params.simulator is CircularObstacleMapSimulator:
+            # Obstacle data
+            obs_center_1m2 = simulator.obstacle_map.obstacle_centers_m2[tf.newaxis, :, :].numpy()
+            obs_radii_1m1 = simulator.obstacle_map.obstacle_radii_m1[tf.newaxis, :, :].numpy()
 
-        _, m, _ = obs_center_1m2.shape
+            _, m, _ = obs_center_1m2.shape
 
-        data['obs_centers_nm2'].append(np.broadcast_to(obs_center_1m2, (n, m, 2)))
-        data['obs_radii_nm1'].append(np.broadcast_to(obs_radii_1m1, (n, m, 1)))
+            data['obs_centers_nm2'].append(np.broadcast_to(obs_center_1m2, (n, m, 2)))
+            data['obs_radii_nm1'].append(np.broadcast_to(obs_radii_1m1, (n, m, 1)))
 
         # Vehicle data
         data['vehicle_state_nk3'].append(simulator.vehicle_data['trajectory'].position_and_heading_nk3().numpy())

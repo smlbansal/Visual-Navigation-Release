@@ -48,11 +48,11 @@ def plot_velocity_profile_hisotogram(v, w):
 
     fig.savefig(os.path.join(data_dir, 'velocity_profiles.png'), bbox_inches='tight')
 
-
+#TODO: This will no longer work
 def log_images(i, sim, logdir):
     logdir = os.path.join(logdir, str(i))
     utils.mkdir_if_missing(logdir)
-    imgs = sim.vehicle_data['observation_n']
+    imgs = sim.vehicle_data['image_n']
     fig, _, axs = utils.subplot2(plt, (len(imgs), 1), (8, 8), (.4, .4)) 
     axs = axs[::-1]
     for idx, img in enumerate(imgs):
@@ -62,7 +62,7 @@ def log_images(i, sim, logdir):
             ax.imshow(img[0], cmap='gray', extent=(0, size, -size/2.0, size/2.0))
 
             # Plot the robot position and heading for convenience
-            ax.plot(0, 0, 'r.', markersize=30)
+            ax.plot(0, 0, 'r.', markersize=20)
             ax.quiver(0, 0, 1., 0., color='red')
 
         else:
