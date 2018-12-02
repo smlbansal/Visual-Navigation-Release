@@ -25,6 +25,9 @@ def create_params():
     
         # Height of the camera from the ground in meters
         h=1.,
+        
+        # Tilt of the camera
+        tilt=0.
     )
     return p
 
