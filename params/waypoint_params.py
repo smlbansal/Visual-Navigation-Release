@@ -19,7 +19,7 @@ def load_params():
     p.num_waypoints = 20000
     p.num_theta_bins = 21
     p.bound_min = [0., -2.5, -np.pi]
-    p.bound_max = [2.5, 2.5, np.pi]
+    p.bound_max = [2.5, 2.5, 0.]
     
     # Additional parameters for the projected grid from the image space to the world coordinates
     p.projected_grid_params = DotMap(
