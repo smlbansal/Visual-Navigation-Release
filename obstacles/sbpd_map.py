@@ -12,13 +12,13 @@ class SBPDMap(ObstacleMap):
         """
         self.p = params
         self._r = SBPDRenderer(self.p.renderer_params)
-        self._initialize_occupancy_grid()
+        self._initialize_occupancy_grid_for_map()
         self._initialize_fmm_map()
 
-    def _initialize_occupancy_grid(self):
+    def _initialize_occupancy_grid_for_map(self):
         """
-        Initialize the occupancy grid and associated parameters/
-        instance variables
+        Initialize the occupancy grid for the entire map and
+        associated parameters/ instance variables
         """
         resolution, traversible = self._r.get_config()
 
@@ -31,9 +31,9 @@ class SBPDMap(ObstacleMap):
         self.map_bounds = [[0., 0.],  self.p.map_size_2*self.p.dx]
 
         free_xy = np.array(np.where(traversible)).T
-        self.free_xy_m2 = free_xy[:, ::-1]
+        self.free_xy_map_m2 = free_xy[:, ::-1]
 
-        self.occupancy_grid = np.logical_not(traversible)*1.
+        self.occupancy_grid_map = np.logical_not(traversible)*1.
 
     def _initialize_fmm_map(self):
         """
@@ -41,7 +41,7 @@ class SBPDMap(ObstacleMap):
         positions.
         """
         p = self.p
-        occupied_xy_m2 = np.array(np.where(self.occupancy_grid)).T
+        occupied_xy_m2 = np.array(np.where(self.occupancy_grid_map)).T
         occupied_xy_m2 = occupied_xy_m2[:, ::-1]
         occupied_xy_m2_world = self._map_to_point(occupied_xy_m2)
         self.fmm_map = FmmMap.create_fmm_map_based_on_goal_position(
@@ -60,15 +60,15 @@ class SBPDMap(ObstacleMap):
         """
         Samples a real world x, y point in free space on the map.
         """
-        idx = rng.choice(len(self.free_xy_m2))
-        pos_112 = self.free_xy_m2[idx][None, None]
+        idx = rng.choice(len(self.free_xy_map_m2))
+        pos_112 = self.free_xy_map_m2[idx][None, None]
         return self._map_to_point(pos_112)
 
-    def create_occupancy_grid(self):
+    def create_occupancy_grid_for_map(self):
         """
         Return the occupancy grid for the SBPD map.
         """
-        return self.occupancy_grid
+        return self.occupancy_grid_map
 
     def _point_to_map(self, pos_2, cast_to_int=False):
         """
@@ -103,7 +103,7 @@ class SBPDMap(ObstacleMap):
 
     def render(self, ax, start_config=None):
         p = self.p
-        ax.imshow(self.occupancy_grid, cmap='gray_r',
+        ax.imshow(self.occupancy_grid_map, cmap='gray_r',
                   extent=np.array(self.map_bounds).flatten(order='F'),
                   vmax=1.5, vmin=-.5, origin='lower')
 

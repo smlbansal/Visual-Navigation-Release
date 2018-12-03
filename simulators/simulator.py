@@ -345,7 +345,7 @@ class Simulator:
 
     def _init_fmm_map(self):
         p = self.params
-        self.obstacle_occupancy_grid = self.obstacle_map.create_occupancy_grid()
+        self.obstacle_occupancy_grid = self.obstacle_map.create_occupancy_grid_for_map()
         return FmmMap.create_fmm_map_based_on_goal_position(
             goal_positions_n2=self.goal_config.position_nk2()[0],
             map_size_2=np.array(p.obstacle_map_params.map_size_2),

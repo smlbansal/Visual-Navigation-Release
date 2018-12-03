@@ -59,9 +59,10 @@ class CircularObstacleMap(ObstacleMap):
         goal_y = rng.uniform(mb[0][1], mb[1][1])
         return np.array([goal_x, goal_y], dtype=np.float32)[None, None]
 
-    def create_occupancy_grid(self):
-        """ Creates an occupancy grid where 0 and 1 represent free
-            and occupied space respectively. """
+    def create_occupancy_grid_for_map(self):
+        """ Creates an occupancy grid for the entire circular obstacle map
+        where 0 and 1 represent free and occupied space respectively.
+        """
         mb = self.p.map_bounds
         Nx, Ny = self.p.map_size_2
         xx, yy = np.meshgrid(np.linspace(mb[0][0], mb[1][0], Nx),

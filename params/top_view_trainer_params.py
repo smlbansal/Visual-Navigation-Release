@@ -91,7 +91,7 @@ def create_params():
                         num_epochs=400,
         
                         # Total number of samples in the dataset
-                        num_samples=int(10e3),
+                        num_samples=int(20e3),
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
