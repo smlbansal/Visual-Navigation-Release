@@ -2,6 +2,7 @@ from obstacles.obstacle_map import ObstacleMap
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from systems.dubins_car import DubinsCar
 
 
 class CircularObstacleMap(ObstacleMap):
@@ -76,6 +77,31 @@ class CircularObstacleMap(ObstacleMap):
         dists_nm = self.dist_to_nearest_obs(grid_nm2)
         occupancy_grid_nm = tf.nn.relu(tf.sign(dists_nm*-1))
         return occupancy_grid_nm
+
+    @staticmethod
+    def create_occupancy_grid(vehicle_state_n3, **kwargs):
+        """
+        Create egocentric occupancy grids at the positions
+        in vehicle_state_n3.
+        """
+        obs_centers_nl2 = kwargs['obs_centers_nl2']
+        obs_radii_nl1 = kwargs['obs_radii_nl1']
+        occupancy_grid_positions_ego_1mk12 = kwargs['occupancy_grid_positions_ego_1mk12']
+
+        # Convert the obstacle centers to the egocentric coordinates
+        # (here, we leverage the fact that circles after
+        # axis rotation remain circles).
+        n, l = obs_radii_nl1.shape[0], obs_radii_nl1.shape[1]
+        obs_centers_ego_nl2 = DubinsCar.convert_position_and_heading_to_ego_coordinates(
+            vehicle_state_n3[:, np.newaxis, :],
+            np.concatenate([obs_centers_nl2, np.zeros((n, l, 1), dtype=np.float32)], axis=2))[:, :, :2]
+        
+        # Compute distance to the obstacles
+        distance_to_centers_nmkl = tf.norm(obs_centers_ego_nl2[:, tf.newaxis, tf.newaxis, :, :] -
+                                           occupancy_grid_positions_ego_1mk12, axis=4) \
+                                   - obs_radii_nl1[:, tf.newaxis, tf.newaxis, :, 0]
+        distance_to_nearest_obstacle_nmk1 = tf.reduce_min(distance_to_centers_nmkl, axis=3, keep_dims=True)
+        return 0.5 * (1. - tf.sign(distance_to_nearest_obstacle_nmk1))
 
     def render(self, ax):
         for i in range(self.num_obstacles):

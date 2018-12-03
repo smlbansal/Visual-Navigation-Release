@@ -18,7 +18,7 @@ def create_params():
                      
                      
                      # Number of inputs to the model
-                     num_inputs=DotMap(occupancy_grid_size=[32, 32],
+                     num_inputs=DotMap(occupancy_grid_size=[64, 64],
                                        num_state_features=2 + 2  # Goal (x, y) position + Vehicle's current speed and
                                                                  # angular speed
                      ),

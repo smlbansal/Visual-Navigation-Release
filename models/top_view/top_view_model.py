@@ -1,15 +1,14 @@
 import tensorflow as tf
-import numpy as np
 
 from models.base import BaseModel
 from training_utils.architecture.simple_cnn import simple_cnn
-from systems.dubins_car import DubinsCar
 
 
 class TopViewModel(BaseModel):
     
     def __init__(self, params):
         super(TopViewModel, self).__init__(params=params)
+        
         # Initialize an empty occupancy grid
         self.initialize_occupancy_grid()
     
@@ -21,7 +20,7 @@ class TopViewModel(BaseModel):
                                num_inputs=self.p.model.num_inputs.num_state_features,
                                num_outputs=self.p.model.num_outputs,
                                params=self.p.model.arch)
-        
+    
     def initialize_occupancy_grid(self):
         """
         Create an empty occupancy grid for training and test purposes.
@@ -35,20 +34,23 @@ class TopViewModel(BaseModel):
         
         self.occupancy_grid_positions_ego_1mk12 = tf.stack([xx_mk, yy_mk], axis=2)[tf.newaxis, :, :, tf.newaxis, :]
     
-    def create_occupancy_grid(self, vehicle_state_n3, obs_centers_nl2, obs_radii_nl1):
+    def create_occupancy_grid(self, raw_data):
         """
         Create an occupancy grid of size m x k around the current vehicle position.
         """
-        # Convert the obstacle centers to the egocentric coordinates (here, we leverage the fact that circles after
-        # axis rotation remain circles).
-        n, l = obs_radii_nl1.shape[0], obs_radii_nl1.shape[1]
-        obs_centers_ego_nl2 = DubinsCar.convert_position_and_heading_to_ego_coordinates(
-            vehicle_state_n3[:, np.newaxis, :],
-            np.concatenate([obs_centers_nl2, np.zeros((n, l, 1), dtype=np.float32)], axis=2))[:, :, :2]
-        
-        # Compute distance to the obstacles
-        distance_to_centers_nmkl = tf.norm(obs_centers_ego_nl2[:, tf.newaxis, tf.newaxis, :, :] -
-                                           self.occupancy_grid_positions_ego_1mk12, axis=4) \
-                                   - obs_radii_nl1[:, tf.newaxis, tf.newaxis, :, 0]
-        distance_to_nearest_obstacle_nmk1 = tf.reduce_min(distance_to_centers_nmkl, axis=3, keep_dims=True)
-        return 0.5 * (1. - tf.sign(distance_to_nearest_obstacle_nmk1))
+        from obstacles.circular_obstacle_map import CircularObstacleMap
+        from obstacles.sbpd_map import SBPDMap
+
+        p = self.p.simulator_params.obstacle_map_params
+        if p.obstacle_map is CircularObstacleMap:
+            grid_nmk1 = p.obstacle_map.create_occupancy_grid(vehicle_state_n3=raw_data['vehicle_state_nk3'][:, 0],
+                                                             obs_centers_nl2=raw_data['obs_centers_nm2'],
+                                                             obs_radii_nl1=raw_data['obs_radii_nm1'],
+                                                             occupancy_grid_positions_ego_1mk12=self.occupancy_grid_positions_ego_1mk12)
+        elif p.obstacle_map is SBPDMap:
+            grid_nmk1 = p.obstacle_map.create_occupancy_grid(vehicle_state_n3=raw_data['vehicle_state_nk3'][:, 0],
+                                                             crop_size=self.p.model.num_inputs.occupancy_grid_size,
+                                                             p=self.p.simulator_params.obstacle_map_params)
+        else:
+            raise NotImplementedError
+        return grid_nmk1

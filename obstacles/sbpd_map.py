@@ -11,7 +11,7 @@ class SBPDMap(ObstacleMap):
         Initialize a map for Stanford Building Parser Dataset (SBPD)
         """
         self.p = params
-        self._r = SBPDRenderer(self.p.renderer_params)
+        self._r = SBPDRenderer.get_renderer(self.p.renderer_params)
         self._initialize_occupancy_grid_for_map()
         self._initialize_fmm_map()
 
@@ -64,11 +64,27 @@ class SBPDMap(ObstacleMap):
         pos_112 = self.free_xy_map_m2[idx][None, None]
         return self._map_to_point(pos_112)
 
-    def create_occupancy_grid_for_map(self):
+    def create_occupancy_grid_for_map(self, xs_nn=None, ys_nn=None):
         """
         Return the occupancy grid for the SBPD map.
         """
         return self.occupancy_grid_map
+
+    @staticmethod
+    def create_occupancy_grid(vehicle_state_n3, **kwargs):
+        """
+        Create egocentric occupancy grids at the positions
+        in vehicle_state_n3.
+        """
+        p = kwargs['p']
+        assert('occupancy_grid' in p.renderer_params.camera_params.modalities)
+
+        r = SBPDRenderer.get_renderer(p.renderer_params)
+
+        starts_n2 = vehicle_state_n3[:, :2]
+        thetas_n1 = vehicle_state_n3[:, 2:3]
+        imgs = r.render_images(starts_n2, thetas_n1, crop_size=kwargs['crop_size'])
+        return imgs
 
     def _point_to_map(self, pos_2, cast_to_int=False):
         """

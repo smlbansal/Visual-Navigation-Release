@@ -9,10 +9,7 @@ class TopViewWaypointModel(TopViewModel):
         Create the occupancy grid and other inputs for the neural network.
         """
         # Create the occupancy grid out of the raw obstacle information
-        import pdb; pdb.set_trace()
-        occupancy_grid_nmk1 = self.create_occupancy_grid(raw_data['vehicle_state_nk3'][:, 0],
-                                                         raw_data['obs_centers_nm2'],
-                                                         raw_data['obs_radii_nm1'])
+        occupancy_grid_nmk1 = self.create_occupancy_grid(raw_data)
 
         # Concatenate the goal position in an egocentric frame with vehicle's speed information
         state_features_n4 = tf.concat(

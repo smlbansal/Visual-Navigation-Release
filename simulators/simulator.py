@@ -434,7 +434,7 @@ class Simulator:
             [ax.set_title('{:s}{:s}'.format(prepend_title, ax.get_title())) for ax in axs]
         else:
             self._render_trajectory(axs, freq)
-            ax.set_title('{:s}{:s}'.format(prepend_title, ax.get_title()))
+            axs.set_title('{:s}{:s}'.format(prepend_title, axs.get_title()))
 
 
     def _render_obstacle_map(self, ax):

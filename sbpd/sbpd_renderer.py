@@ -47,7 +47,7 @@ class SBPDRenderer():
         cls.renderer = cls(params)
         return cls.renderer
 
-    def render_images(self, starts_n2, thetas_n1):
+    def render_images(self, starts_n2, thetas_n1, crop_size=None):
         """
         Render the corresponding image from
         the x, y positions in starts_2n facing heading
@@ -55,7 +55,9 @@ class SBPDRenderer():
         """
         p = self.p.camera_params
         if 'occupancy_grid' in p.modalities:
-            imgs = self._get_topview(starts_n2, thetas_n1, crop_size=p.width)
+            if crop_size is None:
+                crop_size = [p.width, p.height]
+            imgs = self._get_topview(starts_n2, thetas_n1, crop_size=crop_size)
         elif 'rgb' in p.modalities:
             imgs = self._get_rgb_image(starts_n2, thetas_n1)
         elif 'depth' in p.modalities:
@@ -76,20 +78,27 @@ class SBPDRenderer():
         imgs = self.building.render_nodes(nodes)
         return imgs
 
-    def _get_topview(self, starts, thetas, crop_size=80):
+    def _get_topview(self, starts, thetas, crop_size=[64, 64]):
         """
-        Render crop_size x crop_size topview(s) from the x, y, theta locations
+        Render crop_size  topview(s) from the x, y, theta locations
         in starts and thetas.
         """
-        traversible_map = self.building.map.traversible * 1.
+        p = self.p.camera_params
         
+        # SBPD only supports square top views currently
+        assert(crop_size[0] == crop_size[1])
+
+        traversible_map = self.building.map.traversible * 1.
+
         # In the topview the positive x axis points to the right and 
         # the positive y axis points up. The robot is located at
-        # (0, (crop_size-1)/2) (in pixel coordinates) facing directly to the right
+        # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
         x_axis = np.concatenate([np.cos(thetas), np.sin(thetas)], axis=1)
         y_axis = -np.concatenate([np.cos(thetas + np.pi / 2.), np.sin(thetas + np.pi / 2.)], axis=1)
-        robot_loc = np.array([0, (crop_size-1.)/2.])
-        crops_n1mk = mu.generate_egocentric_maps([traversible_map], [1.0], [crop_size],
+        robot_loc = np.array([0, (crop_size[0]-1.)/2.])
+
+        n = thetas.shape[0]
+        crops_n1mk = mu.generate_egocentric_maps([traversible_map]*n, [1.0]*n, [crop_size[0]]*n,
                                                  starts, x_axis, y_axis, dst_theta=0.,
                                                  dst_loc=robot_loc)
 
