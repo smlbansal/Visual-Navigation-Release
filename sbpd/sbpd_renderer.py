@@ -78,7 +78,7 @@ class SBPDRenderer():
         imgs = self.building.render_nodes(nodes)
         return imgs
 
-    def _get_topview(self, starts, thetas, crop_size=[64, 64]):
+    def _get_topview(self, starts_n2, thetas_n1, crop_size=[64, 64]):
         """
         Render crop_size  topview(s) from the x, y, theta locations
         in starts and thetas.
@@ -93,18 +93,18 @@ class SBPDRenderer():
         # In the topview the positive x axis points to the right and 
         # the positive y axis points up. The robot is located at
         # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
-        x_axis = np.concatenate([np.cos(thetas), np.sin(thetas)], axis=1)
-        y_axis = -np.concatenate([np.cos(thetas + np.pi / 2.), np.sin(thetas + np.pi / 2.)], axis=1)
-        robot_loc = np.array([0, (crop_size[0]-1.)/2.])
+        x_axis_n2 = np.concatenate([np.cos(thetas_n1), np.sin(thetas_n1)], axis=1)
+        y_axis_n2 = -np.concatenate([np.cos(thetas_n1 + np.pi / 2.), np.sin(thetas_n1 + np.pi / 2.)], axis=1)
+        robot_loc_2 = np.array([0, (crop_size[0]-1.)/2.])
 
-        n = thetas.shape[0]
-        crops_n1mk = mu.generate_egocentric_maps([traversible_map]*n, [1.0]*n, [crop_size[0]]*n,
-                                                 starts, x_axis, y_axis, dst_theta=0.,
-                                                 dst_loc=robot_loc)
+        n = thetas_n1.shape[0]
+        crops_nmk = mu.generate_egocentric_maps([traversible_map], [1.0], [crop_size[0]],
+                                                starts_n2, x_axis_n2, y_axis_n2, dst_theta=0.,
+                                                dst_loc=robot_loc_2)[0]
 
         # Invert the crops so that 1.0 corresponds to occupied space
         # and 0.0 corresponds to free space
-        crops_nmk1 = [np.logical_not(crop_1mk[0, :, :, None])*1.0 for crop_1mk in crops_n1mk]
+        crops_nmk1 = [np.logical_not(crop_mk[:, :, None])*1.0 for crop_mk in crops_nmk]
         return crops_nmk1
 
     def _get_depth_image(self, starts, thetas, xy_resolution, map_size):

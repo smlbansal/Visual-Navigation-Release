@@ -52,21 +52,21 @@ def plot_velocity_profile_hisotogram(v, w):
 def log_images(i, sim, logdir):
     logdir = os.path.join(logdir, str(i))
     utils.mkdir_if_missing(logdir)
-    imgs = sim.vehicle_data['image_n']
+    imgs_nmkd = sim.get_observation(sim.vehicle_data['system_config'])  
     fig, _, axs = utils.subplot2(plt, (len(imgs), 1), (8, 8), (.4, .4)) 
     axs = axs[::-1]
-    for idx, img in enumerate(imgs):
+    for idx, img_mkd in enumerate(imgs_nmkd):
         ax = axs[idx]
-        if img.shape[0] == 1:  # plot a topview image
-            size = img[0].shape[0]*sim.params.obstacle_map_params.dx
-            ax.imshow(img[0], cmap='gray', extent=(0, size, -size/2.0, size/2.0))
+        if img_mkd.shape[2] == 1:  # plot a topview image
+            size = img_mkd.shape[0]*sim.params.obstacle_map_params.dx
+            ax.imshow(img_mkd[:, :, 0], cmap='gray', extent=(0, size, -size/2.0, size/2.0))
 
             # Plot the robot position and heading for convenience
             ax.plot(0, 0, 'r.', markersize=20)
             ax.quiver(0, 0, 1., 0., color='red')
 
         else:
-            ax.imshow(img.astype(np.int32))
+            ax.imshow(img_mkd.astype(np.int32))
         ax.set_title('Image {:d}'.format(idx))
         ax.grid('off')
     filename = os.path.join(logdir, 'fpv.png')
