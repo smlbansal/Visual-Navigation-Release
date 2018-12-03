@@ -81,5 +81,5 @@ def load_params():
     p.episode_termination_colors = ['b', 'r', 'g']
     p.waypt_cmap = 'winter'
 
-    p.num_validation_goals = 100
+    p.num_validation_goals = 50
     return p
