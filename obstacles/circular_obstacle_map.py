@@ -78,22 +78,35 @@ class CircularObstacleMap(ObstacleMap):
         occupancy_grid_nm = tf.nn.relu(tf.sign(dists_nm*-1))
         return occupancy_grid_nm
 
-    @staticmethod
-    def create_occupancy_grid(vehicle_state_n3, **kwargs):
+    def get_observation(self, config=None, pos_nk3=None, **kwargs):
         """
-        Create egocentric occupancy grids at the positions
-        in vehicle_state_n3.
+        Render the robot's observation (occupancy_grid) from system configuration config
+        or pos_nk3. If obs_centers_nl2 and obs_radii_nl1 are passed as arguments
+        renders the occupancy_grid for these parameters, otherwise renders based
+        on the current state of the instance variables.
         """
-        obs_centers_nl2 = kwargs['obs_centers_nl2']
-        obs_radii_nl1 = kwargs['obs_radii_nl1']
+        # One of config and pos_nk3 must be not None
+        assert((config is None) != (pos_nk3 is None))
+
+        if config is not None:
+            pos_nk3 = config.position_and_heading_nk3()
+
         occupancy_grid_positions_ego_1mk12 = kwargs['occupancy_grid_positions_ego_1mk12']
+        if 'obs_centers_nl2' in kwargs.keys():
+            obs_centers_nl2 = kwargs['obs_centers_nl2']
+            obs_radii_nl1 = kwargs['obs_radii_nl1']
+        else:
+            obs_centers_nl2 = self.obstacle_centers_m2[None]
+            obs_radii_nl1 = self.obstacle_radii_m1[None]
+
+        import pdb; pdb.set_trace()
 
         # Convert the obstacle centers to the egocentric coordinates
         # (here, we leverage the fact that circles after
         # axis rotation remain circles).
         n, l = obs_radii_nl1.shape[0], obs_radii_nl1.shape[1]
         obs_centers_ego_nl2 = DubinsCar.convert_position_and_heading_to_ego_coordinates(
-            vehicle_state_n3[:, np.newaxis, :],
+            pos_nk3[:, np.newaxis, :],
             np.concatenate([obs_centers_nl2, np.zeros((n, l, 1), dtype=np.float32)], axis=2))[:, :, :2]
         
         # Compute distance to the obstacles
@@ -117,6 +130,7 @@ class CircularObstacleMap(ObstacleMap):
 
     def render_with_obstacle_margins(self, ax, margin0=.3, margin1=.5):
         """ Render the map with different opacity circles indicating the intensity of the cost
+        
         function around obstacles"""
         for i in range(self.num_obstacles):
             c = self.obstacle_centers_m2[i].numpy()

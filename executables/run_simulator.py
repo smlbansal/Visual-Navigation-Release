@@ -48,12 +48,12 @@ def plot_velocity_profile_hisotogram(v, w):
 
     fig.savefig(os.path.join(data_dir, 'velocity_profiles.png'), bbox_inches='tight')
 
-#TODO: This will no longer work
+
 def log_images(i, sim, logdir):
     logdir = os.path.join(logdir, str(i))
     utils.mkdir_if_missing(logdir)
     imgs_nmkd = sim.get_observation(sim.vehicle_data['system_config'])  
-    fig, _, axs = utils.subplot2(plt, (len(imgs), 1), (8, 8), (.4, .4)) 
+    fig, _, axs = utils.subplot2(plt, (len(imgs_nmkd), 1), (8, 8), (.4, .4)) 
     axs = axs[::-1]
     for idx, img_mkd in enumerate(imgs_nmkd):
         ax = axs[idx]
@@ -71,6 +71,7 @@ def log_images(i, sim, logdir):
         ax.grid('off')
     filename = os.path.join(logdir, 'fpv.png')
     fig.savefig(filename, bbox_inches='tight')
+
 
 v = []
 w = []

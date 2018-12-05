@@ -15,7 +15,7 @@ def load_params():
     p.simulator = SBPDSimulator
     #p.simulator = CircularObstacleMapSimulator
 
-    p.seed = 1  # seed for the simulator (different than for numpy and tf)
+    p.seed = 10  # seed for the simulator (different than for numpy and tf)
 
     # Horizons in seconds
     p.episode_horizon_s = 20.0
@@ -68,7 +68,7 @@ def load_params():
                                                     gaussian_params=[0.0, .5]  # [mean, variance]
                                                 )
                             ),
-                            # 'random max dist': the goal position is initialized randomly on the
+                            # 'random_v1 ': the goal position is initialized randomly on the
                                                     # map but at least at a distance of the obstacle margin from the
                                                     # obstacle and at most max_dist from the start.
 
@@ -76,8 +76,9 @@ def load_params():
                                                 position=DotMap(
                                                     # For description of reset types see position parameters in the
                                                     # start_config above.
-                                                    reset_type='random_max_dist',
-                                                    max_dist=6.0
+                                                    reset_type='random_v1',
+                                                    max_dist_diff=.5,
+                                                    max_fmm_dist=6.0
                                                 )
                             )
     )
@@ -88,5 +89,5 @@ def load_params():
     p.episode_termination_colors = ['b', 'r', 'g']
     p.waypt_cmap = 'winter'
 
-    p.num_validation_goals = 4
+    p.num_validation_goals = 50
     return p

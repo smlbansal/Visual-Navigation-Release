@@ -9,6 +9,13 @@ class CircularObstacleMapSimulator(Simulator):
         assert(params.obstacle_map_params.obstacle_map is CircularObstacleMap)
         super().__init__(params=params)
 
+    def get_observation(self, config=None, pos_nk3=None, **kwargs):
+        """
+        Return the robot's observation from configuration config
+        or pos_nk3.
+        """
+        return self.obstacle_map.get_observation(config=config, pos_nk3=pos_nk3, **kwargs)
+
     def _reset_obstacle_map(self, rng):
         p = self.params.reset_params.obstacle_map
         assert(p.reset_type == 'random')

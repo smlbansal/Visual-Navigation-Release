@@ -11,7 +11,12 @@ class TopViewModel(BaseModel):
         
         # Initialize an empty occupancy grid
         self.initialize_occupancy_grid()
-    
+
+        # TODO: Potentially set this elsewhere so the model can use different
+        # simulators (i.e. for different SBPD areas)
+        # Instantiate a simulator object used by the model to generate images
+        self._simulator = params.simulator_params.simulator(params.simulator_params)
+
     def make_architecture(self):
         """
         Create the CNN architecture for the model.
@@ -33,24 +38,19 @@ class TopViewModel(BaseModel):
         xx_mk, yy_mk = tf.meshgrid(x_k, y_m, indexing='xy')
         
         self.occupancy_grid_positions_ego_1mk12 = tf.stack([xx_mk, yy_mk], axis=2)[tf.newaxis, :, :, tf.newaxis, :]
-    
+
     def create_occupancy_grid(self, raw_data):
         """
         Create an occupancy grid of size m x k around the current vehicle position.
         """
-        from obstacles.circular_obstacle_map import CircularObstacleMap
-        from obstacles.sbpd_map import SBPDMap
-
-        p = self.p.simulator_params.obstacle_map_params
-        if p.obstacle_map is CircularObstacleMap:
-            grid_nmk1 = p.obstacle_map.create_occupancy_grid(vehicle_state_n3=raw_data['vehicle_state_nk3'][:, 0],
-                                                             obs_centers_nl2=raw_data['obs_centers_nm2'],
-                                                             obs_radii_nl1=raw_data['obs_radii_nm1'],
-                                                             occupancy_grid_positions_ego_1mk12=self.occupancy_grid_positions_ego_1mk12)
-        elif p.obstacle_map is SBPDMap:
-            grid_nmk1 = p.obstacle_map.create_occupancy_grid(vehicle_state_n3=raw_data['vehicle_state_nk3'][:, 0],
-                                                             crop_size=self.p.model.num_inputs.occupancy_grid_size,
-                                                             p=self.p.simulator_params.obstacle_map_params)
+        if self._simulator.name == 'Circular_Obstacle_Map_Simulator':
+            grid_nmk1 = self._simulator.get_observation(pos_n3=raw_data['vehicle_state_nk3'][:, 0],
+                                                        obs_centers_nl2=raw_data['obs_centers_nm2'],
+                                                        obs_radii_nl1=raw_data['obs_radii_nm1'],
+                                                        occupancy_grid_positions_ego_1mk12=self.occupancy_grid_positions_ego_1mk12)
+        elif self._simulator.name == 'SBPD_Simulator':
+            grid_nmk1 = self._simulator.get_observation(pos_n3=raw_data['vehicle_state_nk3'][:, 0],
+                                                        crop_size=self.p.model.num_inputs.occupancy_grid_size)
         else:
             raise NotImplementedError
         return grid_nmk1

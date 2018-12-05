@@ -1,7 +1,6 @@
 from training_utils.trainer_frontend_helper import TrainerFrontendHelper
 from utils import utils
 import tensorflow as tf
-import numpy as np
 import matplotlib.pyplot as plt
 import os
 
@@ -45,38 +44,20 @@ class TopViewTrainer(TrainerFrontendHelper):
         simulator = p.simulator(p)
 
         # Create Figures/ Axes
-        #sqrt_num_plots = int(np.ceil(np.sqrt(num_tests)))
         if plot_controls:
             # Each row has 2 more subplots for linear and angular velocity respectively
-            fig, _, axs = utils.subplot2(plt, (num_tests, 3), (8, 8), (.4, .4))
+            fig, axss, _ = utils.subplot2(plt, (num_tests, 3), (8, 8), (.4, .4))
         else:
-            fig, _, axs = utils.subplot2(plt, (num_tests, 1), (8, 8), (.4, .4))
-
-        axs = axs[::-1]
+            fig, axss, _ = utils.subplot2(plt, (num_tests, 1), (8, 8), (.4, .4))
 
         # Construct data dictionray
         simulator_data = {'name': name,
                           'simulator': simulator,
                           'fig': fig,
-                          'axs': axs,
+                          'axss': axss,
                           'dir': dirname,
                           'n': num_tests,
                           'seed': seed}
-
-        #if plot_controls:
-        #    fig_v, _, axs_v = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
-        #                                           (8, 8), (.4, .4))
-        #    fig_w, _, axs_w = utils.subplot2(plt, (sqrt_num_plots, sqrt_num_plots),
-        #                                           (8, 8), (.4, .4))
-
-
-         #   axs_v = axs_v[::-1]
- #           axs_w = axs_w[::-1]
-#
-  #          simulator_data['ctrl_plots'] = {'fig_v': fig_v,
-    #                                        'axs_v': axs_v,
-   #                                         'fig_w': fig_w,
-     #                                       'axs_w': axs_w}
 
         return simulator_data
 
@@ -134,8 +115,6 @@ class TopViewTrainer(TrainerFrontendHelper):
                                                         self.p.trainer.callback_seed,
                                                         dirname='callbacks')
 
-    #TODO: Change the shape of the plot to be long and vertical
-    # each row should have a trajectory and optionally a v,w plot
     def test(self):
         """
         Test a trained network. Optionally test the expert policy as well.
@@ -150,6 +129,7 @@ class TopViewTrainer(TrainerFrontendHelper):
                                                           self.p.test.number_tests,
                                                           self.p.test.seed,
                                                           name=self.simulator_name,
+                                                          dirname=self.simulator_name.lower(),
                                                           plot_controls=self.p.test.plot_controls)
             simulator_datas = [nn_simulator_data]
 
@@ -160,14 +140,17 @@ class TopViewTrainer(TrainerFrontendHelper):
                                                                   self.p.test.number_tests,
                                                                   self.p.test.seed,
                                                                   name='Expert_Simulator',
+                                                                  dirname='expert_simulator',
                                                                   plot_controls=self.p.test.plot_controls)
                 simulator_datas.append(expert_simulator_data)
 
             # Test the simulators
             self.simulate(simulator_datas, log_metrics=True,
-                          plot_controls=self.p.test.plot_controls)
+                          plot_controls=self.p.test.plot_controls,
+                          plot_images=self.p.test.plot_images)
 
-    def simulate(self, simulator_datas, log_metrics=True, plot_controls=False):
+    def simulate(self, simulator_datas, log_metrics=True,
+                 plot_controls=False, plot_images=False):
         """
         Takes simulator_datas a list of dictionaries of simulator_data. The keys of
         each dictionary are expected to be [name, simulator, fig, axs, dir, n, seed].
@@ -185,8 +168,10 @@ class TopViewTrainer(TrainerFrontendHelper):
                 if i != 0:
                     simulator.reset(seed=-1)
                 simulator.simulate()
-                metrics.append(simulator.get_metrics())
-                self._plot_episode(i, data, plot_controls=plot_controls)
+                if simulator.valid_episode:
+                    metrics.append(simulator.get_metrics())
+                    self._plot_episode(i, data, plot_controls=plot_controls,
+                                       plot_images=plot_images)
 
             # Collect and Process the metrics
             metrics_keys, metrics_vals = self._process_metrics(data, metrics, log_metrics)
@@ -211,36 +196,50 @@ class TopViewTrainer(TrainerFrontendHelper):
             utils.log_dict_as_json(dict(zip(metrics_keys, metrics_vals)), metrics_filename)
         return metrics_keys, metrics_vals
 
-    #TODO: Not needed anymore
-    def _plot_episode(self, i, data, plot_controls=False):
+    def _plot_episode(self, i, data, plot_controls=False,
+                      plot_images=False):
         """
         Render a vehicle trajectory and optionally the associated
-        control profiles.
+        control profiles and associated images.
         """
         render_angle_freq = utils.render_angle_frequency(self.p.simulator_params)
 
-        axs = data['axs']
+        axss = data['axss']
         simulator = data['simulator']
 
-        if plot_controls:
-            ax_traj = axs[3*i]
-            axs_v = axs[3*i+1]
-            axs_w = axs[3*i+2]
+        prepend_title = '#{:d}, '.format(i)
+        axs = axss[i]
+        [ax.clear() for ax in axs]
+        simulator.render(axs, freq=render_angle_freq, render_velocities=plot_controls,
+                         prepend_title=prepend_title)
+        if plot_images:
+            self._plot_episode_images(i, data)
 
-            ax_traj.clear()
-            axs_v.clear()
-            axs_w.clear()
+    def _plot_episode_images(self, i, data):
+        """
+        Plot the images the robot saw during a particular episode.
+        Useful for debugging at test time.
+        """
+        simulator = data['simulator']
+        dirname = data['dir']
 
-            simulator.render(ax_traj, freq=render_angle_freq)
-            simulator.render_velocities(axs_v, axs_w)
+        imgs_nmkd = simulator.get_observation(simulator.vehicle_data['system_config'])
+        fig, _, axs = utils.subplot2(plt, (len(imgs_nmkd), 1), (8, 8), (.4, .4))
+        axs = axs[::-1]
+        for idx, img_mkd in enumerate(imgs_nmkd):
+            ax = axs[idx]
+            if img_mkd.shape[2] == 1:  # plot a topview image
+                size = img_mkd.shape[0]*simulator.params.obstacle_map_params.dx
+                ax.imshow(img_mkd[:, :, 0], cmap='gray', extent=(0, size, -size/2.0, size/2.0))
+                ax.set_title('Img: {:d}'.format(idx))
+            else:
+                raise NotImplementedError
 
-            ax_traj.set_title('#{:d}, {:s}'.format(i, ax_traj.get_title()))
-            axs_v.set_title('#{:d}, {:s}'.format(i, axs_v.get_title()))
-            axs_w.set_title('#{:d}, {:s}'.format(i, axs_w.get_title()))
-        else:
-            axs[i].clear()
-            simulator.render(axs[i], freq=render_angle_freq)
-            axs[i].set_title('#{:d}, {:s}'.format(i, axs[i].get_title()))
+        figdir = os.path.join(self.p.session_dir, dirname, 'imgs')
+        utils.mkdir_if_missing(figdir)
+        figname = os.path.join(figdir, '{:d}.pdf'.format(i))
+        fig.savefig(figname, bbox_inches='tight')
+        plt.close(fig)
 
     def _save_figures(self, data):
         """
@@ -250,6 +249,7 @@ class TopViewTrainer(TrainerFrontendHelper):
         fig = data['fig']
         name = data['name']
         dirname = data['dir']
+
         fig.suptitle(name)
         figname = os.path.join(self.p.session_dir, dirname, '{:s}.pdf'.format(name.lower()))
         fig.savefig(figname, bbox_inches='tight')

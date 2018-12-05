@@ -64,12 +64,12 @@ class NNWaypointPlanner(NNPlanner):
         return data
 
     def save_occupancy_grid(self, grid, start_config, goal_ego_config,
-                           waypoint_ego_config, waypoint_world_config):
+                            waypoint_ego_config, waypoint_world_config):
         """Save the occupancy grid- useful for debugging."""
         import matplotlib.pyplot as plt
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.contour(grid[0, :, :, 0].numpy(), extent=[0.0, 3.2, -1.6, 1.6])
+        ax.imshow(grid[0][ :, :, 0], extent=[0.0, 3.2, -1.6, 1.6], cmap='gray')
         
         waypoint_ego_config.render(ax, plot_quiver=True)
 

@@ -1,5 +1,7 @@
 from obstacles.sbpd_map import SBPDMap
 from simulators.simulator import Simulator
+import numpy as np
+import tensorflow as tf
 
 
 class SBPDSimulator(Simulator):
@@ -9,18 +11,19 @@ class SBPDSimulator(Simulator):
         assert(params.obstacle_map_params.obstacle_map is SBPDMap)
         super().__init__(params=params)
 
-    def get_observation(self, config):
+    def get_observation(self, config=None, pos_n3=None, **kwargs):
         """
-        Return the robot's observation from configuration config.
+        Return the robot's observation from configuration config
+        or pos_nk3.
         """
-        return self.obstacle_map.get_observation(config)
+        return self.obstacle_map.get_observation(config=config, pos_n3=pos_n3, **kwargs)
 
     def _reset_obstacle_map(self, rng):
         """
         For SBPD the obstacle map does not change
         between episodes.
         """
-        return None
+        return False
 
     def _update_fmm_map(self):
         """
@@ -40,4 +43,7 @@ class SBPDSimulator(Simulator):
         return p.obstacle_map(p)
 
     def _render_obstacle_map(self, ax):
-        self.obstacle_map.render(ax, start_config=self.start_config)
+        p = self.params
+        self.obstacle_map.render_with_obstacle_margins(ax, start_config=self.start_config,
+                                                       margin0=p.avoid_obstacle_objective.obstacle_margin0,
+                                                       margin1=p.avoid_obstacle_objective.obstacle_margin1)

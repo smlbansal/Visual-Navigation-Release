@@ -91,7 +91,7 @@ def create_params():
                         num_epochs=400,
         
                         # Total number of samples in the dataset
-                        num_samples=int(50e3),
+                        num_samples=int(20e3),
         
                         # The percentage of the dataset that corresponds to the training set
                         training_set_size=0.8,
@@ -113,8 +113,8 @@ def create_params():
                         lr_decay_factor=None,
         
                         # Checkpoint settings
-                        ckpt_save_frequency=10,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/nn_waypoint/train_full_episode_10k/session_2018-11-27_14-54-14/checkpoints/ckpt-40',
+                        ckpt_save_frequency=20,
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/topview/nn_waypoint/train_full_episode_20k/session_2018-12-04_13-28-06/checkpoints/ckpt-16', 
 
                         # Callback settings
                         callback_frequency=20,
@@ -162,11 +162,17 @@ def create_params():
                     # Test seed
                     seed=10,
                     
-                    simulate_expert=False,
+                    simulate_expert=True,
                     
                     number_tests=100,
 
+                    # If true the velocity and angular velocity profiles of the robot
+                    # are plotted along with the x, y, theta trajectory
                     plot_controls=True,
+
+                    # If true, the observed images (topview/occupancy grid, rgb, or depth)
+                    # for each episode are plotted as well
+                    plot_images=True,
                     
                     # Custom Simulator Parameters for Testing. Add more as needed
                     simulator_params=simulator_params

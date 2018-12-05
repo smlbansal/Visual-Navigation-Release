@@ -103,9 +103,10 @@ class Simulator:
                                                      T, pad_mode='repeat')
         return trajectory
 
-    def get_observation(self, config):
+    def get_observation(self, config=None, pos_n3=None, **kwargs):
         """
-        Return the robot's observation from configuration config.
+        Return the robot's observation from configuration config or
+        pos_nk3.
         """
         return [None]*config.n
 
@@ -185,9 +186,11 @@ class Simulator:
         # Note: Obstacle map must be reset independently of the fmm map. Sampling start and goal may depend
         # on the updated state of the obstacle map. Updating the fmm map depends
         # on the newly sampled goal.
-        self._reset_obstacle_map(self.rng)
-        self._reset_start_configuration(self.rng)
-        self._reset_goal_configuration(self.rng)
+        reset_start = True
+        while reset_start:
+            self._reset_obstacle_map(self.rng)
+            self._reset_start_configuration(self.rng)
+            reset_start = self._reset_goal_configuration(self.rng)
         self._update_fmm_map()
 
         self.vehicle_trajectory = Trajectory(dt=self.params.dt, n=1, k=0)
@@ -213,7 +216,7 @@ class Simulator:
             obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
             dist_to_obs = 0.
             while dist_to_obs <= obs_margin:
-                start_112 = self.obstacle_map.sample_point_112(self.rng)
+                start_112 = self.obstacle_map.sample_point_112(rng)
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(start_112))
         else:
             raise NotImplementedError('Unknown reset type for the vehicle starting position.')
@@ -257,37 +260,67 @@ class Simulator:
         goal_norm = self.params.goal_dist_norm
         goal_radius = self.params.goal_cutoff_dist
         start_112 = self.start_config.position_nk2()
+        obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
 
         # Reset the goal position
         if p.position.reset_type == 'random':
             # Select a random position on the map that is at least obstacle margin away from the nearest obstacle, and
             # not within the goal margin of the start position.
-            obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
             dist_to_obs = 0.
             dist_to_goal = 0.
             while dist_to_obs <= obs_margin or dist_to_goal <= goal_radius:
-                goal_112 = self.obstacle_map.sample_point_112(self.rng)
+                goal_112 = self.obstacle_map.sample_point_112(rng)
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
                 dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
-        elif p.position.reset_type == 'random_max_dist':
-            # Select a random position on the map that is at least obstacle margin away from the
-            # nearest obstacle, not within the goal margin of the start position, and at most
-            # max_dist away from the start position (in terms of l2 distance)
-            obs_margin = self.params.avoid_obstacle_objective.obstacle_margin1
-            dist_to_obs = 0.
-            dist_to_goal = 0.
-            while (dist_to_obs <= obs_margin or dist_to_goal <= goal_radius
-                   or dist_to_goal >= p.position.max_dist):
-                goal_112 = self.obstacle_map.sample_point_112(self.rng)
-                dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
-                dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
+        elif p.position.reset_type == 'random_v1':
+            # Select a random position on the map that is at least obs_margin away from the
+            # nearest obstacle, and not within the goal margin of the start position.
+            # Additionaly the goal position must satisfy:
+            # fmm_dist(start, goal) - l2_dist(start, goal) > dist_diff (goal should not be
+            #                                                           reachable in a straight line)
+            # fmm_dist(start, goal) < max_dist (goal should not be too far away)
+            
+            # Construct an fmm map where the 0 level set is the start position
+            start_fmm_map = self._init_fmm_map(goal_pos_n2=self.start_config.position_nk2()[:, 0]) 
+            # enforce fmm_dist(start, goal) < max_fmm_dist
+            free_xy = np.where(start_fmm_map.fmm_distance_map.voxel_function_mn <
+                               p.position.max_fmm_dist)
+            free_xy = np.array(free_xy).T
+            free_xy = free_xy[:, ::-1]
+            free_xy_pts_m2 = self.obstacle_map._map_to_point(free_xy)
+            
+            # enforce dist_to_nearest_obstacle > obs_margin
+            dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(free_xy_pts_m2[:, None])).numpy()
 
+            dist_to_obs_valid_mask = dist_to_obs > obs_margin
+
+            # enforce dist_to_goal > goal_radius
+            fmm_dist_to_goal = np.squeeze(start_fmm_map.fmm_distance_map.compute_voxel_function(free_xy_pts_m2[:, None]).numpy())
+            fmm_dist_to_goal_valid_mask = fmm_dist_to_goal > goal_radius
+
+            # enforce fmm_dist - l2_dist > fmm_l2_gap
+            fmm_l2_gap = rng.uniform(0.0, p.position.max_dist_diff)
+            l2_dist_to_goal = np.linalg.norm((start_112 - free_xy_pts_m2[:, None]), axis=2)[:, 0]
+            fmm_dist_to_goal = np.squeeze(start_fmm_map.fmm_distance_map.compute_voxel_function(free_xy_pts_m2[:, None]).numpy())
+            fmm_l2_gap_valid_mask = fmm_dist_to_goal - l2_dist_to_goal > fmm_l2_gap
+
+            valid_mask = np.logical_and.reduce((dist_to_obs_valid_mask,
+                                                fmm_dist_to_goal_valid_mask,
+                                                fmm_l2_gap_valid_mask))
+            free_xy = free_xy[valid_mask]
+            if len(free_xy) == 0:
+                # there are no goal points within the max_fmm_dist of start
+                # return True so the start is reset
+                return True
+            
+            goal_112 = self.obstacle_map.sample_point_112(rng, free_xy_map_m2=free_xy)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle goal position.')
 
         # Initialize the goal configuration
         self.goal_config = SystemConfig(dt=p.dt, n=1, k=1,
                                         position_nk2=goal_112)
+        return False
 
     def _compute_objective_value(self, vehicle_trajectory):
         p = self.params.objective_fn_params
@@ -343,11 +376,15 @@ class Simulator:
                 fmm_map=None))
         return obj_fn
 
-    def _init_fmm_map(self):
+    def _init_fmm_map(self, goal_pos_n2=None):
         p = self.params
         self.obstacle_occupancy_grid = self.obstacle_map.create_occupancy_grid_for_map()
+
+        if goal_pos_n2 is None:
+            goal_pos_n2 = self.goal_config.position_nk2()[0]
+        
         return FmmMap.create_fmm_map_based_on_goal_position(
-            goal_positions_n2=self.goal_config.position_nk2()[0],
+            goal_positions_n2=goal_pos_n2,
             map_size_2=np.array(p.obstacle_map_params.map_size_2),
             dx=p.obstacle_map_params.dx,
             map_origin_2=p.obstacle_map_params.map_origin_2,

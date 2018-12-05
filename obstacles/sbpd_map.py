@@ -28,7 +28,7 @@ class SBPDMap(ObstacleMap):
         self.p.map_size_2 = np.array(traversible.shape[::-1])
 
         # [[min_x, min_y], [max_x, max_y]]
-        self.map_bounds = [[0., 0.],  self.p.map_size_2*self.p.dx]
+        self.map_bounds = np.array([[0., 0.],  self.p.map_size_2*self.p.dx])
 
         free_xy = np.array(np.where(traversible)).T
         self.free_xy_map_m2 = free_xy[:, ::-1]
@@ -56,12 +56,17 @@ class SBPDMap(ObstacleMap):
             distance_nk = self.fmm_map.fmm_distance_map.compute_voxel_function(pos_nk2)
             return distance_nk
 
-    def sample_point_112(self, rng):
+    def sample_point_112(self, rng, free_xy_map_m2=None):
         """
         Samples a real world x, y point in free space on the map.
+        Optionally the user can pass in free_xy_m2 a list of m (x, y)
+        points from which to sample.
         """
-        idx = rng.choice(len(self.free_xy_map_m2))
-        pos_112 = self.free_xy_map_m2[idx][None, None]
+        if free_xy_map_m2 is None:
+            free_xy_map_m2 = self.free_xy_map_m2
+
+        idx = rng.choice(len(free_xy_map_m2))
+        pos_112 = free_xy_map_m2[idx][None, None]
         return self._map_to_point(pos_112)
 
     def create_occupancy_grid_for_map(self, xs_nn=None, ys_nn=None):
@@ -69,22 +74,6 @@ class SBPDMap(ObstacleMap):
         Return the occupancy grid for the SBPD map.
         """
         return self.occupancy_grid_map
-
-    @staticmethod
-    def create_occupancy_grid(vehicle_state_n3, **kwargs):
-        """
-        Create egocentric occupancy grids at the positions
-        in vehicle_state_n3.
-        """
-        p = kwargs['p']
-        assert('occupancy_grid' in p.renderer_params.camera_params.modalities)
-
-        r = SBPDRenderer.get_renderer(p.renderer_params)
-
-        starts_n2 = vehicle_state_n3[:, :2]
-        thetas_n1 = vehicle_state_n3[:, 2:3]
-        imgs = r.render_images(starts_n2, thetas_n1, crop_size=kwargs['crop_size'])
-        return imgs
 
     def _point_to_map(self, pos_2, cast_to_int=False):
         """
@@ -104,17 +93,21 @@ class SBPDMap(ObstacleMap):
         world_pos_2 = (pos_2 + self.p.map_origin_2)*self.p.dx
         return world_pos_2.astype(dtype)
 
-    def get_observation(self, config):
+    def get_observation(self, config=None, pos_n3=None, **kwargs):
         """
-        Render the robot's observation from system configuration config.
+        Render the robot's observation from system configuration config
+        or pos_nk3.
         """
-        pos_map_n12 = self._point_to_map(config.position_nk2())
-        heading_n11 = config.heading_nk1()
+        # One of config and pos_nk3 must be not None
+        assert((config is None) != (pos_n3 is None))
 
-        starts_n2 = pos_map_n12[:, 0].numpy()
-        thetas_n1 = heading_n11[:, 0].numpy()
+        if config is not None:
+            pos_n3 = config.position_and_heading_nk3()[:, 0].numpy()
 
-        imgs = self._r.render_images(starts_n2, thetas_n1)
+        starts_n2 = self._point_to_map(pos_n3[:, :2])
+        thetas_n1 = pos_n3[:, 2:3]
+
+        imgs = self._r.render_images(starts_n2, thetas_n1, **kwargs)
         return imgs
 
     def render(self, ax, start_config=None):
@@ -128,3 +121,42 @@ class SBPDMap(ObstacleMap):
             delta = p.plotting_grid_steps * p.dx
             ax.set_xlim(start_2[0]-delta, start_2[0]+delta)
             ax.set_ylim(start_2[1]-delta, start_2[1]+delta)
+
+    def render_with_obstacle_margins(self, ax, start_config=None, margin0=.3, margin1=.5):
+        p = self.p
+        occupancy_grid_masked = np.ma.masked_where(self.occupancy_grid_map == 0,
+                                                   self.occupancy_grid_map)
+        ax.imshow(occupancy_grid_masked, cmap='Blues_r',
+                  extent=np.array(self.map_bounds).flatten(order='F'),
+                  origin='lower', vmax=2.0)
+
+        self._render_margin(ax, margin=margin0, alpha=.5)
+        self._render_margin(ax, margin=margin1, alpha=.35)
+
+        if start_config is not None:
+            start_2 = start_config.position_nk2()[0, 0].numpy()
+            delta = p.plotting_grid_steps * p.dx
+            ax.set_xlim(start_2[0]-delta, start_2[0]+delta)
+            ax.set_ylim(start_2[1]-delta, start_2[1]+delta)
+
+    def _render_margin(self, ax, margin, alpha):
+        """
+        Render a margin around the occupied space indicating the intensity
+        of the obstacle avoidance cost function.
+        """
+        xs = np.arange(self.map_bounds[0][0], self.map_bounds[1][0], self.p.dx)
+        ys = np.arange(self.map_bounds[0][1], self.map_bounds[1][1], self.p.dx)
+        xs, ys = np.meshgrid(xs, ys)
+        xs = xs.ravel()
+        ys = ys.ravel()
+        pos_n12 = np.stack([xs, ys], axis=1)[:, None]
+        dists_nk = self.dist_to_nearest_obs(pos_n12).numpy()
+
+        margin_mask_n = (dists_nk < margin)[:, 0]
+        margin_mask_mn = margin_mask_n.reshape(self.occupancy_grid_map.shape)
+        mask = np.logical_and(self.occupancy_grid_map, margin_mask_mn == 0)
+
+        margin_img = np.ma.masked_where(mask, margin_mask_mn)
+        ax.imshow(margin_img, cmap='Blues',
+                  extent=np.array(self.map_bounds).flatten(order='F'),
+                  origin='lower', alpha=alpha, vmax=2.0)
