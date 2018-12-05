@@ -42,7 +42,7 @@ class SBPDRenderer():
             if dn == params.dataset_name and bn == params.building_name and f == params.flip and c == params.modalities:
                 return r
             else:
-                assert(False, "Renderer settings are different than previously instantiated renderer")
+                assert False, "Renderer settings are different than previously instantiated renderer"
 
         cls.renderer = cls(params)
         return cls.renderer
