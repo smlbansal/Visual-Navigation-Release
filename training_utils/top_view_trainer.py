@@ -223,7 +223,15 @@ class TopViewTrainer(TrainerFrontendHelper):
         simulator = data['simulator']
         dirname = data['dir']
 
-        imgs_nmkd = simulator.get_observation(simulator.vehicle_data['system_config'])
+        if simulator.name == 'Circular_Obstacle_Map_Simulator':
+            occupancy_grid_positions_ego_1mk12 = self.model.occupancy_grid_positions_ego_1mk12
+            kwargs = {'occupancy_grid_positions_ego_1mk12': occupancy_grid_positions_ego_1mk12}
+        elif simulator.name == 'SBPD_Simulator':
+            kwargs = {}
+        else:
+            raise NotImplementedError
+
+        imgs_nmkd = simulator.get_observation(simulator.vehicle_data['system_config'], **kwargs)
         fig, _, axs = utils.subplot2(plt, (len(imgs_nmkd), 1), (8, 8), (.4, .4))
         axs = axs[::-1]
         for idx, img_mkd in enumerate(imgs_nmkd):

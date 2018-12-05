@@ -5,6 +5,7 @@ from objectives.angle_distance import AngleDistance
 from objectives.goal_distance import GoalDistance
 from objectives.obstacle_avoidance import ObstacleAvoidance
 from trajectory.trajectory import SystemConfig, Trajectory
+from obstacles.sbpd_map import SBPDMap
 from utils.fmm_map import FmmMap
 import matplotlib
 
@@ -273,6 +274,7 @@ class Simulator:
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
                 dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
         elif p.position.reset_type == 'random_v1':
+            assert isinstance(self.obstacle_map, SBPDMap)
             # Select a random position on the map that is at least obs_margin away from the
             # nearest obstacle, and not within the goal margin of the start position.
             # Additionaly the goal position must satisfy:

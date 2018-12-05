@@ -78,7 +78,7 @@ class CircularObstacleMap(ObstacleMap):
         occupancy_grid_nm = tf.nn.relu(tf.sign(dists_nm*-1))
         return occupancy_grid_nm
 
-    def get_observation(self, config=None, pos_nk3=None, **kwargs):
+    def get_observation(self, config=None, pos_n3=None, **kwargs):
         """
         Render the robot's observation (occupancy_grid) from system configuration config
         or pos_nk3. If obs_centers_nl2 and obs_radii_nl1 are passed as arguments
@@ -86,10 +86,10 @@ class CircularObstacleMap(ObstacleMap):
         on the current state of the instance variables.
         """
         # One of config and pos_nk3 must be not None
-        assert((config is None) != (pos_nk3 is None))
+        assert((config is None) != (pos_n3 is None))
 
         if config is not None:
-            pos_nk3 = config.position_and_heading_nk3()
+            pos_n3 = config.position_and_heading_nk3()[:, 0].numpy()
 
         occupancy_grid_positions_ego_1mk12 = kwargs['occupancy_grid_positions_ego_1mk12']
         if 'obs_centers_nl2' in kwargs.keys():
@@ -99,22 +99,21 @@ class CircularObstacleMap(ObstacleMap):
             obs_centers_nl2 = self.obstacle_centers_m2[None]
             obs_radii_nl1 = self.obstacle_radii_m1[None]
 
-        import pdb; pdb.set_trace()
-
         # Convert the obstacle centers to the egocentric coordinates
         # (here, we leverage the fact that circles after
         # axis rotation remain circles).
         n, l = obs_radii_nl1.shape[0], obs_radii_nl1.shape[1]
         obs_centers_ego_nl2 = DubinsCar.convert_position_and_heading_to_ego_coordinates(
-            pos_nk3[:, np.newaxis, :],
+            pos_n3[:, np.newaxis, :],
             np.concatenate([obs_centers_nl2, np.zeros((n, l, 1), dtype=np.float32)], axis=2))[:, :, :2]
-        
+
         # Compute distance to the obstacles
         distance_to_centers_nmkl = tf.norm(obs_centers_ego_nl2[:, tf.newaxis, tf.newaxis, :, :] -
                                            occupancy_grid_positions_ego_1mk12, axis=4) \
                                    - obs_radii_nl1[:, tf.newaxis, tf.newaxis, :, 0]
         distance_to_nearest_obstacle_nmk1 = tf.reduce_min(distance_to_centers_nmkl, axis=3, keep_dims=True)
-        return 0.5 * (1. - tf.sign(distance_to_nearest_obstacle_nmk1))
+        occupancy_grid_nmk1 = 0.5 * (1. - tf.sign(distance_to_nearest_obstacle_nmk1))
+        return occupancy_grid_nmk1.numpy()
 
     def render(self, ax):
         for i in range(self.num_obstacles):
