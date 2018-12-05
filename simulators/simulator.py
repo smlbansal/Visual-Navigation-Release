@@ -111,7 +111,7 @@ class Simulator:
         return [None]*config.n
 
     def _clip_along_time_axis(self, traj, data, horizon, mode='new'):
-        """ Clip a trajectory and the associated LQR controllers
+        """ Clip a trajectory and the associated planner data
         along the time axis to length horizon."""
 
         self.planner.clip_data_along_time_axis(data, horizon)
@@ -276,8 +276,8 @@ class Simulator:
             # Select a random position on the map that is at least obs_margin away from the
             # nearest obstacle, and not within the goal margin of the start position.
             # Additionaly the goal position must satisfy:
-            # fmm_dist(start, goal) - l2_dist(start, goal) > dist_diff (goal should not be
-            #                                                           reachable in a straight line)
+            # fmm_dist(start, goal) - l2_dist(start, goal) > fmm_l2_gap (goal should not be
+            #                                                            reachable in a straight line)
             # fmm_dist(start, goal) < max_dist (goal should not be too far away)
             
             # Construct an fmm map where the 0 level set is the start position
