@@ -147,7 +147,7 @@ def create_params():
                                 data_points_per_file=1000,
                                 
                                 # Data directory
-                                data_dir='/home/ext_drive/somilb/data/training_data/sbpd/topview_full_episode_100k',
+                                data_dir='/home/ext_drive/somilb/data/training_data/sbpd/topview_full_episode_random_v1_100k',
 
                                 # Custom Simulator Params
                                 simulator_params = simulator_params
