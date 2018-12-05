@@ -24,8 +24,8 @@ def create_params():
                      ),
                      
                      # Number of the outputs to the model
-                     num_outputs=3,  # (x, y, theta) waypoint
-                     #num_outputs=60,  # (v, omega) for 30 timesteps
+                     #num_outputs=3,  # (x, y, theta) waypoint
+                     num_outputs=60,  # (v, omega) for 30 timesteps
         
                      # Occupancy grid discretization
                      occupancy_grid_dx=[0.1, 0.1],
@@ -103,7 +103,7 @@ def create_params():
                         optimizer=tf.train.AdamOptimizer,
         
                         # Learning rate
-                        lr=1e-4,
+                        lr=1e-5,
                         
                         # Learning schedule
                         learning_schedule=1,
