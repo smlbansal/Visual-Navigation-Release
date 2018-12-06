@@ -9,8 +9,18 @@ def create_params():
     p.simulator_params.planner_params.control_pipeline_params.waypoint_params.grid = ProjectedImageSpaceGrid
     
     # Data creation parameters
-    p.data_creation.data_points = int(1000)
-    p.data_creation.data_points_per_file = 100
-    p.data_creation.data_dir = '/home/ext_drive/somilb/data/projected_topview_full_episode_100k'
-    
+    p.data_creation.data_points = int(100e3)
+    p.data_creation.data_points_per_file = 1000
+    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/circular_obstacle_map/projected_topview_full_episode_100k'
+
+
+    # Training parameters
+    p.trainer.num_samples = int(5e3)
+    p.trainer.num_epochs = 100
+
+    # Checkpoint
+    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/tmp/session_2018-12-06_14-51-30/checkpoints/ckpt-10'
+
+    # Test params
+    p.test.simulate_expert = True
     return p

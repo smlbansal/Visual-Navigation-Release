@@ -69,7 +69,7 @@ class NNWaypointPlanner(NNPlanner):
         import matplotlib.pyplot as plt
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.contour(grid[0, :, :, 0].numpy(), extent=[0.0, 3.2, -1.6, 1.6])
+        ax.imshow(grid[0, :, :, 0].numpy(), cmap='gray', extent=[0.0, 3.2, -1.6, 1.6])
         
         waypoint_ego_config.render(ax, plot_quiver=True)
 
