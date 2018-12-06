@@ -1,7 +1,5 @@
 from obstacles.sbpd_map import SBPDMap
 from simulators.simulator import Simulator
-import numpy as np
-import tensorflow as tf
 
 
 class SBPDSimulator(Simulator):

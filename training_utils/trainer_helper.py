@@ -9,7 +9,7 @@ class TrainerHelper(object):
     def __init__(self, params):
         self.p = params.trainer
         self.session_dir = params.session_dir
-    
+
     def train(self, model, data_source, callback_fn=None):
         """
         Train a given model.
