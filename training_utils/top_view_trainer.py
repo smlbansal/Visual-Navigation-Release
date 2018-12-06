@@ -3,6 +3,7 @@ from utils import utils
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import os
+from utils.image_utils import plot_image_observation
 
 
 class TopViewTrainer(TrainerFrontendHelper):
@@ -236,12 +237,9 @@ class TopViewTrainer(TrainerFrontendHelper):
         axs = axs[::-1]
         for idx, img_mkd in enumerate(imgs_nmkd):
             ax = axs[idx]
-            if img_mkd.shape[2] == 1:  # plot a topview image
-                size = img_mkd.shape[0]*simulator.params.obstacle_map_params.dx
-                ax.imshow(img_mkd[:, :, 0], cmap='gray', extent=(0, size, -size/2.0, size/2.0))
-                ax.set_title('Img: {:d}'.format(idx))
-            else:
-                raise NotImplementedError
+            size = img_mkd.shape[0]*simulator.params.obstacle_map_params.dx
+            plot_image_observation(ax, img_mkd, size)
+            ax.set_title('Img: {:d}'.format(idx))
 
         figdir = os.path.join(self.p.session_dir, dirname, 'imgs')
         utils.mkdir_if_missing(figdir)

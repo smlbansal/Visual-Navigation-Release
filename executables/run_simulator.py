@@ -5,25 +5,27 @@ import matplotlib.pyplot as plt
 from utils import utils
 import pickle
 import argparse
+from utils.image_utils import plot_image_observation
 
 logdir = './logs/simulator'
 
 # TODO: the vehicle_trajectory is not exactly the LQR reference trajectory.
 # It is very close though so this may not really be problematic.
 
-#TODO: This wont work anymore as simulator has changed
+
+# TODO: This wont work anymore as simulator has changed
 def save_lqr_data(filename, trajectory, controllers):
         """ Saves the LQR controllers (K, k) used to track the current vehicle
         trajectory as well as the current vehicle trajectory."""
-        data = {'trajectory' : trajectory.to_numpy_repr(),
-                'K_1kfd' : controllers['K_1kfd'].numpy(),
-                'k_1kf1' : controllers['k_1kf1'].numpy()}
+        data = {'trajectory': trajectory.to_numpy_repr(),
+                'K_1kfd': controllers['K_1kfd'].numpy(),
+                'k_1kf1': controllers['k_1kf1'].numpy()}
         with open(filename, 'wb') as f:
             pickle.dump(data, f)
 
 
 def plot_velocity_profile_hisotogram(v, w):
-    data_dir = os.path.join('./tmp', 'expert_data_distribution') 
+    data_dir = os.path.join('./tmp', 'expert_data_distribution')
     utils.mkdir_if_missing(data_dir)
 
     v_1k1 = np.concatenate(v, axis=1)
@@ -57,18 +59,9 @@ def log_images(i, sim, logdir):
     axs = axs[::-1]
     for idx, img_mkd in enumerate(imgs_nmkd):
         ax = axs[idx]
-        if img_mkd.shape[2] == 1:  # plot a topview image
-            size = img_mkd.shape[0]*sim.params.obstacle_map_params.dx
-            ax.imshow(img_mkd[:, :, 0], cmap='gray', extent=(0, size, -size/2.0, size/2.0))
-
-            # Plot the robot position and heading for convenience
-            ax.plot(0, 0, 'r.', markersize=20)
-            ax.quiver(0, 0, 1., 0., color='red')
-
-        else:
-            ax.imshow(img_mkd.astype(np.int32))
+        size = img_mkd.shape[0]*sim.params.obstacle_map_params.dx
+        plot_image_observation(ax, img_mkd, size)
         ax.set_title('Image {:d}'.format(idx))
-        ax.grid('off')
     filename = os.path.join(logdir, 'fpv.png')
     fig.savefig(filename, bbox_inches='tight')
 

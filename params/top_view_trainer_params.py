@@ -114,7 +114,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=20,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/topview/nn_control/train_full_episode_20k/hard_goals/session_2018-12-05_12-17-00/checkpoints/ckpt-16',                
+                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/tmp/session_2018-12-05_16-15-48/checkpoints/ckpt-5',                
 
                         # Callback settings
                         callback_frequency=20,
