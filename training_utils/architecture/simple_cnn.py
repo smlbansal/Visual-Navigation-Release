@@ -5,7 +5,7 @@ layers = tf.keras.layers
 
 def simple_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     # Input layers
-    input_image = layers.Input(shape=(image_size[0], image_size[1], 1), dtype=dtype)
+    input_image = layers.Input(shape=(image_size[0], image_size[1], image_size[2]), dtype=dtype)
     input_flat = layers.Input(shape=(num_inputs,), dtype=dtype)
     x = input_image
     

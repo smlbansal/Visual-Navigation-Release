@@ -66,25 +66,23 @@ class SBPDRenderer():
             assert(False)
         return imgs
 
-    def _get_rgb_image(self, starts, thetas):
+    def _get_rgb_image(self, starts_n2, thetas_n1):
         """
         Render rgb image(s) from the x, y, theta
         location in starts and thetas.
         """
-        loc = starts * 1.
         # Scale thetas by 1/delta_theta as the building object
         # internally scales theta by delta_theta
-        nodes = np.concatenate([loc, thetas / self.building.robot.delta_theta], axis=1)
-        imgs = self.building.render_nodes(nodes)
-        return imgs
+        nodes_n3 = np.concatenate([starts_n2*1.,
+                                   thetas_n1 / self.building.robot.delta_theta], axis=1)
+        imgs_nmk3 = self.building.render_nodes(nodes_n3)
+        return imgs_nmk3
 
     def _get_topview(self, starts_n2, thetas_n1, crop_size=[64, 64]):
         """
         Render crop_size  topview(s) from the x, y, theta locations
         in starts and thetas.
         """
-        p = self.p.camera_params
-        
         # SBPD only supports square top views currently
         assert(crop_size[0] == crop_size[1])
 
@@ -94,10 +92,10 @@ class SBPDRenderer():
         # the positive y axis points up. The robot is located at
         # (0, (crop_size[0]-1)/2) (in pixel coordinates) facing directly to the right
         x_axis_n2 = np.concatenate([np.cos(thetas_n1), np.sin(thetas_n1)], axis=1)
-        y_axis_n2 = -np.concatenate([np.cos(thetas_n1 + np.pi / 2.), np.sin(thetas_n1 + np.pi / 2.)], axis=1)
+        y_axis_n2 = -np.concatenate([np.cos(thetas_n1 + np.pi / 2.),
+                                     np.sin(thetas_n1 + np.pi / 2.)], axis=1)
         robot_loc_2 = np.array([0, (crop_size[0]-1.)/2.])
 
-        n = thetas_n1.shape[0]
         crops_nmk = mu.generate_egocentric_maps([traversible_map], [1.0], [crop_size[0]],
                                                 starts_n2, x_axis_n2, y_axis_n2, dst_theta=0.,
                                                 dst_loc=robot_loc_2)[0]
@@ -107,7 +105,7 @@ class SBPDRenderer():
         crops_nmk1 = [np.logical_not(crop_mk[:, :, None])*1.0 for crop_mk in crops_nmk]
         return crops_nmk1
 
-    def _get_depth_image(self, starts, thetas, xy_resolution, map_size):
+    def _get_depth_image(self, starts_n2, thetas_n1, xy_resolution, map_size):
         """
         Render analytically projected depth images at the locations in
         starts, thetas. Bin data inside bins in a resolution of xy_resolution along x and y axis and
@@ -116,9 +114,8 @@ class SBPDRenderer():
         robot = self.building.robot
         z_bins = [-10, robot.base, robot.base + robot.height]
 
-        loc = starts * 1.
-        nodes = np.concatenate([loc, thetas / self.building.robot.delta_theta], axis=1)
-        imgs = self.building.render_nodes(nodes)
+        nodes_n3 = np.concatenate([starts_n2, thetas_n1 / self.building.robot.delta_theta], axis=1)
+        imgs = self.building.render_nodes(nodes_n3)
         tt = np.array(imgs)
 
         assert (r_obj.fov_horizontal == r_obj.fov_vertical)

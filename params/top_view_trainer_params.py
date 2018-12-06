@@ -18,17 +18,17 @@ def create_params():
                      
                      
                      # Number of inputs to the model
-                     num_inputs=DotMap(occupancy_grid_size=[64, 64],
+                     num_inputs=DotMap(occupancy_grid_size=[64, 64, 3],
                                        num_state_features=2 + 2  # Goal (x, y) position + Vehicle's current speed and
                                                                  # angular speed
                      ),
                      
                      # Number of the outputs to the model
-                     #num_outputs=3,  # (x, y, theta) waypoint
-                     num_outputs=60,  # (v, omega) for 30 timesteps
+                     num_outputs=3,  # (x, y, theta) waypoint
+                     #num_outputs=60,  # (v, omega) for 30 timesteps
         
                      # Occupancy grid discretization
-                     occupancy_grid_dx=[0.1, 0.1],
+                     occupancy_grid_dx=[0.05, 0.05],
                      
                      # Architecture parameters
                      arch=DotMap(
@@ -88,7 +88,7 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=400,
+                        num_epochs=100,
         
                         # Total number of samples in the dataset
                         num_samples=int(20e3),
@@ -103,7 +103,7 @@ def create_params():
                         optimizer=tf.train.AdamOptimizer,
         
                         # Learning rate
-                        lr=1e-5,
+                        lr=1e-4,
                         
                         # Learning schedule
                         learning_schedule=1,

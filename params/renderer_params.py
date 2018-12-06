@@ -13,7 +13,7 @@ def load_params():
     p.building_name = 'area3'
     p.flip = False
 
-    p.camera_params = DotMap(modalities=['occupancy_grid'],  # occupancy_grid, rgb, or depth
+    p.camera_params = DotMap(modalities=['rgb'],  # occupancy_grid, rgb, or depth
                              width=64,
                              height=64,  # the remaining params are for rgb and depth only
                              z_near=.01,
