@@ -1,13 +1,13 @@
 from dotmap import DotMap
-from utils import utils
 from obstacles.sbpd_map import SBPDMap
+from params.renderer_params import create_params as create_renderer_params
 
-dependencies = ['renderer_params']
 
+def create_params():
+    p = DotMap()
 
-def load_params():
     # Load the dependencies
-    p = DotMap({dependency: utils.load_params(dependency) for dependency in dependencies})
+    p.renderer_params = create_renderer_params()
 
     p.obstacle_map = SBPDMap
 

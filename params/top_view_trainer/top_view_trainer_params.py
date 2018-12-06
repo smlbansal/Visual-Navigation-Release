@@ -3,15 +3,15 @@ import numpy as np
 import tensorflow as tf
 from dotmap import DotMap
 from copy import deepcopy
-
-dependencies = ['simulator_params']
+from params.simulator.sbpd_simulator_params import create_params as create_simulator_params
 
 
 def create_params():
+    p = DotMap()
+
     # Load the dependencies
-    p = DotMap({dependency: utils.load_params(dependency)
-                for dependency in dependencies})
-    
+    p.simulator_params = create_simulator_params()
+        
     # Model parameters
     num_conv_layers = 3
     p.model = DotMap(
@@ -25,7 +25,6 @@ def create_params():
                      
                      # Number of the outputs to the model
                      num_outputs=3,  # (x, y, theta) waypoint
-                     #num_outputs=60,  # (v, omega) for 30 timesteps
         
                      # Occupancy grid discretization
                      occupancy_grid_dx=[0.05, 0.05],

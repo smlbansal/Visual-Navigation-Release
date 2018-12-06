@@ -3,16 +3,17 @@ import numpy as np
 from dotmap import DotMap
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
-from systems.dubins_v2 import DubinsV2
 from control_pipelines.control_pipeline_v0 import ControlPipelineV0
+from params.system_dynamics_params import create_params as create_system_dynamics_params
+from params.waypoint_params import create_params as create_waypoint_params
 
-dependencies = ['waypoint_params', 'system_dynamics_params']
 
+def create_params():
+    p = DotMap()
 
-def load_params():
     # Load the dependencies
-    p = DotMap({dependency: utils.load_params(dependency)
-                for dependency in dependencies})
+    p.system_dynamics_params = create_system_dynamics_params()
+    p.waypoint_params = create_waypoint_params()
 
     p.pipeline = ControlPipelineV0
 

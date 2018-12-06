@@ -1,19 +1,16 @@
 from dotmap import DotMap
 from utils import utils
 import numpy as np
-from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
-from simulators.sbpd_simulator import SBPDSimulator
-
-dependencies = ['planner_params', 'obstacle_map_params', 'system_dynamics_params']
+from params.system_dynamics_params import create_params as create_system_dynamics_params
+from params.planner_params import create_params as create_planner_params
 
 
-def load_params():
+def create_params():
+    p = DotMap()
+
     # Load the dependencies
-    p = DotMap({dependency: utils.load_params(dependency)
-                for dependency in dependencies})
-
-    p.simulator = SBPDSimulator
-    #p.simulator = CircularObstacleMapSimulator
+    p.system_dynamics_params = create_system_dynamics_params()
+    p.planner_params = create_planner_params()
 
     p.seed = 10  # seed for the simulator (different than for numpy and tf)
 
@@ -68,17 +65,12 @@ def load_params():
                                                     gaussian_params=[0.0, .5]  # [mean, variance]
                                                 )
                             ),
-                            # 'random_v1 ': the goal position is initialized randomly on the
-                                                    # map but at least at a distance of the obstacle margin from the
-                                                    # obstacle and at most max_dist from the start.
-
+                            
                             goal_config=DotMap(
                                                 position=DotMap(
                                                     # For description of reset types see position parameters in the
                                                     # start_config above.
-                                                    reset_type='random_v1',
-                                                    max_dist_diff=.5,
-                                                    max_fmm_dist=6.0
+                                                    reset_type='random'
                                                 )
                             )
     )

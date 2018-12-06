@@ -1,7 +1,5 @@
 import os
-import pickle
 import json
-import importlib
 import copy
 import numpy as np
 import tensorflow as tf
@@ -36,14 +34,6 @@ def render_angle_frequency(p):
     """Returns a render angle frequency
     that looks heuristically nice on plots."""
     return int(p.episode_horizon/25)
-
-
-def load_params(module_name):
-    """Loads a parameter file in ./params/module_name.py"""
-    module_name = 'params.{:s}'.format(module_name)
-    params = importlib.import_module(module_name)
-    p = params.load_params()
-    return p
 
 
 def log_dict_as_json(params, filename):

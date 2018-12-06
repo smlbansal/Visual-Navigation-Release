@@ -1,14 +1,8 @@
 from dotmap import DotMap
-from utils import utils
-from obstacles.sbpd_map import SBPDMap
-
-dependencies = []
 
 
-def load_params():
-    # Load the dependencies
-    p = DotMap({dependency: utils.load_params(dependency) for dependency in dependencies})
-
+def create_params():
+    p = DotMap()
     p.dataset_name = 'sbpd'
     p.building_name = 'area3'
     p.flip = False

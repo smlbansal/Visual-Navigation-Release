@@ -3,13 +3,9 @@ from utils import utils
 import numpy as np
 from waypoint_grids.uniform_sampling_grid import UniformSamplingGrid
 
-dependencies = []
 
-
-def load_params():
-    # Load the dependencies
-    p = DotMap({dependency: utils.load_params(dependency) for dependency in dependencies})
-
+def create_params():
+    p = DotMap()
     p.grid = UniformSamplingGrid
 
     # Desired number of waypoints. Actual number may differ slightly
