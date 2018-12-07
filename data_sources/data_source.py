@@ -28,6 +28,9 @@ class DataSource(object):
         """
         Load a saved dataset.
         """
+        # Prepare to load data
+        self._prepare_for_data_loading()
+
         # Get all the files in the directory
         file_list = self.get_file_list()
 
@@ -39,7 +42,14 @@ class DataSource(object):
         self.training_dataset = self.get_data_from_indices(data, np.arange(self.num_training_samples))
         self.validation_dataset = self.get_data_from_indices(data, np.arange(self.num_training_samples,
                                                                              self.p.trainer.num_samples))
-        
+       
+    def _prepare_for_data_loading(self):
+        """
+        Take any actions needed to prepare for data loading.
+        By default does nothing.
+        """
+        return None
+
     def generate_training_batch(self, start_index):
         """
         Generate a training batch from the dataset.
@@ -115,7 +125,7 @@ class DataSource(object):
             data[tag] = np.vstack(data[tag])
         
         return data
-    
+
     def get_data_tags(self, example_file, file_type='.pkl'):
         """
         Get the keys of the dictionary saved in the example file.
