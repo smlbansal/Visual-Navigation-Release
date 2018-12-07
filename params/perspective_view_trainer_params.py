@@ -15,8 +15,8 @@ def create_params():
 
 
     # Training parameters
-    p.trainer.num_samples = int(5e3)
-    p.trainer.num_epochs = 100
+    p.trainer.num_samples = int(20e3)
+    p.trainer.num_epochs = 400
 
     # Checkpoint
     p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/tmp/session_2018-12-06_14-51-30/checkpoints/ckpt-10'
