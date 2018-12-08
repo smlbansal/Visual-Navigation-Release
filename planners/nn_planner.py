@@ -31,10 +31,8 @@ class NNPlanner(Planner):
         # Convert Goal to Egocentric Coordinates
         self.params.system_dynamics.to_egocentric_coordinates(start_config, simulator.goal_config, self.goal_ego_config)
         
-        # Obstacle Data
-        if type(simulator) is CircularObstacleMapSimulator:
-            data['obs_centers_nm2'] = simulator.obstacle_map.obstacle_centers_m2[tf.newaxis, :, :].numpy()
-            data['obs_radii_nm1'] = simulator.obstacle_map.obstacle_radii_m1[tf.newaxis, :, :].numpy()
+        # Image Data
+        data['img_nmkd'] = simulator.get_observation(config=start_config)
 
         # Vehicle Data
         data['vehicle_state_nk3'] = start_config.position_and_heading_nk3().numpy()

@@ -43,15 +43,5 @@ class TopViewModel(BaseModel):
         """
         Create an occupancy grid of size m x k around the current vehicle position.
         """
+        #TODO: Make this work with SBPD & Circular Map
         return raw_data['img_nmkd']
-        #if self._simulator.name == 'Circular_Obstacle_Map_Simulator':
-        #    grid_nmk1 = self._simulator.get_observation(pos_n3=raw_data['vehicle_state_nk3'][:, 0],
-        #                                                obs_centers_nl2=raw_data['obs_centers_nm2'],
-        #                                                obs_radii_nl1=raw_data['obs_radii_nm1'],
-        #                                                occupancy_grid_positions_ego_1mk12=self.occupancy_grid_positions_ego_1mk12)
-        #elif self._simulator.name == 'SBPD_Simulator':
-        #    grid_nmk1 = self._simulator.get_observation(pos_n3=raw_data['vehicle_state_nk3'][:, 0],
-        #                                                crop_size=self.p.model.num_inputs.occupancy_grid_size)
-        #else:
-        #    raise NotImplementedError
-        #return grid_nmk1

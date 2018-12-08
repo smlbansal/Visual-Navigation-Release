@@ -3,106 +3,21 @@ import pickle
 import numpy as np
 import tensorflow as tf
 
-from data_sources.data_source import DataSource
+from data_sources.image_data_source import ImageDataSource
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 from trajectory.trajectory import SystemConfig
 from systems.dubins_car import DubinsCar
 
 
-class TopViewDataSource(DataSource):
+class TopViewDataSource(ImageDataSource):
+
+    def _get_n(self, data):
+        """
+        Returns n, the batch size of the data inside
+        this data dictionary.
+        """
+        return data['vehicle_state_nk3'].shape[0]
     
-    def _prepare_for_data_loading(self):
-        from utils import utils 
-        import datetime
-
-        # Create a temporary directory for image data
-        img_dir = 'tmp_{:s}_image_data_{:s}'.format(self.p.simulator_params.obstacle_map_params.renderer_params.camera_params.modalities[0],
-                                                    datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-        self.img_dir = os.path.join(self.p.data_creation.data_dir, img_dir)
-        utils.mkdir_if_missing(self.img_dir)
-
-        # Initialize the simulator to render images
-        simulator = self.p.simulator_params.simulator(self.p.simulator_params)
-
-
-        data_files = self.get_file_list()
-        for data_file in data_files:
-            with open(data_file, 'rb') as f:
-                data = pickle.load(f)
-        
-            # data_file should be ../path/file{:d}.pkl
-            filename = data_file.split('/')[-1]  # file{:d}.pkl
-            file_number = filename.split('.')[0]  # file{:d}
-            file_number = int(file_number.split('file')[-1])  # {:d}
-           
-            # Add the tag 'img_placeholder_n2' to data if needed
-            if not 'img_placeholder_n2' in data.keys():
-                n = data['vehicle_state_nk3'].shape[0]
-                data['img_placeholder_n2'] = np.stack([np.ones(n, dtype=np.int32)*file_number,
-                                                       np.arange(n)], axis=1)
-                # Save the data back to the data_file
-                with open(data_file, 'wb') as f:
-                    pickle.dump(data, f)
-
-            # Render the images from the simulator
-            if simulator.name == 'Circular_Obstacle_Map_Simulator':
-                import pdb; pdb.set_trace()
-                # TODO: get the occupancy grid from somewhere!!!
-                img_nmkd = simulator.get_observation(pos_n3=data['vehicle_state_nk3'][:, 0],
-                                                     obs_centers_nl2=data['obs_centers_nm2'],
-                                                     obs_radii_nl1=data['obs_radii_nm1'],
-                                                     occupancy_grid_positions_ego_1mk12=self.occupancy_grid_positions_ego_1mk12)
-            elif simulator.name == 'SBPD_Simulator':
-                img_nmkd = simulator.get_observation(pos_n3=data['vehicle_state_nk3'][:, 0],
-                                                     crop_size=self.p.model.num_inputs.occupancy_grid_size)
-            else:
-                raise NotImplementedError
-            
-            # Save the images to the img dir
-            img_filename = os.path.join(self.img_dir, filename)
-            data = {'img_nmkd': np.array(img_nmkd)}
-            with open(img_filename, 'wb') as f:
-                pickle.dump(data, f)
-            #TODO: Delete the img dir later
-
-    def generate_training_batch(self, start_index):
-        """
-        Generate a training batch from the dataset.
-        """
-        data = super().generate_training_batch(start_index)
-        self._load_images_into_data(data)
-        return data
-            
-    def generate_validation_batch(self):
-        """
-        Generate a validation batch from the dataset.
-        """
-        data = super().generate_validation_batch()
-        self._load_images_into_data(data)
-        return data
-
-    def _load_images_into_data(self, data):
-        """
-        Use the information stored in
-        data['img_placeholder_n2'] to load
-        the images for training.
-        """
-        img_placeholder_n2 = data['img_placeholder_n2']
-        file_numbers = set(img_placeholder_n2[:, 0])
-        img_nmkd = np.zeros((img_placeholder_n2.shape[0],
-                             *self.p.model.num_inputs.occupancy_grid_size), dtype=np.float32)
-        for file_number in file_numbers:
-            filename = os.path.join(self.img_dir, 'file{:d}.pkl'.format(file_number))
-            with open(filename, 'rb') as f:
-                img_data = pickle.load(f)
-
-            batch_mask = (img_placeholder_n2[:, 0] == file_number)
-            data_idxs = img_placeholder_n2[:, 1][batch_mask]
-            #TODO: Check if adding or equality is faster here
-            img_nmkd[batch_mask] += img_data['img_nmkd'][data_idxs]
-
-        data['img_nmkd'] = img_nmkd
-
     # TODO: Varun- look into efficiency at some point to see
     # if data collection can be sped up
     def generate_data(self):

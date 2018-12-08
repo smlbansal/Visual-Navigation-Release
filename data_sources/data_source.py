@@ -28,9 +28,6 @@ class DataSource(object):
         """
         Load a saved dataset.
         """
-        # Prepare to load data
-        self._prepare_for_data_loading()
-
         # Get all the files in the directory
         file_list = self.get_file_list()
 
@@ -39,16 +36,16 @@ class DataSource(object):
 
         # Shuffle the data and create the training and the validation datasets
         data = self.shuffle_data_dictionary(data)
-        self.training_dataset = self.get_data_from_indices(data, np.arange(self.num_training_samples))
-        self.validation_dataset = self.get_data_from_indices(data, np.arange(self.num_training_samples,
-                                                                             self.p.trainer.num_samples))
-       
-    def _prepare_for_data_loading(self):
+        self.training_dataset, self.validation_dataset = self.split_data_into_training_and_validation(data)
+
+    def split_data_into_training_and_validation(self, data):
         """
-        Take any actions needed to prepare for data loading.
-        By default does nothing.
+        Split data intro training and validation sets.
         """
-        return None
+        training_dataset = self.get_data_from_indices(data, np.arange(self.num_training_samples))
+        validation_dataset = self.get_data_from_indices(data, np.arange(self.num_training_samples,
+                                                                        self.p.trainer.num_samples))
+        return training_dataset, validation_dataset
 
     def generate_training_batch(self, start_index):
         """
@@ -115,16 +112,25 @@ class DataSource(object):
         
         # Load the data
         for filename in file_list:
-            with open(filename, 'rb') as handle:
-                data_current = pickle.load(handle)
-                for tag in self.data_tags:
-                    data[tag].append(data_current[tag])
+            data_current = self._get_current_data(filename)
+            for tag in self.data_tags:
+                data[tag].append(data_current[tag])
         
         # Concatenate all the data
         for tag in self.data_tags:
             data[tag] = np.vstack(data[tag])
         
         return data
+
+    def _get_current_data(self, filename):
+        """
+        Load and return the data stored in filename.
+        This can be overriden in subclasses
+        (see image_data_source.py).
+        """
+        with open(filename, 'rb') as handle:
+            data_current = pickle.load(handle)
+        return data_current
 
     def get_data_tags(self, example_file, file_type='.pkl'):
         """
