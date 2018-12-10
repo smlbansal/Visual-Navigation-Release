@@ -6,9 +6,9 @@ import os
 from utils.image_utils import plot_image_observation
 
 
-class TopViewTrainer(TrainerFrontendHelper):
+class VisualNavigationTrainer(TrainerFrontendHelper):
     """
-    Create a trainer that regress on the optimal waypoint using the top-view occupancy maps.
+    Create a trainer to train a model for navigation using images.
     """
 
     def parse_params(self, p, args):
@@ -31,8 +31,8 @@ class TopViewTrainer(TrainerFrontendHelper):
         return p
 
     def create_data_source(self, params=None):
-        from data_sources.top_view_trainer_data_source import TopViewDataSource
-        self.data_source = TopViewDataSource(self.p)
+        from data_sources.visual_navigation_data_source import VisualNavigationDataSource
+        self.data_source = VisualNavigationDataSource(self.p)
 
     def _init_simulator_data(self, p, num_tests, seed, name='', dirname='', plot_controls=False):
         """Initializes a simulator_data dictionary based on the params in p,
@@ -121,7 +121,7 @@ class TopViewTrainer(TrainerFrontendHelper):
         Test a trained network. Optionally test the expert policy as well.
         """
         # Call the parent test function first to restore a checkpoint
-        super(TopViewTrainer, self).test()
+        super(VisualNavigationTrainer, self).test()
 
         with tf.device(self.p.device):
             # Initialize the NN Simulator to be tested
@@ -286,4 +286,4 @@ class TopViewTrainer(TrainerFrontendHelper):
 
 
 if __name__ == '__main__':
-    TopViewTrainer().run()
+    VisualNavigationTrainer().run()

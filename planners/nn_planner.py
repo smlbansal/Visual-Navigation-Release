@@ -32,7 +32,13 @@ class NNPlanner(Planner):
         self.params.system_dynamics.to_egocentric_coordinates(start_config, simulator.goal_config, self.goal_ego_config)
         
         # Image Data
-        data['img_nmkd'] = simulator.get_observation(config=start_config)
+        if simulator.name == 'Circular_Obstacle_Map_Simulator':
+            kwargs = {'occupancy_grid_positions_ego_1mk12':
+                      self.params.model.occupancy_grid_positions_ego_1mk12}
+        else:
+            kwargs = {}
+
+        data['img_nmkd'] = simulator.get_observation(config=start_config, **kwargs)
 
         # Vehicle Data
         data['vehicle_state_nk3'] = start_config.position_and_heading_nk3().numpy()

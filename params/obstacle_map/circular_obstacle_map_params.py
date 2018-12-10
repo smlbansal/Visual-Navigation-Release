@@ -5,7 +5,7 @@ from obstacles.circular_obstacle_map import CircularObstacleMap
 dependencies = []
 
 
-def load_params():
+def create_params():
     # Load the dependencies
     p = DotMap({dependency: utils.load_params(dependency) for dependency in dependencies})
 

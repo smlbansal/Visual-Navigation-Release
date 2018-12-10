@@ -1,7 +1,12 @@
-from models.top_view.top_view_model import TopViewModel
+from models.visual_navigation.base import VisualNavigationModelBase
 
 
-class TopViewControlModel(TopViewModel):
+class VisualNavigationControlModel(VisualNavigationModelBase):
+    """
+    A model used for navigation that, conditioned on an image
+    (and potentially other inputs), returns a sequence of optimal
+    control
+    """
 
     def _optimal_labels(self, raw_data):
         """

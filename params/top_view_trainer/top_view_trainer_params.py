@@ -4,13 +4,18 @@ import tensorflow as tf
 from dotmap import DotMap
 from copy import deepcopy
 from params.simulator.sbpd_simulator_params import create_params as create_simulator_params
+from params.simulator.circular_obstacle_map_simulator_params import create_params as create_circular_simulator_params
 
 
 def create_params():
     p = DotMap()
 
     # Load the dependencies
-    p.simulator_params = create_simulator_params()
+    #p.simulator_params = create_simulator_params()
+    p.simulator_params = create_circular_simulator_params()
+
+    # Ensure the camera modality is occupancy_grid
+    p.simulator_params.obstacle_map_params.renderer_params.camera_params.modalities = ['occupancy_grid']
         
     # Model parameters
     num_conv_layers = 3
@@ -18,7 +23,7 @@ def create_params():
                      
                      
                      # Number of inputs to the model
-                     num_inputs=DotMap(occupancy_grid_size=[64, 64, 3],
+                     num_inputs=DotMap(image_size=[64, 64, 1],
                                        num_state_features=2 + 2  # Goal (x, y) position + Vehicle's current speed and
                                                                  # angular speed
                      ),
@@ -87,7 +92,7 @@ def create_params():
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=100,
+                        num_epochs=400,
         
                         # Total number of samples in the dataset
                         num_samples=int(20e3),

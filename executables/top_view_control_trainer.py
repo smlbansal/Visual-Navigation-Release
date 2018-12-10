@@ -1,13 +1,13 @@
-from training_utils.top_view_trainer import TopViewTrainer
-from models.top_view.top_view_control_model import TopViewControlModel
+from training_utils.visual_navigation_trainer import VisualNavigationTrainer
+from models.visual_navigation.top_view.top_view_control_model import TopViewControlModel
 import os
 
 
-class TopViewControlTrainer(TopViewTrainer):
+class TopViewControlTrainer(VisualNavigationTrainer):
     """
     Create a trainer that regress on the optimal control using the top-view occupancy maps.
     """
-    simulator_name = 'NN_Control_Simulator'
+    simulator_name = 'Topview_NN_Control_Simulator'
 
     def create_model(self, params=None):
         self.model = TopViewControlModel(self.p)

@@ -1,16 +1,16 @@
 from training_utils.visual_navigation_trainer import VisualNavigationTrainer
-from models.visual_navigation.top_view.top_view_waypoint_model import TopViewWaypointModel
+from models.visual_navigation.rgb.rgb_waypoint_model import RGBWaypointModel
 import os
 
 
-class TopViewWaypointTrainer(VisualNavigationTrainer):
+class RGBWaypointTrainer(VisualNavigationTrainer):
     """
     Create a trainer that regress on the optimal waypoint using the top-view occupancy maps.
     """
-    simulator_name = 'Topview_NN_Waypoint_Simulator'
+    simulator_name = 'RGB_NN_Waypoint_Simulator'
 
     def create_model(self, params=None):
-        self.model = TopViewWaypointModel(self.p)
+        self.model = RGBWaypointModel(self.p)
 
     def _modify_planner_params(self, p):
         """
@@ -31,4 +31,4 @@ class TopViewWaypointTrainer(VisualNavigationTrainer):
 
 
 if __name__ == '__main__':
-    TopViewWaypointTrainer().run()
+    RGBWaypointTrainer().run()

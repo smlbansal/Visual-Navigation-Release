@@ -64,7 +64,7 @@ class SBPDRenderer():
             raise NotImplementedError
         else:
             assert(False)
-        return imgs
+        return np.array(imgs)
 
     def _get_rgb_image(self, starts_n2, thetas_n1):
         """

@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 from data_sources.data_source import DataSource
 
+
 class ImageDataSource(DataSource):
     """
     A base class for an image data source. An image data source differs from a normal data source
@@ -25,7 +26,7 @@ class ImageDataSource(DataSource):
                                     int((self.p.trainer.training_set_size * self.p.trainer.num_samples) //
                                      self.p.trainer.batch_size)
         self.num_validation_samples = self.p.trainer.num_samples - self.num_training_samples
-        
+
         # Controls whether get_data_tags returns
         # tags which reference pickle files
         # or tags for the data iself
@@ -42,7 +43,7 @@ class ImageDataSource(DataSource):
         """
 
         # If the image dir exists already update data_dir and return it
-        if not self.p.data_creation.img_data_dir.empty() and os.path.exists(self.p.data_creation.img_data_dir):
+        if type(self.p.data_creation.img_data_dir) is str and os.path.exists(self.p.data_creation.img_data_dir):
             self.p.data_creation.data_dir = self.p.data_creation.img_data_dir
             return self.p.data_creation.data_dir
 
@@ -62,7 +63,7 @@ class ImageDataSource(DataSource):
 
             # Get the filename 'file{:d}.pkl' and file_number '{:d}'
             filename, _ = self._extract_file_name_and_number(data_file, old_data_dir)
-            
+
             # Render the images from the simulator
             img_nmkd = simulator.get_observation_from_data_dict_and_model_params(data,
                                                                                  self.p.model)
@@ -73,7 +74,7 @@ class ImageDataSource(DataSource):
             data['img_nmkd'] = np.array(img_nmkd)
             with open(img_filename, 'wb') as f:
                 pickle.dump(data, f)
-        
+
         return self.p.data_creation.data_dir
 
     def _extract_file_name_and_number(self, filename, data_dir):

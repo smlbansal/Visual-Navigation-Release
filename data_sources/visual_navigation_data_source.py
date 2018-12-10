@@ -8,7 +8,7 @@ from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimula
 from systems.dubins_car import DubinsCar
 
 
-class TopViewDataSource(ImageDataSource):
+class VisualNavigationDataSource(ImageDataSource):
 
     def _get_n(self, data):
         """

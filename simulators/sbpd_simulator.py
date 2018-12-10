@@ -22,7 +22,7 @@ class SBPDSimulator(Simulator):
         using parameters specified by the model.
         """
         img_nmkd = self.get_observation(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
-                                        crop_size=model_params.num_inputs.occupancy_grid_size)
+                                        crop_size=model_params.num_inputs.image_size)
         return img_nmkd
 
     def _reset_obstacle_map(self, rng):
