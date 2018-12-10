@@ -6,8 +6,14 @@ from data_sources.data_source import DataSource
 class ImageDataSource(DataSource):
     """
     A base class for an image data source. An image data source differs from a normal data source
-    in that the whole dataset cannot be loaded into memory. Thus we work with pickle files instead,
-    only loading data as needed.
+    in that the whole dataset cannot be loaded into memory. 
+    
+    When generating data, an image data source still generates image-less data. When loading data
+    (i.e. for training) the image data augments the imageless dataset with images (if needed), saving it in a
+    new directory. Since the entire dataset will not fit in memory an image_data_source stores the
+    training and validation sets as dictionaries with references to pickle files (placeholders). Upon calling
+    generate_training_batch (or validation_batch) the references to pickle files are converted into
+    actual training data (by loading the actual pickle file).
     """
     def __init__(self, params):
         self.p = params
@@ -28,6 +34,19 @@ class ImageDataSource(DataSource):
         self.placeholder_data_tags = ['file_number_n1', 'num_samples_n1']
 
     def _create_image_dataset(self):
+        """
+        If a user supplied img_data_dir is given, use this as the data_dir.
+        Otherwise, load the image-less data in the given data_dir, augment
+        this dataset with images, and save the resulting image dataset
+        in a new directory.
+        """
+        
+        # If the image dir exists already update data_dir and return it
+        if hasattr(self.p.data_creation, 'img_data_dir'):
+            assert(os.path.exists(self.p.data_creation.img_data_dir))
+            self.p.data_creation.data_dir = self.p.data_creation.img_data_dir
+            return self.p.data_creation.data_dir
+
         # Get the old file list
         data_files = self.get_file_list()
         old_data_dir = self.p.data_creation.data_dir
@@ -54,7 +73,8 @@ class ImageDataSource(DataSource):
             data['img_nmkd'] = np.array(img_nmkd)
             with open(img_filename, 'wb') as f:
                 pickle.dump(data, f)
-            # TODO: Delete the tmp_dir later
+        
+        return self.p.data_creation.data_dir
 
     def _extract_file_name_and_number(self, filename, data_dir):
         """
@@ -75,6 +95,8 @@ class ImageDataSource(DataSource):
         robot would have seen based on robot configurations
         in data.
         """
+        #TODO: Change this to simulator.get_obs_from_data_and_model
+        import pdb; pdb.set_trace()
         if simulator.name == 'Circular_Obstacle_Map_Simulator':
             import pdb; pdb.set_trace()
             # TODO: get the occupancy grid from somewhere!!!
@@ -89,16 +111,16 @@ class ImageDataSource(DataSource):
             raise NotImplementedError
         return img_nmkd
 
-    def _create_tmp_image_dir(self):
+    def _create_image_dir(self):
         """
-        Create a temporary directory where image data
+        Create a new directory where image data
         can be saved.
         """
         from utils import utils 
         import datetime
 
-        # Create a temporary directory for image data
-        img_dir = 'tmp_{:s}_image_data_{:s}'.format(self.p.simulator_params.obstacle_map_params.renderer_params.camera_params.modalities[0],
+        # Create a unique directory for image data
+        img_dir = '{:s}_image_data_{:s}'.format(self.p.simulator_params.obstacle_map_params.renderer_params.camera_params.modalities[0],
                                                     datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         img_dir = os.path.join(self.p.data_creation.data_dir, img_dir)
         utils.mkdir_if_missing(img_dir)
@@ -121,8 +143,9 @@ class ImageDataSource(DataSource):
         # file that is open, the current data that is loaded, etc.
         self._create_train_and_validation_information_dicts()
 
-        # This allows for loading references to pickle files rather
-        # than data itself
+        # Set this flag to True so that the data that is passed around
+        # is a reference to a pickle file (memory efficient)
+        # rather than actual data (memory inefficient)
         self.get_placeholder_data_tags = True
 
         # Load the new dataset
@@ -151,8 +174,8 @@ class ImageDataSource(DataSource):
     def _get_current_data(self, filename):
         """
         Load and return the data stored in filename.
-        This can be overriden in subclasses
-        (see image_data_source.py).
+        An image data_source deals with references to data
+        files, only loading as needed.
         """
         _, file_number = self._extract_file_name_and_number(filename,
                                                             self.p.data_creation.data_dir)
@@ -173,7 +196,8 @@ class ImageDataSource(DataSource):
     def _create_train_and_validation_information_dicts(self):
         """
         Create empty information dictionaries. These
-        are used to persist information across batch loading.
+        are used to persist information (keep a particular data file loaded)
+        across batches.
         """
         def _create_info_dict():
             return {'filename': '',
@@ -188,46 +212,55 @@ class ImageDataSource(DataSource):
         Generate a training batch from the dataset.
         """
         assert self.training_dataset is not None
+        
         # Update self.data_tags to have the real data tags
         self.data_tags = self.actual_data_tags
 
         if start_index == 0:
             self.training_info_dict['num_samples'] = 0
 
+        # Get the index of the current data file to use
         num_samples = np.cumsum(self.training_dataset['num_samples_n1'])
         file_idx = np.where(start_index < num_samples)[0][0]
+
+        # Get the indices used to shuffle the data inside this data file
         data_shuffle_idxs = self.training_shuffle_idxs[file_idx]
 
+        # Number of samples in this data file
         n = self.training_dataset['num_samples_n1'][file_idx, 0]
        
         # Load the pickle file into memory if necessary
         self._load_data_into_info_dict(self.training_dataset, file_idx,
                                        self.training_info_dict)
 
-        # Get the start index relative to the start of this pickle
-        # files data
+        # Get the start index relative to the start of this data_files data
         start_index += -self.training_info_dict['num_samples'] + n
 
-        # The whole batch can be loaded from one pickle file
+        # The whole batch can be loaded from one data file
         if start_index + self.p.trainer.batch_size < n:
             
             # Get the training batch
             training_batch = self.get_data_from_indices(self.training_info_dict['data'],
                                                         data_shuffle_idxs[start_index: start_index+self.p.trainer.batch_size])
-        else:  # The batch is split over two pickle files
-            # Get the remaining data from the first pickle file
+        else:  # The batch is split over two data_files
+            
+            # Get the remaining data from the first data_file
             training_batch0 = self.get_data_from_indices(self.training_info_dict['data'],
-                                                        data_shuffle_idxs[start_index: start_index+self.p.trainer.batch_size])
+                                                         data_shuffle_idxs[start_index: start_index+self.p.trainer.batch_size])
 
             remaining_num_samples = self.p.trainer.batch_size - self._get_n(training_batch0)
-            
-            # Load the next pickle file into memory
+           
+            # The index of the next data file
             file_idx += 1
+
+            # The indices used to shuffle the data inside this file
             data_shuffle_idxs = self.training_shuffle_idxs[file_idx]
+
+            # Load the next data_file into memory
             self._load_data_into_info_dict(self.training_dataset, file_idx,
                                            self.training_info_dict)
 
-
+            # Get the rest of the batch from the second data_file
             training_batch1 = self.get_data_from_indices(self.training_info_dict['data'],
                                                          data_shuffle_idxs[:remaining_num_samples])
 
@@ -246,8 +279,14 @@ class ImageDataSource(DataSource):
         # Update self.data_tags to have the real data tags
         self.data_tags = self.actual_data_tags
         
-        #TODO: This could be made faster. Dont need to load a new pickle file everytime!
+        # TODO: This could be made faster. This could potentially
+        # load a new pickle file everytime it is called which may slow
+        # things down
+        
+        # Choose a random data_file from the validation set
         file_idx = np.random.choice(len(self.validation_dataset['file_number_n1'][:, 0]))
+
+        # Get the shuffling indices for this data_file
         data_shuffle_idxs = self.validation_shuffle_idxs[file_idx]
         
         # Load the pickle file into memory if necessary
@@ -268,12 +307,11 @@ class ImageDataSource(DataSource):
         # Update self.data_tags to have the placeholder data tags
         self.data_tags = self.placeholder_data_tags
         
-        # Shuffle the order of the pickle files
-        # for training and validation
+        # Shuffle the order of the data_files used in training and validation
         super().shuffle_datasets()
 
         # Generate indices which correspond to shuffling
-        # individual examples inside pickle files
+        # individual examples inside data_files
         self.training_shuffle_idxs = self._generate_shuffle_ind_for_data(self.training_dataset)
         self.validation_shuffle_idxs = self._generate_shuffle_ind_for_data(self.validation_dataset)
 
@@ -296,14 +334,13 @@ class ImageDataSource(DataSource):
             info_dict['num_samples'] += data['num_samples_n1'][file_idx, 0]
         else:
             # If the file has already been loaded but num_samples has been reset to 0
-            # increment it so that it correctly reflects the correct number
+            # increment it so that it correctly reflects the correct number of samples
             if info_dict['num_samples'] == 0:
                 info_dict['num_samples'] += data['num_samples_n1'][file_idx, 0]
 
     def _generate_shuffle_ind_for_data(self, data):
         """
-        Generates shuffling data level shuffling arrays for each pickle
-        file in data.
+        Generates shuffling arrays for the actual data points inside each data
         """
         return [np.random.permutation(num_samples[0]) for num_samples in data['num_samples_n1']]
 

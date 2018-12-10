@@ -13,4 +13,5 @@ def create_params():
 
     # Change the data_dir
     p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/topview_full_episode_random_v1_100k'
+    p.data_creation.img_data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/topview_full_episode_random_v1_100k/tmp_rgb_image_data_2018-12-07_16-13-57'
     return p
