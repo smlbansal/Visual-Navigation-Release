@@ -19,8 +19,8 @@ def create_params():
     p.trainer.num_epochs = 400
 
     # Checkpoint
-    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/tmp/session_2018-12-06_14-51-30/checkpoints/ckpt-10'
+    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/circular_obstacle_map/nn_waypoint/perspective_grid/train_full_episode_20k/session_2018-12-07_10-13-45/checkpoints/ckpt-40'
 
     # Test params
-    p.test.simulate_expert = True
+    p.test.simulate_expert = False
     return p

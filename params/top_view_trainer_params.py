@@ -164,7 +164,7 @@ def create_params():
                     
                     simulate_expert=False,
                     
-                    number_tests=1,
+                    number_tests=100,
 
                     plot_controls=True,
                     
