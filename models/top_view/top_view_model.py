@@ -12,11 +12,6 @@ class TopViewModel(BaseModel):
         # Initialize an empty occupancy grid
         self.initialize_occupancy_grid()
 
-        # TODO: Potentially set this elsewhere so the model can use different
-        # simulators (i.e. for different SBPD areas)
-        # Instantiate a simulator object used by the model to generate images
-        self._simulator = params.simulator_params.simulator(params.simulator_params)
-
     def make_architecture(self):
         """
         Create the CNN architecture for the model.
@@ -39,9 +34,30 @@ class TopViewModel(BaseModel):
         
         self.occupancy_grid_positions_ego_1mk12 = tf.stack([xx_mk, yy_mk], axis=2)[tf.newaxis, :, :, tf.newaxis, :]
 
-    def create_occupancy_grid(self, raw_data):
+    def create_nn_inputs_and_outputs(self, raw_data):
         """
-        Create an occupancy grid of size m x k around the current vehicle position.
+        Create the occupancy grid and other inputs for the neural network.
         """
-        #TODO: Make this work with SBPD & Circular Map
-        return raw_data['img_nmkd']
+
+        import pdb; pdb.set_trace()
+
+        # Preprocess data if necessary
+        if self.data_processing.input_processing_function is not None:
+            raw_data = self.p.data_processing.input_processing_function(raw_data)
+
+        # Get the input image (n, m, k, d)
+        # batch size n x (m x k pixels) x d channels
+        img_nmkd = raw_data['img_nmkd']
+
+        # Concatenate the goal position in an egocentric frame with vehicle's speed information
+        state_features_n4 = tf.concat(
+            [raw_data['goal_position_ego_n2'], raw_data['vehicle_controls_nk2'][:, 0]], axis=1)
+
+        # Optimal Supervision
+        optimal_labels_n = self._optimal_labels(raw_data)
+
+        # Prepare and return the data dictionary
+        data = {}
+        data['inputs'] = [img_nmkd, state_features_n4]
+        data['labels'] = optimal_labels_n
+        return data

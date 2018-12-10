@@ -16,6 +16,18 @@ class CircularObstacleMapSimulator(Simulator):
         """
         return self.obstacle_map.get_observation(config=config, pos_n3=pos_n3, **kwargs)
 
+    def get_observation_from_data_dict_and_model_params(self, data_dict, model):
+        """
+        Returns the robot's observation from the data inside data_dict,
+        using parameters specified by the model.
+        """
+        import pdb; pdb.set_trace()
+        img_nmkd = self.get_observation(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
+                                        obs_centers_nl2=data_dict['obs_centers_nm2'],
+                                        obs_radii_nl1=data_dict['obs_radii_nm1'],
+                                        occupancy_grid_positions_ego_1mk12=model.occupancy_grid_positions_ego_1mk12)
+        return img_nmkd
+
     def _reset_obstacle_map(self, rng):
         p = self.params.reset_params.obstacle_map
         assert(p.reset_type == 'random')

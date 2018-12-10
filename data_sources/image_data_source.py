@@ -40,10 +40,9 @@ class ImageDataSource(DataSource):
         this dataset with images, and save the resulting image dataset
         in a new directory.
         """
-        
+
         # If the image dir exists already update data_dir and return it
-        if hasattr(self.p.data_creation, 'img_data_dir'):
-            assert(os.path.exists(self.p.data_creation.img_data_dir))
+        if not self.p.data_creation.img_data_dir.empty() and os.path.exists(self.p.data_creation.img_data_dir):
             self.p.data_creation.data_dir = self.p.data_creation.img_data_dir
             return self.p.data_creation.data_dir
 
@@ -52,9 +51,9 @@ class ImageDataSource(DataSource):
         old_data_dir = self.p.data_creation.data_dir
 
         # Create a new directory for image data
-        self.p.data_creation.data_dir = self._create_tmp_image_dir()
+        self.p.data_creation.data_dir = self._create_image_dir()
 
-        # Initialize the simulator to render images
+        # Initialize the simulator and model to render images
         simulator = self.p.simulator_params.simulator(self.p.simulator_params)
 
         for data_file in data_files:
@@ -62,10 +61,11 @@ class ImageDataSource(DataSource):
                 data = pickle.load(f)
 
             # Get the filename 'file{:d}.pkl' and file_number '{:d}'
-            filename, fil_number = self._extract_file_name_and_number(data_file, old_data_dir)
+            filename, _ = self._extract_file_name_and_number(data_file, old_data_dir)
             
             # Render the images from the simulator
-            img_nmkd = self._render_image(simulator, data)
+            img_nmkd = simulator.get_observation_from_data_dict_and_model_params(data,
+                                                                                 self.p.model)
 
             # Save the image augmented data
             # to the new data_creation.data_dir
@@ -89,28 +89,6 @@ class ImageDataSource(DataSource):
         file_number = int(file_number)  # {:d}
         return filename, file_number
 
-    def _render_image(self, simulator, data):
-        """
-        Uses the simulator to render the image the
-        robot would have seen based on robot configurations
-        in data.
-        """
-        #TODO: Change this to simulator.get_obs_from_data_and_model
-        import pdb; pdb.set_trace()
-        if simulator.name == 'Circular_Obstacle_Map_Simulator':
-            import pdb; pdb.set_trace()
-            # TODO: get the occupancy grid from somewhere!!!
-            img_nmkd = simulator.get_observation(pos_n3=data['vehicle_state_nk3'][:, 0],
-                                                 obs_centers_nl2=data['obs_centers_nm2'],
-                                                 obs_radii_nl1=data['obs_radii_nm1'],
-                                                 occupancy_grid_positions_ego_1mk12=self.occupancy_grid_positions_ego_1mk12)
-        elif simulator.name == 'SBPD_Simulator':
-            img_nmkd = simulator.get_observation(pos_n3=data['vehicle_state_nk3'][:, 0],
-                                                 crop_size=self.p.model.num_inputs.occupancy_grid_size)
-        else:
-            raise NotImplementedError
-        return img_nmkd
-
     def _create_image_dir(self):
         """
         Create a new directory where image data
@@ -121,7 +99,7 @@ class ImageDataSource(DataSource):
 
         # Create a unique directory for image data
         img_dir = '{:s}_image_data_{:s}'.format(self.p.simulator_params.obstacle_map_params.renderer_params.camera_params.modalities[0],
-                                                    datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+                                                datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         img_dir = os.path.join(self.p.data_creation.data_dir, img_dir)
         utils.mkdir_if_missing(img_dir)
         return img_dir
@@ -151,7 +129,6 @@ class ImageDataSource(DataSource):
         # Load the new dataset
         super().load_dataset()
 
-        
     def get_data_tags(self, example_file, file_type='.pkl'):
         """
         Get the keys of the dictionary saved in the example file. 

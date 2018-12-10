@@ -5,7 +5,6 @@ import tensorflow as tf
 
 from data_sources.image_data_source import ImageDataSource
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
-from trajectory.trajectory import SystemConfig
 from systems.dubins_car import DubinsCar
 
 

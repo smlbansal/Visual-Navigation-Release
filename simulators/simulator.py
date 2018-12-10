@@ -111,6 +111,13 @@ class Simulator:
         """
         return [None]*config.n
 
+    def get_observation_from_data_dict_and_model_params(self, data_dict, model):
+        """
+        Returns the robot's observation from the data inside data_dict,
+        using parameters specified by the model_params.
+        """
+        raise NotImplementedError
+
     def _clip_along_time_axis(self, traj, data, horizon, mode='new'):
         """ Clip a trajectory and the associated planner data
         along the time axis to length horizon."""

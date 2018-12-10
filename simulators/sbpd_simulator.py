@@ -16,6 +16,15 @@ class SBPDSimulator(Simulator):
         """
         return self.obstacle_map.get_observation(config=config, pos_n3=pos_n3, **kwargs)
 
+    def get_observation_from_data_dict_and_model_params(self, data_dict, model_params):
+        """
+        Returns the robot's observation from the data inside data_dict,
+        using parameters specified by the model.
+        """
+        img_nmkd = self.get_observation(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
+                                        crop_size=model_params.num_inputs.occupancy_grid_size)
+        return img_nmkd
+
     def _reset_obstacle_map(self, rng):
         """
         For SBPD the obstacle map does not change
