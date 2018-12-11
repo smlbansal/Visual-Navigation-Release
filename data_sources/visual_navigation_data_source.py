@@ -10,6 +10,38 @@ from systems.dubins_car import DubinsCar
 
 class VisualNavigationDataSource(ImageDataSource):
 
+    def _get_image_dir_name(self):
+        """
+        Return the name of a unique directory
+        where image data can be saved.
+        """
+        camera_params = self.p.simulator_params.obstacle_map_params.renderer_params.camera_params
+        robot_params = self.p.simulator_params.obstacle_map_params.renderer_params.robot_params
+
+
+        dir_name = 'img_data_{:s}'.format(camera_params.modalities[0])
+        dir_name += '_{:d}_{:d}_{:d}'.format(camera_params.width, camera_params.height,
+                                             camera_params.img_channels)
+       
+        # The fov, z, and resize params dont affect the occupancy grid images
+        if camera_params.modalities[0] == 'occupancy_grid':
+            dir_name += '_{:d}_{:d}'.format(robot_params.radius,
+                                            robot_params.height)
+        else:
+            dir_name += '_{:.2f}_{:.2f}'.format(camera_params.fov_horizontal,
+                                                camera_params.fov_vertical)
+            dir_name += '_{:.2f}_{:.2f}'.format(camera_params.z_near,
+                                                camera_params.z_far)
+            dir_name += '_{:.2f}'.format(camera_params.im_resize)
+
+            dir_name += '_{:d}_{:d}_{:d}_{:d}_{:d}_{:.3f}'.format(robot_params.radius,
+                                                                  robot_params.base,
+                                                                  robot_params.height,
+                                                                  robot_params.sensor_height,
+                                                                  robot_params.camera_elevation_degree,
+                                                                  robot_params.delta_theta)
+        return dir_name
+        
     def _get_n(self, data):
         """
         Returns n, the batch size of the data inside

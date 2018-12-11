@@ -36,16 +36,10 @@ class ImageDataSource(DataSource):
 
     def _create_image_dataset(self):
         """
-        If a user supplied img_data_dir is given, use this as the data_dir.
-        Otherwise, load the image-less data in the given data_dir, augment
+        Load the image-less data in the given data_dir, augment
         this dataset with images, and save the resulting image dataset
-        in a new directory.
+        in a new directory. If the data already exists, do nothing.
         """
-
-        # If the image dir exists already update data_dir and return it
-        if type(self.p.data_creation.img_data_dir) is str and os.path.exists(self.p.data_creation.img_data_dir):
-            self.p.data_creation.data_dir = self.p.data_creation.img_data_dir
-            return self.p.data_creation.data_dir
 
         # Get the old file list
         data_files = self.get_file_list()
@@ -53,6 +47,10 @@ class ImageDataSource(DataSource):
 
         # Create a new directory for image data
         self.p.data_creation.data_dir = self._create_image_dir()
+
+        # If the image data already exists, no need to recreate it
+        if len(os.listdir(self.p.data_creation.data_dir)) > 0:
+            return self.p.data_creation.data_dir
 
         # Initialize the simulator and model to render images
         simulator = self.p.simulator_params.simulator(self.p.simulator_params)
@@ -96,14 +94,18 @@ class ImageDataSource(DataSource):
         can be saved.
         """
         from utils import utils 
-        import datetime
-
-        # Create a unique directory for image data
-        img_dir = '{:s}_image_data_{:s}'.format(self.p.simulator_params.obstacle_map_params.renderer_params.camera_params.modalities[0],
-                                                datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        
+        img_dir = self._get_image_dir_name()
         img_dir = os.path.join(self.p.data_creation.data_dir, img_dir)
         utils.mkdir_if_missing(img_dir)
         return img_dir
+
+    def _get_image_dir_name(self):
+        """
+        Return the name of a unique directory
+        where image data can be saved.
+        """
+        raise NotImplementedError
 
     def load_dataset(self):
         """

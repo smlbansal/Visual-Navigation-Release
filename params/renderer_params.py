@@ -12,8 +12,8 @@ def create_params():
                              height=64,  # the remaining params are for rgb and depth only
                              z_near=.01,
                              z_far=20.0,
-                             fov_horizontal=60.,
-                             fov_vertical=49.5,
+                             fov_horizontal=90.,
+                             fov_vertical=90.,
                              img_channels=3,
                              im_resize=1.)
     
@@ -28,7 +28,7 @@ def create_params():
                             base=10,
                             height=100,
                             sensor_height=80,
-                            camera_elevation_degree=-15,
+                            camera_elevation_degree=-45,  # camera tilt
                             delta_theta=1.0)
 
     return p
