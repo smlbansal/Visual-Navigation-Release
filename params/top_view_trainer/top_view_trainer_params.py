@@ -11,8 +11,8 @@ def create_params():
     p = DotMap()
 
     # Load the dependencies
-    #p.simulator_params = create_simulator_params()
-    p.simulator_params = create_circular_simulator_params()
+    p.simulator_params = create_simulator_params()
+    #p.simulator_params = create_circular_simulator_params()
 
     # Ensure the camera modality is occupancy_grid
     p.simulator_params.obstacle_map_params.renderer_params.camera_params.modalities = ['occupancy_grid']
