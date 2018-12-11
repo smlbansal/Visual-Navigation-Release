@@ -1,10 +1,10 @@
 import tensorflow as tf
 import numpy as np
-from models.top_view.top_view_waypoint_model import TopViewWaypointModel
+from models.top_view.top_view_model import TopViewModel
 from waypoint_grids.projected_image_space_grid import ProjectedImageSpaceGrid
 
 
-class PerspectiveViewWaypointModel(TopViewWaypointModel):
+class PerspectiveViewModel(TopViewModel):
     
     def initialize_occupancy_grid(self):
         """

@@ -32,7 +32,7 @@ class TopViewModel(BaseModel):
         x_k = tf.linspace(0., 1., self.p.model.num_inputs.occupancy_grid_size[0]) * x_size
         y_m = tf.linspace(1., -1., self.p.model.num_inputs.occupancy_grid_size[1]) * y_size
         xx_mk, yy_mk = tf.meshgrid(x_k, y_m, indexing='xy')
-        
+
         self.occupancy_grid_positions_ego_1mk12 = tf.stack([xx_mk, yy_mk], axis=2)[tf.newaxis, :, :, tf.newaxis, :]
     
     def create_occupancy_grid(self, vehicle_state_n3, obs_centers_nl2, obs_radii_nl1):
