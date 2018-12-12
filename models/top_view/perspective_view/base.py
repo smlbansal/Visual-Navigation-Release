@@ -5,7 +5,11 @@ from waypoint_grids.projected_image_space_grid import ProjectedImageSpaceGrid
 
 
 class PerspectiveViewModel(TopViewModel):
-    
+    """
+    A base class for a model which recieves as input (among other things)
+    a perspective warped topview image of the environment. The model
+    predicts waypoints or controls in 3d space.
+    """
     def initialize_occupancy_grid(self):
         """
         Create an empty occupancy grid for training and test purposes.

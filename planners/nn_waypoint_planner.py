@@ -24,7 +24,8 @@ class NNWaypointPlanner(NNPlanner):
         processed_data = model.create_nn_inputs_and_outputs(raw_data)
         
         # Predict the NN output
-        nn_output_113 = model.predict_nn_output(processed_data['inputs'], is_training=False)[:, None]
+        nn_output_113 = model.predict_nn_output_with_postprocessing(processed_data['inputs'],
+                                                                    is_training=False)[:, None]
         
         # Transform to World Coordinates
         waypoint_ego_config = SystemConfig(dt=self.params.dt, n=1, k=1,

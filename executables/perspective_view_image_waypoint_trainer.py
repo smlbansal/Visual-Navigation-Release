@@ -1,17 +1,17 @@
 from training_utils.top_view_trainer import TopViewTrainer
-from models.top_view.perspective_view.perspective_view_waypoint_model import PerspectiveViewWaypointModel
+from models.top_view.perspective_view.perspective_view_image_waypoint_model import PerspectiveViewImageWaypointModel 
 import os
 
 
-class PerspectiveViewWaypointTrainer(TopViewTrainer):
+class PerspectiveViewImageWaypointTrainer(TopViewTrainer):
     """
-    Create a trainer that regress on the optimal waypoint (in 3d space)
+    Create a trainer that regress on the optimal waypoint (in the image plane)
     using the top-view occupancy maps.
     """
     simulator_name = 'NN_Waypoint_Simulator'
 
     def create_model(self, params=None):
-        self.model = PerspectiveViewWaypointModel(self.p)
+        self.model = PerspectiveViewImageWaypointModel(self.p) 
 
     def _modify_planner_params(self, p):
         """
@@ -29,4 +29,4 @@ class PerspectiveViewWaypointTrainer(TopViewTrainer):
 
 
 if __name__ == '__main__':
-    PerspectiveViewWaypointTrainer().run()
+    PerspectiveViewImageWaypointTrainer().run()
