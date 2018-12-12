@@ -16,6 +16,7 @@ def create_params():
 
     # Ensure the renderer modality is rgb
     p.simulator_params.obstacle_map_params.renderer_params.camera_params.modalities = ['rgb']
+    p.simulator_params.obstacle_map_params.renderer_params.camera_params.img_channels = 3
 
     # Copy the simulator parameters for training, data_creation, and testing
     p.trainer.simulator_params = deepcopy(p.simulator_params)

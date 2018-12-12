@@ -16,6 +16,7 @@ def create_params():
 
     # Ensure the camera modality is occupancy_grid
     p.simulator_params.obstacle_map_params.renderer_params.camera_params.modalities = ['occupancy_grid']
+    p.simulator_params.obstacle_map_params.renderer_params.camera_params.img_channels = 1
         
     # Model parameters
     num_conv_layers = 3

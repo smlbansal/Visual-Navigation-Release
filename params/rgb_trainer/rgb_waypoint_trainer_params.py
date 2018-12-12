@@ -12,5 +12,5 @@ def create_params():
     p.trainer.num_samples = int(50e3)
 
     # Change the checkpoint
-    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/nn_waypoint/train_full_episode_20k/session_2018-12-10_23-13-59/checkpoints/ckpt-20'
+    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/nn_waypoint/train_full_episo_50k_wider_fov/session_2018-12-11_19-00-58/checkpoints/ckpt-20'
     return p

@@ -208,7 +208,7 @@ class ImageDataSource(DataSource):
 
         # Number of samples in this data file
         n = self.training_dataset['num_samples_n1'][file_idx, 0]
-       
+
         # Load the pickle file into memory if necessary
         self._load_data_into_info_dict(self.training_dataset, file_idx,
                                        self.training_info_dict)
