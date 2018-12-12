@@ -77,3 +77,10 @@ class BaseModel(object):
             tf.keras.backend.set_learning_phase(0)
         
         return self.arch.predict_on_batch(data)
+
+    def predict_nn_output_with_postprocessing(self, data, is_training=None):
+        """
+        Predict the NN output to a given input with an optional post processing function
+        applied. By default there is no post processing function applied.
+        """
+        return self.model.predict_nn_output(data, is_training=is_training)

@@ -113,8 +113,13 @@ class LQRSolver:
             for t in range(self.T):
                 x_ref_n1d, u_ref_n1f = x_ref_nkd[:, t:t+1], u_ref_nkf[:, t:t+1]
                 error_t_n1d = x_next_n1d - x_ref_n1d
+            
+                # TODO: Currently calling numpy() here as tfe.DEVICE_PLACEMENT_SILENT
+                # is not working to place non-gpu ops (i.e. mod) on the cpu
+                # turning tensors into numpy arrays is a hack around this.
                 error_t_n1d = tf.concat([error_t_n1d[:, :, :angle_dims],
-                                         angle_normalize(error_t_n1d[:, :, angle_dims:angle_dims+1]),
+                                         angle_normalize(error_t_n1d[:, :,
+                                                                     angle_dims:angle_dims+1].numpy()),
                                          error_t_n1d[:, :, angle_dims+1:]],
                                         axis=2)
                 fdback_nf1 = tf.matmul(K_array_nTfd[:, t],
@@ -155,10 +160,15 @@ class LQRSolver:
             Vxx_ndd = lqr_sys['dldxx_nkdd'][:, -1]
             Vx_nd1 = lqr_sys['dldx_nkd'][:, -1, :, None]
 
+            # TODO: Currently calling numpy() here as tfe.DEVICE_PLACEMENT_SILENT
+            # is not working to place non-gpu ops (i.e. mod) on the cpu
+            # turning tensors into numpy arrays is a hack around this.
+
             for t in reversed(range(self.T)):
                 error_t_nd = lqr_sys['f_nkd'][:, t]-x_nkd[:, t+1]
                 error_t_nd = tf.concat([error_t_nd[:, :angle_dims],
-                                        angle_normalize(error_t_nd[:, angle_dims:angle_dims+1]),
+                                        angle_normalize(error_t_nd[:,
+                                                                   angle_dims:angle_dims+1].numpy()),
                                         error_t_nd[:, angle_dims+1:]],
                                        axis=1)
                 error_t_nd1 = error_t_nd[:, :, None]

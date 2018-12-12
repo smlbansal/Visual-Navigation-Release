@@ -36,11 +36,12 @@ class UniformSamplingGrid(WaypointGridBase):
     def _keep_valid_waypoints(self, wx_n11, wy_n11, wtheta_n11):
         """Remove any invalid waypoints from the grid."""
         # If the [0, 0, 0] waypoint exists remove it!
-        idx = np.argmax(np.logical_and(np.logical_and(wx_n11 == 0.0, wy_n11 == 0.0), wtheta_n11==0.0))
-        assert(wx_n11[idx] == 0.0 and wy_n11[idx] == 0.0 and wtheta_n11[idx] == 0.0)
-        wx_n11 = np.delete(wx_n11, idx, axis=0)
-        wy_n11 = np.delete(wy_n11, idx, axis=0)
-        wtheta_n11 = np.delete(wtheta_n11, idx, axis=0)
+        idx = np.where(np.logical_and(np.logical_and(wx_n11[:, 0, 0] == 0.0, wy_n11[:, 0, 0] == 0.0),
+                                      wtheta_n11[:, 0, 0] == 0.0))[0]
+        if idx.size > 0:
+            wx_n11 = np.delete(wx_n11, idx, axis=0)
+            wy_n11 = np.delete(wy_n11, idx, axis=0)
+            wtheta_n11 = np.delete(wtheta_n11, idx, axis=0)
         return wx_n11, wy_n11, wtheta_n11
 
     @property

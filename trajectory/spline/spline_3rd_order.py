@@ -198,8 +198,7 @@ class Spline3rdOrder(Spline):
         """ Perturbs goal_x and goal_y by epsilon if needed ensuring that a unique spline exists.
         Assumes that all goal angles are within [-pi/2., pi/2]."""
         assert((goal_theta_nk1 >= -np.pi/2.).all() and (goal_theta_nk1 <= np.pi/2.).all())
-        norms = np.linalg.norm(np.concatenate([goal_x_nk1-start_x, goal_y_nk1-start_y], axis=2),
-                               axis=2)
+        norms = np.linalg.norm(np.concatenate([goal_x_nk1-start_x, goal_y_nk1-start_y], axis=2), axis=2)
         invalid_idxs = (norms == 0.0)
         goal_x_nk1[invalid_idxs] += epsilon
         goal_y_nk1[invalid_idxs] += np.sign(np.sin(goal_theta_nk1[invalid_idxs]))*epsilon

@@ -24,7 +24,8 @@ class NNControlPlanner(NNPlanner):
         processed_data = model.create_nn_inputs_and_outputs(raw_data)
 
         # Predict the NN output
-        nn_output_112k = model.predict_nn_output(processed_data['inputs'], is_training=False)[:, None]
+        nn_output_112k = model.predict_nn_output_with_postprocessing(processed_data['inputs'],
+                                                                     is_training=False)[:, None]
         optimal_control_hat_1k2 = tf.reshape(nn_output_112k, (1, -1, 2))
 
         data = {'optimal_control_nk2': optimal_control_hat_1k2,
