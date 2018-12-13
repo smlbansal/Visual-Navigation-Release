@@ -1,4 +1,4 @@
-from models.visual_navigation.waypoint_model import VisualNavigationControlModel
+from models.visual_navigation.control_model import VisualNavigationControlModel
 
 
 class RGBControlModel(VisualNavigationControlModel):
