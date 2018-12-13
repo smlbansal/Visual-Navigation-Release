@@ -3,21 +3,14 @@ import numpy as np
 import tensorflow as tf
 from dotmap import DotMap
 from copy import deepcopy
-from params.simulator.sbpd_simulator_params import create_params as create_simulator_params
 from params.simulator.circular_obstacle_map_simulator_params import create_params as create_circular_simulator_params
 
 
-def create_params():
+def create_params(simulator_params):
     p = DotMap()
 
-    # Load the dependencies
-    p.simulator_params = create_simulator_params()
-    #p.simulator_params = create_circular_simulator_params()
+    p.simulator_params = simulator_params
 
-    # Ensure the camera modality is occupancy_grid
-    p.simulator_params.obstacle_map_params.renderer_params.camera_params.modalities = ['occupancy_grid']
-    p.simulator_params.obstacle_map_params.renderer_params.camera_params.img_channels = 1
-        
     # Model parameters
     num_conv_layers = 3
     p.model = DotMap(
@@ -119,7 +112,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=20,
-                        ckpt_path='/home/vtolani/Documents/Projects/visual_mpc/logs/tmp/session_2018-12-05_16-15-48/checkpoints/ckpt-5',                
+                        ckpt_path='',                
 
                         # Callback settings
                         callback_frequency=20,
@@ -152,7 +145,7 @@ def create_params():
                                 data_points_per_file=1000,
                                 
                                 # Data directory
-                                data_dir='/home/ext_drive/somilb/data/training_data/sbpd/topview_full_episode_random_v1_100k',
+                                data_dir='./REPLACE_ME',
 
                                 # Custom Simulator Params
                                 simulator_params = simulator_params
@@ -160,7 +153,6 @@ def create_params():
 
     # Custom Simulator Parameters for Testing
     simulator_params = deepcopy(p.simulator_params)
-    #simulator_params.control_horizon_s = simulator_params.system_dynamics_params.dt
 
     # Test parameters
     p.test = DotMap(

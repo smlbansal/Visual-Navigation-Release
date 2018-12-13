@@ -71,7 +71,8 @@ w = []
 
 
 def simulate(plot_controls, log_fpv_images, save_lqr, plot_velocity_hist):
-    p = utils.load_params('simulator_params')
+    from params.simulator.circular_obstacle_map_simulator_params import create_params
+    p = create_params()
     print(logdir)
     utils.mkdir_if_missing(logdir)
     utils.log_dict_as_json(p, os.path.join(logdir, 'simulator_params.json'))
