@@ -1,6 +1,5 @@
 from models.top_view.perspective_view.base import PerspectiveViewModel
 from waypoint_grids.projected_image_space_grid import ProjectedImageSpaceGrid
-import tensorflow as tf
 import numpy as np
 
 
@@ -14,19 +13,10 @@ class PerspectiveViewImageWaypointModel(PerspectiveViewModel):
         super(PerspectiveViewImageWaypointModel, self).__init__(params=params)
         self.projected_grid = ProjectedImageSpaceGrid(self.p.simulator_params.planner_params.control_pipeline_params.waypoint_params)
 
-    def create_nn_inputs_and_outputs(self, raw_data):
+    def _optimal_labels(self, raw_data):
         """
-        Create the occupancy grid and other inputs for the neural network.
+        Supervision for the optimal waypoint.
         """
-        # Create the occupancy grid out of the raw obstacle information
-        occupancy_grid_nmk1 = self.create_occupancy_grid(raw_data['vehicle_state_nk3'][:, 0],
-                                                         raw_data['obs_centers_nm2'],
-                                                         raw_data['obs_radii_nm1'])
-
-        # Concatenate the goal position in an egocentric frame with vehicle's speed information
-        state_features_n4 = tf.concat(
-            [raw_data['goal_position_ego_n2'], raw_data['vehicle_controls_nk2'][:, 0]], axis=1)
-
         # Waypoint to be supervised in 3d space
         optimal_waypoints_3d_n13 = raw_data['optimal_waypoint_ego_n3'][:, None]
         
@@ -39,15 +29,8 @@ class PerspectiveViewImageWaypointModel(PerspectiveViewModel):
                                                                                                                     wtheta_n11)
         optimal_waypoint_image_plane_n3 = np.concatenate([wx_n11[:, :, 0], wy_n11[:, :, 0],
                                                           wtheta_n11[:, :, 0]], axis=1)
-        optimal_waypoints_n3 = optimal_waypoint_image_plane_n3
-
-        # Prepare and return the data dictionary
-        data = {}
-        data['inputs'] = [occupancy_grid_nmk1, state_features_n4]
-        data['labels'] = optimal_waypoints_n3
-        return data
-
-
+        return optimal_waypoint_image_plane_n3
+        
     def predict_nn_output_with_postprocessing(self, data, is_training=None):
         """
         Predict waypoints in world space given inputs to the NN. The network

@@ -10,19 +10,21 @@ class PerspectiveViewModel(TopViewModel):
     a perspective warped topview image of the environment. The model
     predicts waypoints or controls in 3d space.
     """
-    def initialize_occupancy_grid(self):
+    
+    @staticmethod
+    def initialize_occupancy_grid(p):
         """
         Create an empty occupancy grid for training and test purposes.
         """
         # Compute the range of the image corresponding to a fov
-        grid_params = self.p.simulator_params.planner_params.control_pipeline_params.waypoint_params
+        grid_params = p.simulator_params.planner_params.control_pipeline_params.waypoint_params
         projected_grid = ProjectedImageSpaceGrid(grid_params)
        
         # Now sample uniformly from this image depending on the occupancy grid size
         wx_k = np.linspace(grid_params.bound_min[0], grid_params.bound_max[0],
-                           self.p.model.num_inputs.occupancy_grid_size[0], dtype=np.float32)
+                           p.model.num_inputs.occupancy_grid_size[0], dtype=np.float32)
         wy_m = np.linspace(grid_params.bound_min[1], grid_params.bound_max[1],
-                           self.p.model.num_inputs.occupancy_grid_size[1], dtype=np.float32)
+                           p.model.num_inputs.occupancy_grid_size[1], dtype=np.float32)
         wx_mk, wy_mk = np.meshgrid(wx_k, wy_m, indexing='xy')
 
         # Project the points back to the egocentric world frame (n = m*k here)
@@ -31,9 +33,10 @@ class PerspectiveViewModel(TopViewModel):
         
         # Make a meshgrid out of the projected points (Z is our X and X is our Y)
         XX_mk = tf.reshape(Z_n1[:, 0],
-                           [self.p.model.num_inputs.occupancy_grid_size[1],
-                            self.p.model.num_inputs.occupancy_grid_size[0]])
+                           [p.model.num_inputs.occupancy_grid_size[1],
+                            p.model.num_inputs.occupancy_grid_size[0]])
         YY_mk = tf.reshape(X_n1[:, 0],
-                           [self.p.model.num_inputs.occupancy_grid_size[1],
-                            self.p.model.num_inputs.occupancy_grid_size[0]])
-        self.occupancy_grid_positions_ego_1mk12 = tf.stack([XX_mk, YY_mk], axis=2)[tf.newaxis, :, :, tf.newaxis, :]
+                           [p.model.num_inputs.occupancy_grid_size[1],
+                            p.model.num_inputs.occupancy_grid_size[0]])
+        occupancy_grid_positions_ego_1mk12 = tf.stack([XX_mk, YY_mk], axis=2)[tf.newaxis, :, :, tf.newaxis, :]
+        return occupancy_grid_positions_ego_1mk12
