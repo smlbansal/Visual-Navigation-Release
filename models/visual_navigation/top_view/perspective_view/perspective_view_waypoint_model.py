@@ -1,5 +1,5 @@
-from models.top_view.top_view_waypoint_model import TopViewWaypointModel
-from models.top_view.perspective_view.base import PerspectiveViewModel
+from models.visual_navigation.top_view.top_view_waypoint_model import TopViewWaypointModel
+from models.visual_navigation.top_view.perspective_view.base import PerspectiveViewModel
 
 
 class PerspectiveViewWaypointModel(TopViewWaypointModel, PerspectiveViewModel):

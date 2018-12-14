@@ -8,13 +8,14 @@ class TopViewModel(VisualNavigationModelBase):
         super(TopViewModel, self).__init__(params=params)
         
         # Initialize an empty occupancy grid
-        self.occupancy_grid_positions_ego_1mk12 = self.initialize_occupancy_grid(params.model)
+        self.occupancy_grid_positions_ego_1mk12 = self.initialize_occupancy_grid(params)
 
     @staticmethod
     def initialize_occupancy_grid(p):
         """
         Create an empty occupancy grid for training and test purposes.
         """
+        p = p.model
         x_size = p.occupancy_grid_dx[0] * p.num_inputs.image_size[0]
         y_size = 0.5 * p.occupancy_grid_dx[1] * p.num_inputs.image_size[1]
         

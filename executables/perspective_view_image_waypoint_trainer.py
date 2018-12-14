@@ -1,9 +1,9 @@
-from training_utils.top_view_trainer import TopViewTrainer
-from models.top_view.perspective_view.perspective_view_image_waypoint_model import PerspectiveViewImageWaypointModel 
+from training_utils.visual_navigation_trainer import VisualNavigationTrainer
+from models.visual_navigation.top_view.perspective_view.perspective_view_image_waypoint_model import PerspectiveViewImageWaypointModel 
 import os
 
 
-class PerspectiveViewImageWaypointTrainer(TopViewTrainer):
+class PerspectiveViewImageWaypointTrainer(VisualNavigationTrainer):
     """
     Create a trainer that regress on the optimal waypoint (in the image plane)
     using the top-view occupancy maps.

@@ -1,6 +1,7 @@
 from dotmap import DotMap
 import numpy as np
 from waypoint_grids.projected_image_space_grid import ProjectedImageSpaceGrid
+from params.renderer_params import create_params as create_renderer_params
 
 
 def create_params():
@@ -15,20 +16,31 @@ def create_params():
     
     p.bound_min = [0., -2.5, -np.pi]
     p.bound_max = [2.5, 2.5, 0.]
+   
+
+    renderer_params = create_renderer_params()
+    camera_params = renderer_params.camera_params
+    robot_params = renderer_params.robot_params
     
+    # Ensure square image and aspect ratio = 1
+    # as ProjectedImageSpaceGrid assumes this
+    assert(camera_params.width == camera_params.height)
+    assert(camera_params.fov_horizontal == camera_params.fov_vertical)
+
     # Additional parameters for the projected grid from the image space to the world coordinates
     p.projected_grid_params = DotMap(
                                     # Focal length in meters
-                                    f=1.,
+                                    # OpenGL default uses the near clipping plane
+                                    f=camera_params.z_near,
                                     
                                     # Half-field of view
-                                    fov=np.pi/4.,
+                                    fov=np.deg2rad(camera_params.fov_horizontal/2.),
         
                                     # Height of the camera from the ground in meters
-                                    h=1.,
+                                    h=robot_params.sensor_height/100.,
         
                                     # Downwards tilt of the robot camera
-                                    tilt=np.pi/4.
+                                    tilt=np.deg2rad(-robot_params.camera_elevation_degree),
     )
     
     return p

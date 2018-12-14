@@ -1,4 +1,4 @@
-from models.top_view.perspective_view.base import PerspectiveViewModel
+from models.visual_navigation.top_view.perspective_view.base import PerspectiveViewModel
 from waypoint_grids.projected_image_space_grid import ProjectedImageSpaceGrid
 import numpy as np
 

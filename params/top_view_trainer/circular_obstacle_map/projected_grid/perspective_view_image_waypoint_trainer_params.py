@@ -1,4 +1,4 @@
-from params.perspective_view_trainer.perspective_view_trainer_params import create_params as create_perspective_view_trainer_params
+from params.top_view_trainer.circular_obstacle_map.projected_grid.perspective_view_trainer_params import create_params as create_perspective_view_trainer_params
 
 
 def create_params():
