@@ -1,4 +1,4 @@
-from params.rgb_trainer.sbpd.uniform_grid.rgb_trainer_params import create_params as create_rgb_trainer_params
+from params.rgb_trainer.sbpd.projected_grid.rgb_trainer_params import create_params as create_rgb_trainer_params
 
 
 def create_params():
@@ -12,6 +12,6 @@ def create_params():
     p.trainer.num_samples = int(50e3)
 
     # Change the checkpoint
-    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/nn_waypoint/train_full_episode_50k/session_2018-12-12_13-34-16/checkpoints/ckpt-20'
+    p.trainer.ckpt_path = '' 
 
     return p

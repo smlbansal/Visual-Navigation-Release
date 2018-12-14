@@ -1,0 +1,30 @@
+from params.simulator.sbpd_simulator_params import create_params as create_simulator_params
+from params.visual_navigation_trainer_params import create_params as create_trainer_params
+from training_utils.data_processing.rgb_preprocess import preprocess as preprocess_image_data
+from params.waypoint_grid.sbpd_image_space_grid import create_params as create_waypoint_params
+
+def create_params():
+    # Load the dependencies
+    simulator_params = create_simulator_params()
+
+    # Ensure the waypoint grid is the projected SBPD grid
+    simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
+
+    # Ensure the renderer modality is rgb
+    simulator_params.obstacle_map_params.renderer_params.camera_params.modalities = ['rgb']
+    simulator_params.obstacle_map_params.renderer_params.camera_params.img_channels = 3
+
+    p = create_trainer_params(simulator_params=simulator_params)
+
+    # Change the occupancy grid discretization to match SBPD (5cm)
+    # Image size to [64, 64, 3]
+    p.model.occupancy_grid_dx = [.05, .05]
+    p.model.num_inputs.image_size = [64, 64, 3]
+
+    # Change the data_dir
+    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_full_episode_random_v1_100k'
+
+    # Change the Data Processing
+    p.data_processing.input_processing_function = preprocess_image_data 
+
+    return p
