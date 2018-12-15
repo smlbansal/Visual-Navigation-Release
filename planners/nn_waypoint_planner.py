@@ -19,7 +19,7 @@ class NNWaypointPlanner(NNPlanner):
         p = self.params
 
         model = p.model
-        
+
         raw_data = self._raw_data(start_config)
         processed_data = model.create_nn_inputs_and_outputs(raw_data)
         
