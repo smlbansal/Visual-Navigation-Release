@@ -7,7 +7,6 @@ def create_params():
     # Load the dependencies
     simulator_params = create_simulator_params()
 
-    # Ensure the waypoint grid is projected image space
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
 
     # Ensure the camera modality is occupancy_grid
@@ -21,7 +20,9 @@ def create_params():
     p.model.occupancy_grid_dx = [.1, .1]
     p.model.num_inputs.image_size = [32, 32, 1]
 
+    p.model.rescale_imageframe_coordinates = False
+
     # Change the data directory
-    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/circular_obstacle_map/topview_full_episode_100k'
+    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/circular_obstacle_map/projected_topview_full_episode_100k'
 
     return p

@@ -119,6 +119,11 @@ def create_params(simulator_params):
                         callback_number_tests=20,
                         callback_seed=10,
 
+                        # For models which regress to waypoints in the image space
+                        # True: Supervision for model outputs is normalized to a 0, 1 range
+                        # False: Supervision for model outputs is kept in its normal range
+                        rescale_imageframe_coordinates = False,
+
                         # Custom Simulator Parameters for Training. Add more as needed.
                         simulator_params=deepcopy(p.simulator_params)
 

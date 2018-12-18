@@ -1,13 +1,16 @@
 from dotmap import DotMap
-from utils import utils
 from obstacles.circular_obstacle_map import CircularObstacleMap
-
-dependencies = []
+from params.renderer_params import create_params as create_renderer_params
 
 
 def create_params():
+    p = DotMap()
+
     # Load the dependencies
-    p = DotMap({dependency: utils.load_params(dependency) for dependency in dependencies})
+    p.renderer_params = create_renderer_params()
+
+    # The Circular Obstacle Map only supports occupancy grid as observation
+    assert(p.renderer_params.camera_params.modalities[0] == 'occupancy_grid')
 
     p.obstacle_map = CircularObstacleMap
 
