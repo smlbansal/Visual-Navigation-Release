@@ -82,7 +82,21 @@ class TrainerHelper(object):
         if not os.path.exists(self.ckpt_dir):
             os.makedirs(self.ckpt_dir)
             self.checkpoint = tfe.Checkpoint(optimizer=self.optimizer, model=model.arch)
-        
+           
+            # TODO: This allows the user to specify how many checkpoints should be saved.
+            # Tensorflow does not support passing the max_to_keep argument to
+            # an eager checkpoint so this is a hack around it.
+            from tensorflow.python.training.saver import Saver
+            default_args = list(Saver.__init__.__code__.co_varnames)
+            default_values = list(Saver.__init__.__defaults__)
+            if 'self' in default_args:
+                # Subtract one since default_values has no value for 'self'
+                idx = default_args.index('max_to_keep') - 1
+                default_values[idx] = self.p.max_num_ckpts_to_keep
+                Saver.__init__.__defaults__ = tuple(default_values)
+            else:
+                assert(False)
+
         # Save the checkpoint
         if epoch % self.p.ckpt_save_frequency == 0:
             self.checkpoint.save(os.path.join(self.ckpt_dir, 'ckpt'))

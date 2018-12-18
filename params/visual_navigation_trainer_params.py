@@ -86,7 +86,7 @@ def create_params(simulator_params):
                         seed=10,
                         
                         # Number of epochs
-                        num_epochs=400,
+                        num_epochs=200,
         
                         # Total number of samples in the dataset
                         num_samples=int(20e3),
@@ -111,12 +111,13 @@ def create_params(simulator_params):
                         lr_decay_factor=None,
         
                         # Checkpoint settings
+                        max_num_ckpts_to_keep=int(1e2),
                         ckpt_save_frequency=20,
                         ckpt_path='',                
 
                         # Callback settings
                         callback_frequency=20,
-                        callback_number_tests=20,
+                        callback_number_tests=50,
                         callback_seed=10,
 
                         # For models which regress to waypoints in the image space
