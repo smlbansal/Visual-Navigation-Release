@@ -22,6 +22,9 @@ class NNControlPlanner(NNPlanner):
 
         raw_data = self._raw_data(start_config)
         processed_data = model.create_nn_inputs_and_outputs(raw_data)
+        
+        # TODO: This is for debugging
+        # self._plot_img(processed_data['inputs'][0])
 
         # Predict the NN output
         nn_output_112k = model.predict_nn_output_with_postprocessing(processed_data['inputs'],
@@ -31,6 +34,21 @@ class NNControlPlanner(NNPlanner):
         data = {'optimal_control_nk2': optimal_control_hat_1k2,
                 'system_config': SystemConfig.copy(start_config)}
         return data
+
+    def _plot_img(self, img_nmkd):
+        """
+        Plot a raw image observation in the tmp data directory.
+        For debugging.
+        """
+        import matplotlib.pyplot as plt
+        from utils.image_utils import plot_image_observation
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        plot_image_observation(ax, img_nmkd[0])
+        fig.suptitle('Image: {:d}'.format(self.counter))
+        fig.savefig('./tmp/grid/image_{:d}.png'.format(self.counter), bbox_inches='tight')
+        self.counter += 1
+        plt.close(fig)
 
     @staticmethod
     def empty_data_dict():

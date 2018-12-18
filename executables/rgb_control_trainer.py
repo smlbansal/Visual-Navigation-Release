@@ -1,6 +1,6 @@
-from training_utils.visual_navigation_trainer import VisualNavigationTrainer
-from models.visual_navigation.rgb.rgb_control_model import RGBControlModel
 import os
+from models.visual_navigation.rgb.rgb_control_model import RGBControlModel
+from training_utils.visual_navigation_trainer import VisualNavigationTrainer
 
 
 class RGBControlTrainer(VisualNavigationTrainer):
@@ -16,11 +16,11 @@ class RGBControlTrainer(VisualNavigationTrainer):
     def _modify_planner_params(self, p):
         """
         Modifies a DotMap parameter object
-        with parameters for a NNWaypointPlanner
+        with parameters for a NNControlPlanner
         """
-        from planners.nn_waypoint_planner import NNWaypointPlanner
+        from planners.nn_control_planner import NNControlPlanner
 
-        p.planner_params.planner = NNWaypointPlanner
+        p.planner_params.planner = NNControlPlanner
         p.planner_params.model = self.model
 
     def _summary_dir(self):
