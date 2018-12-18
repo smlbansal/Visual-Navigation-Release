@@ -25,12 +25,18 @@ class VisualNavigationImageWaypointModel(VisualNavigationModelBase):
         wy_n11 = optimal_waypoints_3d_n13[:, :, 1:2]
         wtheta_n11 = optimal_waypoints_3d_n13[:, :, 2:3]
         wx_n11, wy_n11, wtheta_n11, _, _ = self.projected_grid.generate_imageframe_waypoints_from_worldframe_waypoints(wx_n11,
-                                                                                                                    wy_n11,
-                                                                                                                    wtheta_n11)
+                                                                                                                       wy_n11,
+                                                                                                                       wtheta_n11)
+
+        # Optionally rescale x and y to the range [0, 1] for better learning
+        if self.p.model.rescale_imageframe_coordinates:
+            wx_n11, wy_n11, wtheta_n11 = self.rescale_imageframe_coordinates_to_0_1(wx_n11,
+                                                                                    wy_n11,
+                                                                                    wtheta_n11)
         optimal_waypoint_image_plane_n3 = np.concatenate([wx_n11[:, :, 0], wy_n11[:, :, 0],
                                                           wtheta_n11[:, :, 0]], axis=1)
         return optimal_waypoint_image_plane_n3
-        
+
     def predict_nn_output_with_postprocessing(self, data, is_training=None):
         """
         Predict waypoints in world space given inputs to the NN. The network
@@ -41,8 +47,40 @@ class VisualNavigationImageWaypointModel(VisualNavigationModelBase):
         wx_n11 = nn_output_n13[:, :, 0:1]
         wy_n11 = nn_output_n13[:, :, 1:2]
         wtheta_n11 = nn_output_n13[:, :, 2:3]
+       
+        # If the network was trained to predict normalized x, y then unnormalize them
+        # to get the location of the predicted pixel
+        if self.p.model.rescale_imageframe_coordinates:
+            wx_n11, wy_n11, wtheta_n11 = self.rescale_imageframe_coordinates_to_image_size(wx_n11,
+                                                                                           wy_n11,
+                                                                                           wtheta_n11)
         wx_n11, wy_n11, wtheta_n11, _, _ = self.projected_grid.generate_worldframe_waypoints_from_imageframe_waypoints(wx_n11,
                                                                                                                        wy_n11,
                                                                                                                        wtheta_n11)
         processed_output_n3 = np.concatenate([wx_n11, wy_n11, wtheta_n11], axis=2)[:, 0, :]
         return processed_output_n3
+
+    def rescale_imageframe_coordinates_to_0_1(self, wx_n11, wy_n11, wtheta_n11):
+        """
+        Rescale image plane coordinates to between 0 and 1 for
+        x, and y for better NN learning. Theta is always in a reasonable range so it doesnt need to be rescaled
+        """
+        bound_min = self.projected_grid.params.bound_min
+        bound_max = self.projected_grid.params.bound_max
+
+        wx_n11 = (wx_n11 - bound_min[0])/(bound_max[0] - bound_min[0])
+        wy_n11 = (wy_n11 - bound_min[1])/(bound_max[1] - bound_min[1])
+
+        return wx_n11, wy_n11, wtheta_n11
+
+    def rescale_imageframe_coordinates_to_image_size(self, wx_n11, wy_n11, wtheta_n11):
+        """
+        Rescale normalized image plane coordinates to actual coordinates on the image plane.
+        """
+        bound_min = self.projected_grid.params.bound_min
+        bound_max = self.projected_grid.params.bound_max
+
+        wx_n11 = wx_n11 * (bound_max[0] - bound_min[0]) + bound_min[0]
+        wy_n11 = wy_n11 * (bound_max[1] - bound_min[1])  + bound_min[1]
+        return wx_n11, wy_n11, wtheta_n11 
+
