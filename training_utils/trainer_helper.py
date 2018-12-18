@@ -84,8 +84,8 @@ class TrainerHelper(object):
             self.checkpoint = tfe.Checkpoint(optimizer=self.optimizer, model=model.arch)
            
             # TODO: This allows the user to specify how many checkpoints should be saved.
-            # Tensorflow does not support passing the max_to_keep argument to
-            # an eager checkpoint so this is a hack around it.
+            # Tensorflow does not expose the parameter in tfe.Checkpoint for max_to_keep,
+            # however under the hood it uses a Saver object so we can hack around this.
             from tensorflow.python.training.saver import Saver
             default_args = list(Saver.__init__.__code__.co_varnames)
             default_values = list(Saver.__init__.__defaults__)
