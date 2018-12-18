@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 from sbpd.sbpd_renderer import SBPDRenderer
 from utils.fmm_map import FmmMap
+from systems.dubins_car import DubinsCar
 
 
 class SBPDMap(ObstacleMap):
@@ -86,10 +87,26 @@ class SBPDMap(ObstacleMap):
         if config is not None:
             pos_n3 = config.position_and_heading_nk3()[:, 0].numpy()
 
-        starts_n2 = self._point_to_map(pos_n3[:, :2])
-        thetas_n1 = pos_n3[:, 2:3]
-
-        imgs = self._r.render_images(starts_n2, thetas_n1, **kwargs)
+        if 'occupancy_grid' in self.p.renderer_params.camera_params.modalities:
+            occupancy_grid_world_1mk12 = kwargs['occupancy_grid_positions_ego_1mk12']
+            _, m, k, _, _ = [x.value for x in occupancy_grid_world_1mk12.shape]
+            occupancy_grid_nk2 = tf.reshape(occupancy_grid_world_1mk12, (1, -1, 2))
+           
+            # Broadcast the occupancy grid to batch size n if needed
+            n = pos_n3.shape[0]
+            if n != 1:
+                occupancy_grid_nk2 = tf.broadcast_to(occupancy_grid_nk2, (n,
+                                                                          occupancy_grid_nk2.shape[1].value,
+                                                                          2))
+            occupancy_grid_world_nk2 = DubinsCar.convert_position_and_heading_to_world_coordinates(pos_n3[:, None, :],
+                                                                                                   occupancy_grid_nk2.numpy())
+            dist_to_nearest_obs_nk2 = self.dist_to_nearest_obs(occupancy_grid_world_nk2)
+            dist_to_nearest_obs_nmk1 = tf.reshape(dist_to_nearest_obs_nk2, (n, m, k, 1))
+            imgs = 0.5 * (1. - tf.sign(dist_to_nearest_obs_nmk1)).numpy()
+        else:
+            starts_n2 = self._point_to_map(pos_n3[:, :2])
+            thetas_n1 = pos_n3[:, 2:3]
+            imgs = self._r.render_images(starts_n2, thetas_n1, **kwargs)
         return imgs
 
     def render(self, ax, start_config=None):

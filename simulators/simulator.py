@@ -111,10 +111,10 @@ class Simulator:
         """
         return [None]*config.n
 
-    def get_observation_from_data_dict_and_model_params(self, data_dict, model):
+    def get_observation_from_data_dict_and_model(self, data_dict, model):
         """
         Returns the robot's observation from the data inside data_dict,
-        using parameters specified by the model_params.
+        using parameters specified by the model.
         """
         raise NotImplementedError
 

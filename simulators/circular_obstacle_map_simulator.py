@@ -17,16 +17,15 @@ class CircularObstacleMapSimulator(Simulator):
         """
         return self.obstacle_map.get_observation(config=config, pos_n3=pos_n3, **kwargs)
 
-    def get_observation_from_data_dict_and_model_params(self, data_dict, model_params):
+    def get_observation_from_data_dict_and_model(self, data_dict, model):
         """
         Returns the robot's observation from the data inside data_dict,
-        using parameters specified by the model.
+        using the occupancy_grid from the model.
         """
-        occupancy_grid_positions_ego_1mk12 = TopViewModel.initialize_occupancy_grid(model_params)
         img_nmkd = self.get_observation(pos_n3=data_dict['vehicle_state_nk3'][:, 0],
                                         obs_centers_nl2=data_dict['obs_centers_nm2'],
                                         obs_radii_nl1=data_dict['obs_radii_nm1'],
-                                        occupancy_grid_positions_ego_1mk12=occupancy_grid_positions_ego_1mk12)
+                                        occupancy_grid_positions_ego_1mk12=model.occupancy_grid_positions_ego_1mk12)
         return img_nmkd
 
     def _reset_obstacle_map(self, rng):
