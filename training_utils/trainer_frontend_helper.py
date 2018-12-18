@@ -87,7 +87,7 @@ class TrainerFrontendHelper(object):
         Create a data source for the data manipulation.
         """
         self.data_source = DataSource(self.p)
-        
+
     def create_model(self, params=None):
         """
         Create the input-output model.
@@ -119,12 +119,12 @@ class TrainerFrontendHelper(object):
 
         # Start the training
         with tf.device(self.p.device):
-            # First create a data source and load the data
-            self.create_data_source()
-            self.data_source.load_dataset()
-
             # Create an input and output model
             self.create_model()
+
+            # Create a data source and load the data
+            self.create_data_source()
+            self.data_source.load_dataset()
 
             # Create a trainer
             self.create_trainer()

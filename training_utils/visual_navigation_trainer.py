@@ -34,6 +34,10 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         from data_sources.visual_navigation_data_source import VisualNavigationDataSource
         self.data_source = VisualNavigationDataSource(self.p)
 
+        # Give the visual_navigation data source access to the model.
+        # May be needed to render training images, etc.
+        self.data_source.model = self.model
+
     def _init_simulator_data(self, p, num_tests, seed, name='', dirname='', plot_controls=False):
         """Initializes a simulator_data dictionary based on the params in p,
         num_test, name, and dirname. This can be later passed to the simulate
@@ -224,13 +228,11 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         simulator = data['simulator']
         dirname = data['dir']
 
-        if simulator.name == 'Circular_Obstacle_Map_Simulator':
+        if hasattr(self.model, 'occupancy_grid_positions_ego_1mk12'):
             occupancy_grid_positions_ego_1mk12 = self.model.occupancy_grid_positions_ego_1mk12
             kwargs = {'occupancy_grid_positions_ego_1mk12': occupancy_grid_positions_ego_1mk12}
-        elif simulator.name == 'SBPD_Simulator':
-            kwargs = {}
         else:
-            raise NotImplementedError
+            kwargs = {}
 
         imgs_nmkd = simulator.get_observation(simulator.vehicle_data['system_config'], **kwargs)
         fig, _, axs = utils.subplot2(plt, (len(imgs_nmkd), 1), (8, 8), (.4, .4))

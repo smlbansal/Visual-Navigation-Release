@@ -63,8 +63,8 @@ class ImageDataSource(DataSource):
             filename, _ = self._extract_file_name_and_number(data_file, old_data_dir)
 
             # Render the images from the simulator
-            img_nmkd = simulator.get_observation_from_data_dict_and_model_params(data,
-                                                                                 self.p.model)
+            img_nmkd = simulator.get_observation_from_data_dict_and_model(data,
+                                                                          self.model)
 
             # Save the image augmented data
             # to the new data_creation.data_dir
