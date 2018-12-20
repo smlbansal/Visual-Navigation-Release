@@ -27,6 +27,6 @@ def create_params():
 
 
     # Change the data directory
-    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_full_episode_random_v1_100k'
+    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/full_episode_random_v1_100k'
 
     return p

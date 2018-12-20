@@ -12,7 +12,7 @@ def create_params():
     p.trainer.num_samples = int(50e3)
 
     # Change the checkpoint
-    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/nn_control/uniform_grid/train_full_episode_50k/session_2018-12-18_11-10-27/checkpoints/ckpt-4' 
+    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/nn_control/uniform_grid/train_full_episode_50k/session_2018-12-18_13-46-02/checkpoints/ckpt-6'
 
     p.test.number_tests = 100
     p.test.simulate_expert = False

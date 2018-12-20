@@ -14,15 +14,17 @@ def create_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.modalities = ['rgb']
     simulator_params.obstacle_map_params.renderer_params.camera_params.img_channels = 3
 
+    # Ensure image is 64x64
+    simulator_params.obstacle_map_params.renderer_params.camera_params.width = 64
+    simulator_params.obstacle_map_params.renderer_params.camera_params.height = 64
+
     p = create_trainer_params(simulator_params=simulator_params)
 
-    # Change the occupancy grid discretization to match SBPD (5cm)
     # Image size to [64, 64, 3]
-    p.model.occupancy_grid_dx = [.05, .05]
     p.model.num_inputs.image_size = [64, 64, 3]
 
     # Change the data_dir
-    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_full_episode_random_v1_100k'
+    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/full_episode_random_v1_100k' 
 
     # Change the Data Processing
     p.data_processing.input_processing_function = preprocess_image_data 

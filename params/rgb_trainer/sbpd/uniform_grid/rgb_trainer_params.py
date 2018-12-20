@@ -19,7 +19,6 @@ def create_params():
 
     p = create_trainer_params(simulator_params=simulator_params)
 
-    # Change the occupancy grid discretization to match SBPD (5cm)
     # Image size to [64, 64, 3]
     p.model.num_inputs.image_size = [64, 64, 3]
 
