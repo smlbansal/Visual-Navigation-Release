@@ -25,6 +25,13 @@ class VisualNavigationModelBase(BaseModel):
         """
         raise NotImplementedError
 
+    def _goal_position(self, raw_data):
+        """
+        Return the goal position (x, y) in egocentric
+        coordinates.
+        """
+        return raw_data['goal_position_ego_n2']
+
     def create_nn_inputs_and_outputs(self, raw_data):
         """
         Create the occupancy grid and other inputs for the neural network.
@@ -39,8 +46,9 @@ class VisualNavigationModelBase(BaseModel):
         img_nmkd = raw_data['img_nmkd']
 
         # Concatenate the goal position in an egocentric frame with vehicle's speed information
+        goal_position = self._goal_position(raw_data)
         state_features_n4 = tf.concat(
-            [raw_data['goal_position_ego_n2'], raw_data['vehicle_controls_nk2'][:, 0]], axis=1)
+            [goal_position, raw_data['vehicle_controls_nk2'][:, 0]], axis=1)
 
         # Optimal Supervision
         optimal_labels_n = self._optimal_labels(raw_data)

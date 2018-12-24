@@ -13,6 +13,15 @@ def create_params():
     
     # Rescale NN supervision from [0, 1]
     p.model.rescale_imageframe_coordinates = True
+
+    # Project the goal position into the image frame
+    p.model.project_goal_coordinates_to_image_plane = True
+
+    # Add an indicator telling the model whether the goal is in front
+    # or behind the image plane
+    p.model.include_goal_direction_indicator = True
+    p.model.num_inputs.num_state_features = 3 + 2  # Goal (x, y), Goal direction ind, and vehicle
+    # current speed and angular speed
     
     # Checkpoint
     p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/topview/nn_waypoint/projected_grid/predict_image_space/normalized_waypt_coord/train_full_episode_20k_newest/session_2018-12-17_16-46-40/checkpoints/ckpt-20' 

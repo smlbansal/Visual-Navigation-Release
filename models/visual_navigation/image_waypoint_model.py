@@ -13,6 +13,43 @@ class VisualNavigationImageWaypointModel(VisualNavigationModelBase):
         super(VisualNavigationModelBase, self).__init__(params=params)
         self.projected_grid = ProjectedImageSpaceGrid(self.p.simulator_params.planner_params.control_pipeline_params.waypoint_params)
 
+    def _goal_position(self, raw_data):
+        """
+        Return the goal position in egocentric coordinates.
+        Optionally, project the goal position into the image frame
+        and return its location in the pixel space.
+        """
+        if self.p.model.project_goal_coordinates_to_image_plane:
+            goal_x = raw_data['goal_position_ego_n2'][:, 0]
+            goal_y = raw_data['goal_position_ego_n2'][:, 1]
+            goal_x_n11 = goal_x[:, None, None]
+            goal_y_n11 = goal_y[:, None, None]
+            goal_direction_indicator_n11 = self.projected_grid.worldframe_waypoint_direction_indicator(goal_x_n11,
+                                                                                                       goal_y_n11,
+                                                                                                       0.*goal_x_n11)
+            goal_x_n11, goal_y_n11, _, _, _ = self.projected_grid.generate_imageframe_waypoints_from_worldframe_waypoints(goal_x_n11,
+                                                                                                                          goal_y_n11,
+                                                                                                                          0.*goal_x_n11)
+            # If necessary, scale the goal position to normalized image
+            # plane (1 x 1 meters)
+            if self.p.model.rescale_imageframe_coordinates:
+                goal_x_n11, goal_y_n11, _ = self.rescale_imageframe_coordinates_to_0_1(goal_x_n11,
+                                                                                       goal_y_n11,
+                                                                                       0.0*goal_y_n11)
+            goal_image_plane_n2 = np.concatenate([goal_x_n11[:, :, 0], goal_y_n11[:, :, 0]],
+                                                 axis=1)
+
+            # If necessary append the goal direction information
+            if self.p.model.include_goal_direction_indicator:
+                goal_info_image_plane_n3 = np.concatenate([goal_image_plane_n2,
+                                                           goal_direction_indicator_n11[:, 0]],
+                                                          axis=1)
+                return goal_info_image_plane_n3.astype(np.float32)
+            else:
+                return goal_image_plane_n2.astype(np.float32)
+        else:
+            return raw_data['goal_position_ego_n2']
+
     def _optimal_labels(self, raw_data):
         """
         Supervision for the optimal waypoint.

@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 from waypoint_grids.uniform_sampling_grid import UniformSamplingGrid
 
 
@@ -98,7 +99,19 @@ class ProjectedImageSpaceGrid(UniformSamplingGrid):
         return x_n1[:, :, np.newaxis], y_n1[:, :, np.newaxis], \
                np.arctan2(y_plus_delta_n1 - y_n1, x_plus_delta_n1 - x_n1)[:, :, np.newaxis], \
                vf_n11, wf_n11
-    
+
+    def worldframe_waypoint_direction_indicator(self, wx_n11, wy_n11, wtheta_n11, vf_n11=None,
+                                                wf_n11=None):
+        """
+        Returns an indicator vector of length n11 where an element is 1 if the corresponding
+        waypoint is "in front of the camera" (Z coordinate positive in the optical axis),
+        -1 if "behind the camera" (Z coordinate negative).
+        """
+        n = wx_n11.shape[0]
+        XYZ_world_coordinates_n3 = np.hstack([wy_n11[:, :, 0], np.zeros((n, 1)), wx_n11[:, :, 0]])
+        XYZ_optical_coordinates_n3 = self.convert_world_coordinates_to_optical_coordinates(XYZ_world_coordinates_n3)
+        return tf.sign(XYZ_optical_coordinates_n3[:, 2])[:, None, None]
+
     def project_optical_coordinates_to_image_space(self, XYZ_n3):
         """
         Project a series of coordinates from the optical frame to the image space.
