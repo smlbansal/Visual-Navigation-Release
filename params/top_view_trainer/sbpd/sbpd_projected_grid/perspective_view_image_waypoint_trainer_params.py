@@ -24,6 +24,8 @@ def create_params():
     # current speed and angular speed
     
     # Checkpoint
-    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/topview/nn_waypoint/projected_grid/predict_image_space/normalized_waypt_coord/train_full_episode_20k_newest/session_2018-12-17_16-46-40/checkpoints/ckpt-20' 
+    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/topview/nn_waypoint/projected_grid/predict_image_space/normalized_waypt_coord/goal_in_image_space/goal_direction_indicator/train_full_episode_20k/session_2018-12-20_17-44-08/checkpoints/ckpt-20'
+
+    p.trainer.simulate_expert = False
 
     return p
