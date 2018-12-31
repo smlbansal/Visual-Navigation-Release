@@ -78,6 +78,7 @@ class ControlPipelineV0(ControlPipelineBase):
             trajectories = self.trajectories_world[idx][waypt_idx]
             controllers = {'K_nkfd': self.Ks_world_nkfd[idx][waypt_idx:waypt_idx+1],
                            'k_nkf1': self.k_nkf1[idx][waypt_idx:waypt_idx+1]}
+
         trajectories.update_valid_mask_nk()
         return waypt_configs, horizons, trajectories, controllers
 
@@ -189,7 +190,8 @@ class ControlPipelineV0(ControlPipelineBase):
             for v0, expected_filename in zip(self.start_velocities, self.pipeline_files):
                 filename = self._data_file_name(v0=v0)
                 assert(filename == expected_filename)
-                data_bin = self.helper.load_and_process_data(filename)
+                data_bin = self.helper.load_and_process_data(filename,
+                                                             self.params.discard_LQR_controller_data)
                 self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
             self._set_instance_variables(pipeline_data)
 
@@ -204,7 +206,7 @@ class ControlPipelineV0(ControlPipelineBase):
         self.lqr_trajectories = data['lqr_trajectories']
         self.K_nkfd = data['K_nkfd']
         self.k_nkf1 = data['k_nkf1']
-
+        
         # Initialize variable tensors for waypoints and trajectories in world coordinates
         dt = self.params.system_dynamics_params.dt
         self.waypt_configs_world = [SystemConfig(
@@ -213,8 +215,13 @@ class ControlPipelineV0(ControlPipelineBase):
             dt=dt, n=config.n, k=self.params.planning_horizon, variable=True)
            for config in data['start_configs']]
 
-        self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(K)) for K in data['K_nkfd']]
+        if not self.params.discard_LQR_controller_data:
+            self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(K)) for K in data['K_nkfd']]
+        else:
+            self.Ks_world_nkfd = self.K_nkfd
+
         self.instance_variables_loaded = True
+
         if self.params.verbose:
             N = self.params.waypoint_params.n
             for v0, start_config in zip(self.start_velocities, self.start_configs):

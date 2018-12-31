@@ -1,6 +1,7 @@
 import pickle
 from trajectory.trajectory import Trajectory, SystemConfig
 import tensorflow as tf
+import numpy as np
 from utils.angle_utils import angle_normalize
 
 
@@ -45,11 +46,21 @@ class ControlPipelineV0Helper():
             data_bin[key] = pipeline_data[key][idx]
         return data_bin
 
-    def load_and_process_data(self, filename):
+    def load_and_process_data(self, filename, discard_lqr_controller_data=False):
         """Load control pipeline data from a pickle file
         and process it so that it can be used by the pipeline."""
         with open(filename, 'rb') as f:
             data = pickle.load(f)
+
+        if discard_lqr_controller_data:
+            spline_trajectories = None
+            K_nkfd = np.zeros((1,1,1,1), dtype=np.float32)
+            k_nkf1 = np.zeros((1,1,1,1), dtype=np.float32)
+        else:
+            spline_trajectories = Trajectory.init_from_numpy_repr(**data['spline_trajectories'])
+            K_nkfd = tf.constant(data['K_nkfd'])
+            k_nkf1 = tf.constant(data['k_nkf1'])
+
 
         # Restore tensors and trajectory objects from numpy representations
         data_processed = {'start_speeds': tf.constant(data['start_speeds']),
@@ -57,13 +68,12 @@ class ControlPipelineV0Helper():
                           SystemConfig.init_from_numpy_repr(**data['start_configs']),
                           'waypt_configs':
                           SystemConfig.init_from_numpy_repr(**data['waypt_configs']),
-                          'spline_trajectories':
-                          Trajectory.init_from_numpy_repr(**data['spline_trajectories']),
+                          'spline_trajectories': spline_trajectories,
                           'horizons': tf.constant(data['horizons']),
                           'lqr_trajectories':
                           Trajectory.init_from_numpy_repr(**data['lqr_trajectories']),
-                          'K_nkfd': tf.constant(data['K_nkfd']),
-                          'k_nkf1': tf.constant(data['k_nkf1'])}
+                          'K_nkfd': K_nkfd,
+                          'k_nkf1': k_nkf1}
         return data_processed
 
     def gather_across_batch_dim(self, data, idxs):

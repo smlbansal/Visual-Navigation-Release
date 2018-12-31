@@ -29,7 +29,7 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
                     filters=params.dim_red_conv_2d.num_outputs,
                     kernel_size=params.dim_red_conv_2d.filter_size,
                     strides=params.dim_red_conv_2d.stride,
-                    padding=params.diom_red_conv_2d.padding,
+                    padding=params.dim_red_conv_2d.padding,
                     activation=params.hidden_layer_activation_func)(x)
 
     # Flatten the image

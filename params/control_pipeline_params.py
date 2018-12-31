@@ -40,5 +40,9 @@ def create_params():
     # so only set this to true when LQR data is needed
     p.convert_K_to_world_coordinates = False
 
+    # When not needed, LQR controllers can be discarded
+    # to save memory
+    p.discard_LQR_controller_data = True
+
     p.verbose = False
     return p
