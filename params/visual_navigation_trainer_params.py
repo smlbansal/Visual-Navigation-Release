@@ -30,6 +30,7 @@ def create_params(simulator_params):
                      
                      # Architecture parameters
                      arch=DotMap(
+                         
                                  # Number of convolutional layers
                                  num_conv_layers=num_conv_layers,
                          

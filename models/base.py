@@ -42,7 +42,6 @@ class BaseModel(object):
             prediction_loss = tf.nn.l2_loss(nn_output - processed_data['labels'])
         else:
             raise NotImplementedError
-            #TODO- add a huber loss here?
         
         total_loss = prediction_loss + regularization_loss
         

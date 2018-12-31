@@ -1,16 +1,16 @@
 from training_utils.visual_navigation_trainer import VisualNavigationTrainer
-from models.visual_navigation.rgb.rgb_waypoint_model import RGBWaypointModel
+from models.visual_navigation.rgb.resnet50.rgb_resnet50_waypoint_model import RGBResnet50WaypointModel
 import os
 
 
 class RGBWaypointTrainer(VisualNavigationTrainer):
     """
-    Create a trainer that regress on the optimal waypoint using the top-view occupancy maps.
+    Create a trainer that regress on the optimal waypoint using rgb images.
     """
-    simulator_name = 'RGB_NN_Waypoint_Simulator'
+    simulator_name = 'RGB_Resnet50_NN_Waypoint_Simulator'
 
     def create_model(self, params=None):
-        self.model = RGBWaypointModel(self.p)
+        self.model = RGBResnet50WaypointModel(self.p)
 
     def _modify_planner_params(self, p):
         """
