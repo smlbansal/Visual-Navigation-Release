@@ -2,7 +2,7 @@ from params.simulator.sbpd_simulator_params import create_params as create_simul
 from params.visual_navigation_trainer_params import create_params as create_trainer_params
 from training_utils.data_processing.rgb_preprocess_resnet_50 import preprocess as rgb_preprocess
 from params.waypoint_grid.uniform_grid_params import create_params as create_waypoint_params
-
+from dotmap import DotMap
 
 def create_params():
     # Load the dependencies
@@ -28,10 +28,12 @@ def create_params():
     # Which conv layer of the resnet to use as the feature embedding (1-5)
     p.model.arch.resnet_output_layer = 3
 
-    # Parameters for the 1d convolution used for dimensionality reduction 
-    p.model.arch.conv_1d_stride = 2
-    p.model.arch.conv_1d_filter_size = 3
-    p.model.arch.conv_1d_num_outputs = 64
+    # Parameters for the 2d convolution used for dimensionality reduction 
+    p.model.arch.dim_red_conv_2d = DotMap(use=True,
+                                          stride=2,
+                                          filter_size=3,
+                                          num_outputs=64,
+                                          padding='valid')
 
     # Location of the resnet50 weights
     p.model.arch.resnet50_weights_path = '/home/ext_drive/somilb/data/resnet50_weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'

@@ -11,8 +11,6 @@ def create_params():
     p.trainer.lr = 1e-4
     p.trainer.num_samples = int(50e3)
 
-    p.trainer.callback_frequency = 50
-
     # Change the checkpoint
     p.trainer.ckpt_path = ''
 
