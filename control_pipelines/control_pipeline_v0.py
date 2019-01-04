@@ -76,6 +76,12 @@ class ControlPipelineV0(ControlPipelineBase):
             waypt_configs = self.waypt_configs_world[idx][waypt_idx]
             horizons = self.horizons[idx][waypt_idx:waypt_idx+1]
             trajectories = self.trajectories_world[idx][waypt_idx]
+           
+            # If LQR controller data is being ignored
+            # just return the first element
+            if self.params.discard_LQR_controller_data:
+                waypt_idx = 0
+
             controllers = {'K_nkfd': self.Ks_world_nkfd[idx][waypt_idx:waypt_idx+1],
                            'k_nkf1': self.k_nkf1[idx][waypt_idx:waypt_idx+1]}
 

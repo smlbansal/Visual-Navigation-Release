@@ -54,8 +54,8 @@ class ControlPipelineV0Helper():
 
         if discard_lqr_controller_data:
             spline_trajectories = None
-            K_nkfd = np.zeros((1,1,1,1), dtype=np.float32)
-            k_nkf1 = np.zeros((1,1,1,1), dtype=np.float32)
+            K_nkfd = tf.zeros((2, 1, 1, 1), dtype=np.float32)
+            k_nkf1 = tf.zeros((2, 1, 1, 1), dtype=np.float32)
         else:
             spline_trajectories = Trajectory.init_from_numpy_repr(**data['spline_trajectories'])
             K_nkfd = tf.constant(data['K_nkfd'])
