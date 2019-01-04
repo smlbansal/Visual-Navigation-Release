@@ -12,6 +12,6 @@ def create_params():
     p.trainer.num_samples = int(50e3)
 
     # Change the checkpoint
-    p.trainer.ckpt_path = ''
+    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/tmp/resnet_finetune/fix_nan_bug/session_2019-01-03_16-17-35/checkpoints/ckpt-4'
 
     return p
