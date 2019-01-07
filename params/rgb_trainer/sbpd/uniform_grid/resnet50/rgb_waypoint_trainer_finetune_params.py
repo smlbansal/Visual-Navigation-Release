@@ -12,6 +12,6 @@ def create_params():
     p.trainer.num_samples = int(50e3)
 
     # Change the checkpoint
-    p.trainer.ckpt_path = ''
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/varun_logs/sbpd/rgb/nn_waypoint/uniform_grid/resnet50_v0_finetune/train_full_episode_50k/session_2019-01-03_16-17-35/checkpoints/ckpt-4'
 
     return p
