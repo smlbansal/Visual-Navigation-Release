@@ -1,6 +1,7 @@
 from params.simulator.sbpd_simulator_params import create_params as create_simulator_params
 from params.visual_navigation_trainer_params import create_params as create_trainer_params
 from training_utils.data_processing.rgb_preprocess_resnet_50 import preprocess as rgb_preprocess
+
 from params.waypoint_grid.uniform_grid_params import create_params as create_waypoint_params
 from params.model.resnet50_arch_v0_params import create_params as create_model_params
 
@@ -30,7 +31,7 @@ def create_params():
     p.model.num_inputs.image_size = [64, 64, 3]
 
     # Change the data_dir
-    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/full_episode_random_v1_100k'
+    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area3/full_episode_random_v1_100k'
 
     # Change the Data Processing
     p.data_processing.input_processing_function = rgb_preprocess
