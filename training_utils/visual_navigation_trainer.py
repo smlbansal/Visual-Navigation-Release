@@ -34,9 +34,10 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         from data_sources.visual_navigation_data_source import VisualNavigationDataSource
         self.data_source = VisualNavigationDataSource(self.p)
 
-        # Give the visual_navigation data source access to the model.
-        # May be needed to render training images, etc.
-        self.data_source.model = self.model
+        if hasattr(self, 'model'):
+            # Give the visual_navigation data source access to the model.
+            # May be needed to render training images, etc.
+            self.data_source.model = self.model
 
     def _init_simulator_data(self, p, num_tests, seed, name='', dirname='', plot_controls=False):
         """Initializes a simulator_data dictionary based on the params in p,
