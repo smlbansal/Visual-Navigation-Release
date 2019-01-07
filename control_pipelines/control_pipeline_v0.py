@@ -85,6 +85,9 @@ class ControlPipelineV0(ControlPipelineBase):
             controllers = {'K_nkfd': self.Ks_world_nkfd[idx][waypt_idx:waypt_idx+1],
                            'k_nkf1': self.k_nkf1[idx][waypt_idx:waypt_idx+1]}
 
+            if self.params.apply_LQR_controllers:
+                import pdb; pdb.set_trace()
+
         trajectories.update_valid_mask_nk()
         return waypt_configs, horizons, trajectories, controllers
 

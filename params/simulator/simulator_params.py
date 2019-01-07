@@ -1,7 +1,7 @@
 from dotmap import DotMap
 from utils import utils
 import numpy as np
-from params.system_dynamics_params import create_params as create_system_dynamics_params
+from params.system_dynamics.dubins_v2_params import create_params as create_system_dynamics_params
 from params.planner_params import create_params as create_planner_params
 
 
