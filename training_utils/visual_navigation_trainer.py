@@ -4,6 +4,8 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import os
 from utils.image_utils import plot_image_observation
+import numpy as np
+import pickle
 
 
 class VisualNavigationTrainer(TrainerFrontendHelper):
@@ -21,7 +23,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             p.simulator_params = p.data_creation.simulator_params
         elif args.command == 'train':
             p.simulator_params = p.trainer.simulator_params
-        elif args.command == 'test':
+        elif args.command in ['test', 'generate-metric-curves']:
             p.simulator_params = p.test.simulator_params
         else:
             raise NotImplementedError('Unknown Command')
@@ -151,9 +153,10 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                 simulator_datas.append(expert_simulator_data)
 
             # Test the simulators
-            self.simulate(simulator_datas, log_metrics=True,
-                          plot_controls=self.p.test.plot_controls,
-                          plot_images=self.p.test.plot_images)
+            metrics_keys, metrics_values = self.simulate(simulator_datas, log_metrics=True,
+                                                         plot_controls=self.p.test.plot_controls,
+                                                         plot_images=self.p.test.plot_images)
+            return metrics_keys, metrics_values
 
     def simulate(self, simulator_datas, log_metrics=True,
                  plot_controls=False, plot_images=False):
@@ -286,7 +289,65 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         summaries
         """
         raise NotImplementedError
-
+    
+    def generate_metric_curves(self):
+        """
+        Generate a metric curve using a trained network.
+        """
+        # Extract the number of checkpoints to run
+        num_ckpts = self.p.test.metric_curves.end_ckpt - self.p.test.metric_curves.start_ckpt + 1
+     
+        # Extract the number of seeds to run
+        num_seeds = self.p.test.metric_curves.end_seed - self.p.test.metric_curves.start_seed + 1
+     
+        # Checkpoint directory
+        ckpt_directory = os.path.join(self.p.trainer.ckpt_path.split('checkpoints')[0], 'checkpoints')
+        
+        # Call the test function inside a loop and record the metrics
+        for i in range(num_ckpts):
+            for j in range(num_seeds):
+                # Change the required test and trainer parameters
+                self.p.test.seed = j + self.p.test.metric_curves.start_seed
+                self.p.test.simulate_expert = False
+                self.p.trainer.ckpt_path = os.path.join(ckpt_directory,
+                                                        'ckpt-%i' % (i + self.p.test.metric_curves.start_ckpt))
+                
+                # Call the test function
+                metrics_keys_current, metrics_values_current = self.test()
+                
+                # Record the metrics
+                if i == 0 and j == 0:
+                    # Placeholders for metrics
+                    num_metrics = len(metrics_values_current[0])
+                    metrics_data = {}
+                    metrics_data['values'] = np.zeros((num_seeds, num_ckpts, num_metrics))
+                    metrics_data['keys'] = metrics_keys_current[0]
+                metrics_data['values'][j, i, :] = metrics_values_current[0]
+                
+            self.dump_and_plot_metrics_data(metrics_data)
+                
+    def dump_and_plot_metrics_data(self, metrics_data):
+        # Dump the metric data
+        filename = os.path.join(self.p.session_dir, 'metric_data_ckpts_%i_%i_seeds_%i_%i.pkl' %
+                                (self.p.test.metric_curves.start_ckpt, self.p.test.metric_curves.end_ckpt,
+                                 self.p.test.metric_curves.start_seed, self.p.test.metric_curves.end_seed))
+        with open(filename, 'wb') as handle:
+            pickle.dump(metrics_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
+        # Plot the metrics
+        if self.p.test.metric_curves.plot_curves:
+            checkpoints = np.arange(self.p.test.metric_curves.start_ckpt, self.p.test.metric_curves.end_ckpt+1)
+            num_metrics = metrics_data['values'].shape[2]
+            for i in range(num_metrics):
+                mean = np.mean(metrics_data['values'][:, :, i], axis=0)
+                std = np.std(metrics_data['values'][:, :, i], axis=0)
+                fig = plt.figure(figsize=(8.0, 6.0))
+                ax = fig.add_subplot(111)
+                ax.plot(checkpoints, mean, 'r-', label=metrics_data['keys'][i])
+                ax.fill_between(checkpoints, mean-std, mean+std, color='r', alpha=0.3)
+                ax.legend()
+                fig.savefig(os.path.join(self.p.session_dir, 'metric_%s.pdf' % metrics_data['keys'][i]))
+                
 
 if __name__ == '__main__':
     VisualNavigationTrainer().run()

@@ -72,6 +72,8 @@ class TrainerFrontendHelper(object):
             self.train()
         elif args.command == 'test':
             self.test()
+        elif args.command == 'generate-metric-curves':
+            self.generate_metric_curves()
         else:
             raise NotImplementedError('Unknown command')
  
@@ -208,6 +210,12 @@ class TrainerFrontendHelper(object):
         # Add some basic information to the logger
         #logging.info('Parameter file name: %s' % args.params)
         #logging.info('Command: %s' % args.command)
+        
+    def generate_metric_curves(self):
+        """
+        Generate the metric curve from the starting checkpoint to end checkpoint over the range of specified seeds.
+        """
+        raise NotImplementedError
         
 
 if __name__ == '__main__':

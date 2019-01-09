@@ -1,4 +1,5 @@
 from params.rgb_trainer.sbpd.uniform_grid.rgb_trainer_params import create_params as create_rgb_trainer_params
+from dotmap import DotMap
 
 
 def create_params():
@@ -13,5 +14,17 @@ def create_params():
 
     # Change the checkpoint
     p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/nn_waypoint/train_full_episode_50k/session_2018-12-12_13-34-16/checkpoints/ckpt-20'
+
+    # Seed for selecting the test scenarios and the number of such scenarios
+    p.test.seed = 10
+    p.test.number_tests = 100
+
+    # Parameters for the metric curves
+    p.test.metric_curves = DotMap(start_ckpt=1,
+                                  end_ckpt=10,
+                                  start_seed=1,
+                                  end_seed=10,
+                                  plot_curves=True
+                                  )
 
     return p

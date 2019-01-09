@@ -23,7 +23,7 @@ def create_params():
     p.model.num_inputs.image_size = [64, 64, 3]
 
     # Change the data_dir
-    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/topview_full_episode_random_v1_100k'
+    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area3/full_episode_random_v1_100k'
 
     # Change the Data Processing
     p.data_processing.input_processing_function = preprocess_image_data 
