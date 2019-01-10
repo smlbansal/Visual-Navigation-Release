@@ -44,11 +44,20 @@ class SamplingPlanner(Planner):
         # Convert horizon in seconds to horizon in # of steps
         min_horizon = int(tf.ceil(horizons_s[min_idx, 0] / self.params.dt).numpy())
 
+        # If the real LQR data has been discarded just take the first element
+        # since it will be all zeros
+        if self.params.control_pipeline_params.discard_LQR_controller_data:
+            K_nkfd = controllers['K_nkfd'][0: 1]
+            k_nkf1 = controllers['k_nkf1'][0: 1]
+        else:
+            K_nkfd = controllers['K_nkfd'][min_idx:min_idx + 1]
+            k_nkf1 = controllers['k_nkf1'][min_idx:min_idx + 1]
+
         data = {'system_config': SystemConfig.copy(start_config),
                 'waypoint_config': SystemConfig.copy(self.opt_waypt),
                 'trajectory': Trajectory.copy(self.opt_traj),
                 'planning_horizon': min_horizon,
-                'K_nkfd': controllers['K_nkfd'][min_idx:min_idx + 1],
-                'k_nkf1': controllers['k_nkf1'][min_idx:min_idx + 1]}
+                'K_nkfd': K_nkfd,
+                'k_nkf1': k_nkf1}
 
         return data
