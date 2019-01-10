@@ -7,7 +7,7 @@ class TurtlebotSimulator(Simulator):
 
     def __init__(self, params):
         assert(params.obstacle_map_params.obstacle_map is TurtlebotMap)
-        super().__init__(params=params)
+        super(TurtlebotSimulator, self).__init__(params=params)
 
     def get_observation(self, config=None, pos_n3=None, **kwargs):
         """

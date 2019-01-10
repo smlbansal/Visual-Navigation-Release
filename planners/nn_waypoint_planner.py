@@ -9,7 +9,7 @@ class NNWaypointPlanner(NNPlanner):
     counter = 0
 
     def __init__(self, simulator, params):
-        super().__init__(simulator, params)
+        super(NNWaypointPlanner, self).__init__(simulator, params)
         self.waypoint_world_config = SystemConfig(dt=self.params.dt, n=1, k=1)
 
     def optimize(self, start_config):

@@ -11,6 +11,9 @@ def create_params():
     # Load the dependencies
     simulator_params = create_simulator_params()
 
+    # Update the control pipeline directory for the turtlebot
+    simulator_params.planner_params.control_pipeline_params.dir = '/home/vtolani/Documents/Projects/visual_mpc_data/control_pipelines_py27/'
+
     # Ensure the turtlebot takes rgb images 64x64x3
     hardware_params = DotMap(image_size=[64, 64, 3],
                              image_type='rgb',

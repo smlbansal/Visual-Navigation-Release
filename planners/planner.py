@@ -3,7 +3,7 @@ import numpy as np
 from trajectory.trajectory import Trajectory, SystemConfig
 
 
-class Planner:
+class Planner(object):
     """Plans optimal trajectories (by minimizing an objective function)
     through an environment. """
 

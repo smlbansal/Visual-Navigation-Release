@@ -12,7 +12,7 @@ class Dubins3D(DubinsCar):
     """
 
     def __init__(self, dt):
-        super().__init__(dt, x_dim=3, u_dim=2)
+        super(Dubins3D, self).__init__(dt, x_dim=3, u_dim=2)
         self._angle_dims = 2
 
     def simulate(self, x_nk3, u_nk2, t=None):

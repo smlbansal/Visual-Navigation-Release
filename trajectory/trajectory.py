@@ -406,10 +406,10 @@ class SystemConfig(Trajectory):
                  valid_horizons_n1=None):
         assert(k == 1)
         # Don't pass on valid_horizons_n1 as a SystemConfig has no horizon
-        super().__init__(dt, n, k, position_nk2, speed_nk1, acceleration_nk1,
-                         heading_nk1, angular_speed_nk1,
-                         angular_acceleration_nk1, dtype=tf.float32,
-                         variable=variable, direct_init=direct_init)
+        super(SystemConfig, self).__init__(dt, n, k, position_nk2, speed_nk1, acceleration_nk1,
+                                           heading_nk1, angular_speed_nk1,
+                                           angular_acceleration_nk1, dtype=tf.float32,
+                                           variable=variable, direct_init=direct_init)
 
 
     def assign_from_broadcasted_batch(self, config, n):
@@ -452,7 +452,7 @@ class SystemConfig(Trajectory):
                    angular_acceleration_nk1=angular_acceleration_nk1[:, t:t+1])
 
     def assign_from_config_batch_idx(self, config, batch_idx):
-        super().assign_from_trajectory_batch_idx(config, batch_idx)
+        super(SystemConfig, self).assign_from_trajectory_batch_idx(config, batch_idx)
 
     def assign_config_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1,
                                   heading_nk1, angular_speed_nk1, angular_acceleration_nk1):

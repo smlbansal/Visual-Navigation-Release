@@ -11,7 +11,7 @@ class TurtlebotDubinsV2(DubinsV2):
     name = 'dubins_v2'
 
     def __init__(self, dt, params):
-        super().__init__(dt, params)
+        super(TurtlebotDubinsV2, self).__init__(dt, params)
         self.hardware = TurtlebotHardware.get_hardware_interface(params.hardware_params)
 
     def simulate(self, x_nk3, u_nk2, t=None):

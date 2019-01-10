@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-class Dynamics:
+class Dynamics(object):
 
     def __init__(self, dt, x_dim, u_dim, ctrlBounds=None):
         self._dt = dt

@@ -7,6 +7,8 @@ from systems.dubins_car import DubinsCar
 
 
 class SBPDMap(ObstacleMap):
+    name = 'SBPDMap'
+
     def __init__(self, params):
         """
         Initialize a map for Stanford Building Parser Dataset (SBPD)

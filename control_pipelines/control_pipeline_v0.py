@@ -21,7 +21,7 @@ class ControlPipelineV0(ControlPipelineBase):
             0.0, params.binning_parameters.max_speed, params.binning_parameters.num_bins)
         self.helper = ControlPipelineV0Helper()
         self.instance_variables_loaded = False
-        super().__init__(params)
+        super(ControlPipelineV0, self).__init__(params)
 
     @classmethod
     def get_pipeline(cls, params):

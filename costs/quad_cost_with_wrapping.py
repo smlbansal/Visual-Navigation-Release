@@ -26,7 +26,7 @@ class QuadraticRegulatorRef(DiscreteCost):
 
         self.trajectory_ref = trajectory_ref
         self.update_shape()
-        super().__init__(x_dim=self._x_dim, u_dim=self._u_dim)
+        super(QuadraticRegulatorRef, self).__init__(x_dim=self._x_dim, u_dim=self._u_dim)
 
         self.isTimevarying = True
         self.isNonquadratic = False

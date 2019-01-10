@@ -10,7 +10,7 @@ class NNPlanner(Planner):
     a trained neural network. """
 
     def __init__(self, simulator, params):
-        super().__init__(simulator, params)
+        super(NNPlanner, self).__init__(simulator, params)
         self.goal_ego_config = SystemConfig(dt=self.params.dt, n=1, k=1)
 
     @staticmethod
