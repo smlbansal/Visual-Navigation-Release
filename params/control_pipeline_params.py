@@ -46,7 +46,11 @@ def create_params():
 
     # When running on a real system (i.e. Turtlebot), set this to true
     # to apply precomputed LQR controllers on the real physical system
-    p.apply_LQR_controllers = False
+    p.real_robot = False
+
+    # Set this to true if you want trajectory objects to track
+    # linear and angular acceleration. If not set to false to save memory
+    p.track_trajectory_acceleration = False
 
     p.verbose = False
     return p

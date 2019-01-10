@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 import matplotlib.pyplot as plt
@@ -12,7 +13,8 @@ class Trajectory(object):
     def __init__(self, dt, n, k, position_nk2=None, speed_nk1=None, acceleration_nk1=None, heading_nk1=None,
                  angular_speed_nk1=None, angular_acceleration_nk1=None,
                  dtype=tf.float32, variable=True, direct_init=False,
-                 valid_horizons_n1=None):
+                 valid_horizons_n1=None,
+                 track_trajectory_acceleration=True):
 
         # Check dimensions now to make your life easier later
         if position_nk2 is not None:
@@ -34,6 +36,13 @@ class Trajectory(object):
 
         # Batch Size
         self.n = n
+
+        # If not tracking trajectory acceleration
+        # then set them to be arrays of size
+        # (1, 1, 0) to save memory
+        if not track_trajectory_acceleration:
+            angular_acceleration_nk1 = np.array([[[]]], dtype=np.float32)
+            acceleration_nk1 = np.array([[[]]], dtype=np.float32)
 
         self.vars = []
         # When these are already all tensorflow object use direct-init
@@ -83,10 +92,22 @@ class Trajectory(object):
                 self._angular_acceleration_nk1 = tf.zeros([n, k, 1], dtype=dtype) if angular_acceleration_nk1 is None \
                     else tf.constant(angular_acceleration_nk1, dtype=dtype)
 
+    
+    def memory_usage_bytes(self):
+        """
+        A function which gives the memory usage of this trajectory object
+        in bytes.
+        """
+        var_names = [self._position_nk2, self.valid_horizons_n1, self._speed_nk1,
+                     self._acceleration_nk1, self._heading_nk1, self._angular_speed_nk1,
+                     self._angular_acceleration_nk1]
+        return np.sum([var_name.numpy().nbytes for var_name in var_names])
+
     @classmethod
     def init_from_numpy_repr(cls, dt, n, k, position_nk2, speed_nk1,
                              acceleration_nk1, heading_nk1, angular_speed_nk1,
-                             angular_acceleration_nk1, valid_horizons_n1):
+                             angular_acceleration_nk1, valid_horizons_n1,
+                             track_trajectory_acceleration=True):
         """Utility function to initialize a trajectory object from its numpy
         representation. Useful for loading pickled trajectories"""
         return cls(dt=dt, n=n, k=k, position_nk2=position_nk2,
@@ -95,7 +116,8 @@ class Trajectory(object):
                    angular_speed_nk1=angular_speed_nk1,
                    angular_acceleration_nk1=angular_acceleration_nk1,
                    valid_horizons_n1=valid_horizons_n1,
-                   variable=False)
+                   variable=False,
+                   track_trajectory_acceleration=track_trajectory_acceleration)
 
     def update_valid_mask_nk(self):
         """Update this trajectories valid mask. The valid mask is a mask of 1's
@@ -403,13 +425,15 @@ class SystemConfig(Trajectory):
     def __init__(self, dt, n, k, position_nk2=None, speed_nk1=None, acceleration_nk1=None, heading_nk1=None,
                  angular_speed_nk1=None, angular_acceleration_nk1=None,
                  dtype=tf.float32, variable=True, direct_init=False,
-                 valid_horizons_n1=None):
+                 valid_horizons_n1=None,
+                 track_trajectory_acceleration=True):
         assert(k == 1)
         # Don't pass on valid_horizons_n1 as a SystemConfig has no horizon
         super(SystemConfig, self).__init__(dt, n, k, position_nk2, speed_nk1, acceleration_nk1,
                                            heading_nk1, angular_speed_nk1,
                                            angular_acceleration_nk1, dtype=tf.float32,
-                                           variable=variable, direct_init=direct_init)
+                                           variable=variable, direct_init=direct_init,
+                                           track_trajectory_acceleration=track_trajectory_acceleration)
 
 
     def assign_from_broadcasted_batch(self, config, n):

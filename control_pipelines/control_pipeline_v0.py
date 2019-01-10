@@ -85,7 +85,7 @@ class ControlPipelineV0(ControlPipelineBase):
             controllers = {'K_nkfd': self.Ks_world_nkfd[idx][waypt_idx:waypt_idx+1],
                            'k_nkf1': self.k_nkf1[idx][waypt_idx:waypt_idx+1]}
 
-            if self.params.apply_LQR_controllers:
+            if self.params.real_robot:
                 import pdb; pdb.set_trace()
 
         trajectories.update_valid_mask_nk()
@@ -200,7 +200,8 @@ class ControlPipelineV0(ControlPipelineBase):
                 filename = self._data_file_name(v0=v0)
                 assert(filename == expected_filename)
                 data_bin = self.helper.load_and_process_data(filename,
-                                                             self.params.discard_LQR_controller_data)
+                                                             self.params.discard_LQR_controller_data,
+                                                             self.params.real_robot)
                 self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
             self._set_instance_variables(pipeline_data)
 
@@ -215,16 +216,24 @@ class ControlPipelineV0(ControlPipelineBase):
         self.lqr_trajectories = data['lqr_trajectories']
         self.K_nkfd = data['K_nkfd']
         self.k_nkf1 = data['k_nkf1']
-        
+      
         # Initialize variable tensors for waypoints and trajectories in world coordinates
         dt = self.params.system_dynamics_params.dt
         self.waypt_configs_world = [SystemConfig(
             dt=dt, n=config.n, k=1, variable=True) for config in data['start_configs']]
-        self.trajectories_world = [Trajectory(
-            dt=dt, n=config.n, k=self.params.planning_horizon, variable=True)
-           for config in data['start_configs']]
+        
+        # if running on the real turtlebot
+        # dont need precomputed lqr trajectories in the world frame
+        if self.params.real_robot:
+            self.trajectories_world = self.lqr_trajectories
+        else:
+            self.trajectories_world = [Trajectory(
+                dt=dt, n=config.n, k=self.params.planning_horizon, variable=True)
+               for config in data['start_configs']]
 
-        if not self.params.discard_LQR_controller_data:
+        # If LQR feedback matrices are needed in world
+        # coordinates setup a variable to store them
+        if self.params.convert_K_to_world_coordinates:
             self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(K)) for K in data['K_nkfd']]
         else:
             self.Ks_world_nkfd = self.K_nkfd
@@ -324,6 +333,14 @@ class ControlPipelineV0(ControlPipelineBase):
         base_dir = os.path.join(base_dir, self.waypoint_grid.descriptor_string)
         base_dir = os.path.join(base_dir,
                                 '{:d}_velocity_bins'.format(p.binning_parameters.num_bins))
+
+        # If using python 2.7 on the real robot
+        # the control pipeline will need to be converted to
+        # a python 2.7 friendly pickle format and will be
+        # stored in the subfolder py27
+        if sys.version_info[0] == 2: # If using python 2.7 on real robot
+            base_dir = os.path.join(base_dir, 'py27')
+
         utils.mkdir_if_missing(base_dir)
 
         if v0 is not None:

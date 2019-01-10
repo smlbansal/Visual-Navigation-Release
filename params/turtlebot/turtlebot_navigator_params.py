@@ -12,7 +12,7 @@ def create_params():
     simulator_params = create_simulator_params()
 
     # Update the control pipeline directory for the turtlebot
-    simulator_params.planner_params.control_pipeline_params.dir = '/home/vtolani/Documents/Projects/visual_mpc_data/control_pipelines_py27/'
+    simulator_params.planner_params.control_pipeline_params.dir = '/home/vtolani/Documents/Projects/visual_mpc_data/control_pipelines'
 
     # Ensure the turtlebot takes rgb images 64x64x3
     hardware_params = DotMap(image_size=[64, 64, 3],
@@ -33,7 +33,7 @@ def create_params():
 
     # Ensure the control pipeline runs the LQR controllers on the robot
     simulator_params.planner_params.control_pipeline_params.discard_LQR_controller_data = False
-    simulator_params.planner_params.control_pipeline_params.apply_LQR_controllers = True
+    simulator_params.planner_params.control_pipeline_params.real_robot = True
 
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -43,6 +43,6 @@ def create_params():
     # Change the Data Processing
     p.data_processing.input_processing_function = preprocess_image_data
 
-    # There is no expert on the turtlebot
+    # There is no expert for rgb images on the turtlebot
     p.test.simulate_expert = False
     return p
