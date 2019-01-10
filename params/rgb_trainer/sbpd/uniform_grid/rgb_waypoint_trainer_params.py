@@ -13,7 +13,7 @@ def create_params():
     p.trainer.num_samples = int(50e3)
 
     # Change the checkpoint
-    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/nn_waypoint/train_full_episode_50k/session_2018-12-12_13-34-16/checkpoints/ckpt-20'
+    p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/custom_arch/session_2019-01-09_13-38-30/checkpoints/ckpt-5'
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
@@ -21,7 +21,7 @@ def create_params():
 
     # Parameters for the metric curves
     p.test.metric_curves = DotMap(start_ckpt=1,
-                                  end_ckpt=10,
+                                  end_ckpt=17,
                                   start_seed=1,
                                   end_seed=10,
                                   plot_curves=True
