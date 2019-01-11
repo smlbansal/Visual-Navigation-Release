@@ -16,11 +16,11 @@ def create_params():
     p.trainer.callback_number_tests = 200
 
     # Change the Data Processing parameters
-    p.data_processing.input_processing_function = 'normalize_distort_images'
+    p.data_processing.input_processing_function = 'normalize_images'
     
     # Input processing parameters
     p.data_processing.input_processing_params = DotMap(
-                                                        p=0.5  # Probability of distortion
+                                                        p=0.1  # Probability of distortion
                                                       )
 
     # Change the data_dir
