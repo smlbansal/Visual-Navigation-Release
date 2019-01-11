@@ -11,6 +11,17 @@ def create_params():
     # Change the learning rate and num_samples
     p.trainer.lr = 1e-4
     p.trainer.num_samples = int(50e3)
+    
+    # Change the number of tests
+    p.trainer.callback_number_tests = 200
+
+    # Change the Data Processing parameters
+    p.data_processing.input_processing_function = 'normalize_distort_images'
+    
+    # Input processing parameters
+    p.data_processing.input_processing_params = DotMap(
+                                                        p=0.5  # Probability of distortion
+                                                      )
 
     # Change the checkpoint
     p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/custom_arch/session_2019-01-09_13-38-30/checkpoints/ckpt-5'

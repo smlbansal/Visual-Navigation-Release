@@ -10,6 +10,7 @@ class BaseModel(object):
     def __init__(self, params):
         self.p = params
         self.make_architecture()
+        self.make_processing_functions()
         
     def make_architecture(self):
         """
@@ -24,7 +25,7 @@ class BaseModel(object):
         Compute the loss function for a given dataset.
         """
         # Create the NN inputs and labels
-        processed_data = self.create_nn_inputs_and_outputs(raw_data)
+        processed_data = self.create_nn_inputs_and_outputs(raw_data, is_training=is_training)
 
         # Predict the NN output
         nn_output = self.predict_nn_output(processed_data['inputs'], is_training=is_training)
@@ -56,7 +57,7 @@ class BaseModel(object):
         """
         return self.arch.variables
     
-    def create_nn_inputs_and_outputs(self, raw_data):
+    def create_nn_inputs_and_outputs(self, raw_data, is_training=None):
         """
         Create the NN inputs and outputs from the raw data batch. All pre-processing should go here.
         """
@@ -83,3 +84,9 @@ class BaseModel(object):
         applied. By default there is no post processing function applied.
         """
         return self.predict_nn_output(data, is_training=is_training)
+
+    def make_processing_functions(self):
+        """
+        Initialize the processing functions if required.
+        """
+        return

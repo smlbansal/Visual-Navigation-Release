@@ -26,6 +26,6 @@ def create_params():
     p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area3/full_episode_random_v1_100k'
 
     # Change the Data Processing
-    p.data_processing.input_processing_function = preprocess_image_data 
+    p.data_processing.input_processing_function = 'normalize_images'
 
     return p

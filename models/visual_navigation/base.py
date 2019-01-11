@@ -32,14 +32,13 @@ class VisualNavigationModelBase(BaseModel):
         """
         return raw_data['goal_position_ego_n2']
 
-    def create_nn_inputs_and_outputs(self, raw_data):
+    def create_nn_inputs_and_outputs(self, raw_data, is_training=None):
         """
         Create the occupancy grid and other inputs for the neural network.
         """
-
-        # Preprocess data if necessary
+        
         if self.p.data_processing.input_processing_function is not None:
-            raw_data = self.p.data_processing.input_processing_function(raw_data)
+            raw_data = self.preprocess_nn_input(raw_data, is_training)
 
         # Get the input image (n, m, k, d)
         # batch size n x (m x k pixels) x d channels
@@ -58,3 +57,28 @@ class VisualNavigationModelBase(BaseModel):
         data['inputs'] = [img_nmkd, state_features_n4]
         data['labels'] = optimal_labels_n
         return data
+    
+    def make_processing_functions(self):
+        """
+        Initialize the processing functions if required.
+        """
+        # Initialize the distortion function
+        if self.p.data_processing.input_processing_function in ['distort_images', 'normalize_distort_images']:
+            from training_utils.data_processing.distort_images import basic_image_distortor
+            self.image_distortor = basic_image_distortor(self.p.data_processing.input_processing_params.p)
+
+    def preprocess_nn_input(self, raw_data, is_training):
+        """
+        Pre-process the NN input.
+        """
+        if is_training:
+            # Distort images if required
+            if self.p.data_processing.input_processing_function in ['distort_images', 'normalize_distort_images']:
+                raw_data['img_nmkd'] = self.image_distortor.augment_images(raw_data['img_nmkd'])
+        
+        # Normalize images if required
+        if self.p.data_processing.input_processing_function in ['normalize_images', 'normalize_distort_images']:
+            from training_utils.data_processing.normalize_images import rgb_normalize
+            raw_data = rgb_normalize(raw_data)
+        
+        return raw_data
