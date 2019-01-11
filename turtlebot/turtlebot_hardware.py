@@ -1,8 +1,17 @@
 import os
 import numpy as np
 import cv2
+import rospy
 from utils.utils import check_dotmap_equality
 from utils.angle_utils import angle_normalize
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import Image
+from std_msgs.msg import Empty
+from kobuki_msgs.msg import BumperEvent
+from kobuki_msgs.msg import WheelDropEvent
+from tf.transformations import euler_from_quaternion
+from cv_bridge import CvBridge, CvBridgeError
 
 
 class TurtlebotHardware():
@@ -13,6 +22,7 @@ class TurtlebotHardware():
         
         self.state = np.zeros(3)
         self.state_dx = np.zeros(2)
+        self.num_collision_steps = 0
         self.hit_obstacle = False
         self.raw_image = None
         self.save_images = False
@@ -20,42 +30,32 @@ class TurtlebotHardware():
         self.img_dir = None
         self.hit_obstacle = False
 
-        if not params.debug:
-            import rospy
-            from nav_msgs.msg import Odometry
-            from geometry_msgs.msg import Twist
-            from sensor_msgs.msg import Image
-            from std_msgs.msg import Empty
-            from kobuki_msgs.msg import BumperEvent
-            from kobuki_msgs.msg import WheelDropEvent
-            from tf.transformations import euler_from_quaternion
-            from cv_bridge import CvBridge, CvBridgeError
+            
+        rospy.init_node('Visual_MPC_Turtlebot_Agent')
 
-            rospy.init_node('Visual_MPC_Turtlebot_Agent')
+        # Initialize Sensors
+        self.odom = rospy.Subscriber('/odom', Odometry, self.odom_callback)
+        self.odom_reset = rospy.Publisher('/mobile_base/commands/reset_odometry',
+                                          Empty, queue_size=5)
+        self.bumper = rospy.Subscriber('/mobile_base/events/bumper',
+                                       BumperEvent, self.bump_callback)
+        self.wheel_drop = rospy.Subscriber('/mobile_base/events/wheel_drop',
+                                           WheelDropEvent,  self.wheel_drop_callback)
+        if params.image_type == 'rgb':  # use orbbec astra camera over ros
+            self.imager = rospy.Subscriber('/camera/rgb/image_raw', Image, self.imager_callback)
+        elif params.image_type == 'depth':
+            self.imager = rospy.Subscriber('/camera/depth/image_raw', Image, self.imager_callback)
+        else:
+            assert(False)
+        self.bridge = CvBridge()
 
-            # Initialize Sensors
-            self.odom = rospy.Subscriber('/odom', Odometry, self.odom_callback)
-            self.odom_reset = rospy.Publisher('/mobile_base/commands/reset_odometry',
-                                              Empty, queue_size=5)
-            self.bumper = rospy.Subscriber('/mobile_base/events/bumper',
-                                           BumperEvent, self.bump_callback)
-            self.wheel_drop = rospy.Subscriber('/mobile_base/events/wheel_drop',
-                                               WheelDropEvent,  self.wheel_drop_callback)
-            if self.image_type == 'rgb':  # use orbbec astra camera over ros
-                self.imager = rospy.Subscriber('/camera/rgb/image_raw', Image, self.imager_callback)
-            elif self.image_type == 'depth':
-                self.imager = rospy.Subscriber('/camera/depth/image_raw', Image, self.imager_callback)
-            else:
-                assert(False)
-            self.bridge = CvBridge()
+        # Initialize Actuators
+        self.cmd_vel = rospy.Publisher('cmd_vel_mux/input/navi', Twist, queue_size=10)
 
-            # Initialize Actuators
-            self.cmd_vel = rospy.Publisher('cmd_vel_mux/input/navi', Twist, queue_size=10)
-
-            # Initialize rospy
-            rospy.sleep(1)
-            self.reset_odom()
-            self.r = rospy.Rate(int(1./dt))  # Set the actuator frequency in Hz
+        # Initialize rospy
+        rospy.sleep(1)
+        self.reset_odom()
+        self.r = rospy.Rate(int(1./params.dt))  # Set the actuator frequency in Hz
 
     @staticmethod
     def get_hardware_interface(params):
@@ -80,9 +80,9 @@ class TurtlebotHardware():
     # TODO Varun T.: Dont convert every image- might block the cpu
     def imager_callback(self, data):
         try:
-            if self.image_type == 'rgb':
+            if self.params.image_type == 'rgb':
                 self.raw_image = self.bridge.imgmsg_to_cv2(data, "rgb8")
-            elif self.image_type == 'depth':
+            elif self.params.image_type == 'depth':
                 self.raw_image = self.bridge.imgmsg_to_cv2(data, '16UC1')
             else:
                 assert(False)
@@ -109,20 +109,21 @@ class TurtlebotHardware():
 
     @property
     def image(self):
-        if self.params.debug:
-            return np.zeros(self.params.image_size)
-
-        if self.image_type == 'rgb':  # cvt flips this internally
+        if self.params.image_type == 'rgb':  # cvt flips this internally
             image = cv2.resize(self.raw_image*1.,
-                               (self.img_dims[1], self.img_dims[0]),
+                               (self.params.image_size[1], self.params.image_size[0]),
                                interpolation=cv2.INTER_AREA)
-        elif self.image_type == 'depth':
+        elif self.params.image_type == 'depth':
             raise NotImplementedError
         else:
             assert(False)
         return image
 
     def start_saving_images(self, img_dir):
+        """
+        Start recording images while the turtlebot is moving
+        around (useful for making videos).
+        """
         self.img_dir = img_dir
         self.images_saved = 0
         self.save_images = True
@@ -131,14 +132,12 @@ class TurtlebotHardware():
         self.save_images = False
 
     def reset_odom(self):
-        if self.params.debug:
-            return None
-
+        self.num_collision_steps = 0
         self.odom_reset.publish(Empty())
         rospy.sleep(1)
 
     def write_img(self, name, image):
-        if self.image_type == 'rgb':
+        if self.params.image_type == 'rgb':
             cv2.imwrite(name, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
         else:
             cv2.imwrite(name, image.astype(np.uint8))
@@ -149,12 +148,13 @@ class TurtlebotHardware():
         """
         Apply an action u= [linear velocity, angular velocity]
         """
-        if self.params.debug:
-            return None
-
-        x, y, theta = self.state
         cmd = Twist()
-        cmd.linear.x = u[0]
-        cmd.angular.z = u[1]
+        if not self.hit_obstacle:
+            cmd.linear.x = u[0]
+            cmd.angular.z = u[1]
+        else:
+            cmd.linear.x = 0.0
+            cmd.linear.z = 0.0
+            self.num_collision_steps += 1
         self.cmd_vel.publish(cmd)
         self.r.sleep()

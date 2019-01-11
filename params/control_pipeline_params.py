@@ -50,7 +50,7 @@ def create_params():
 
     # Set this to true if you want trajectory objects to track
     # linear and angular acceleration. If not set to false to save memory
-    p.track_trajectory_acceleration = False
+    p.track_trajectory_acceleration = True
 
     p.verbose = False
     return p

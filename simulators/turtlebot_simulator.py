@@ -1,3 +1,6 @@
+import numpy as np
+import tensorflow as tf
+from trajectory.trajectory import SystemConfig
 from obstacles.turtlebot_map import TurtlebotMap
 from simulators.simulator import Simulator
 
@@ -9,6 +12,16 @@ class TurtlebotSimulator(Simulator):
         assert(params.obstacle_map_params.obstacle_map is TurtlebotMap)
         super(TurtlebotSimulator, self).__init__(params=params)
 
+    def _init_obj_fn(self):
+        """
+        A dummy objective function which always returns 0.0
+        so the robot works with the simulator structure.
+        """
+        from dotmap import DotMap
+        dummy_obj = DotMap()
+        dummy_obj.evaluate_function = lambda trajectories: [0.0]
+        return dummy_obj
+
     def get_observation(self, config=None, pos_n3=None, **kwargs):
         """
         Return the robot's observation from configuration config
@@ -16,22 +29,28 @@ class TurtlebotSimulator(Simulator):
         """
         return self.obstacle_map.get_observation(config=config, pos_n3=pos_n3, **kwargs)
 
-
-    def _reset_start_configuration(self):
+    def _reset_start_configuration(self, rng):
         """
         Reset the Turtlebot's odometer.
         """
-        self.system_dynamics.hardware.reset_odom()
-        import pdb; pdb.set_trace()
+        p = self.params
 
-    def _reset_goal_configuration(self):
+        self.system_dynamics.hardware.reset_odom()
+        self.start_config = self.system_dynamics.init_egocentric_robot_config(dt=p.dt,
+                                                                              n=1)
+
+    def _reset_goal_configuration(self, rng):
         """
         Reset the turtlebot goal position
         """
-        assert(self.params.reset_params.goal_config.reset_type == 'custom')
-        import pdb; pdb.set_trace()
-        return True
+        p = self.params
 
+        assert(p.reset_params.goal_config.position.reset_type == 'custom')
+        x, y = p.reset_params.goal_config.position.goal_pos
+        pos_112 = np.array([[[x, y]]], dtype=np.float32)
+        self.goal_config = SystemConfig(dt=p.dt, n=1, k=1,
+                                        position_nk2=pos_112)
+        return False
 
     def _reset_obstacle_map(self, rng):
         """
@@ -51,6 +70,21 @@ class TurtlebotSimulator(Simulator):
         """ Initializes the sbpd map."""
         p = self.params.obstacle_map_params
         return p.obstacle_map(p)
+
+    def _dist_to_goal(self, trajectory):
+        """
+        Calculate the l2 distance to the goal.
+        """
+        dist_to_goal_1k = tf.norm(trajectory.position_nk2() - self.goal_config.position_nk2(),
+                                  axis=2)
+        return dist_to_goal_1k
+
+    def _compute_time_idx_for_collision(self, vehicle_trajectory):
+        if self.system_dynamics.hardware.hit_obstacle:
+            import pdb; pdb.set_trace()
+        else:
+            time_idx = tf.constant(self.params.episode_horizon+1)
+        return time_idx
 
     def _render_obstacle_map(self, ax):
         """

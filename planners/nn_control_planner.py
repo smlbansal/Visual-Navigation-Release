@@ -55,7 +55,8 @@ class NNControlPlanner(NNPlanner):
         """Returns a dictionary with keys mapping to empty lists
         for each datum computed by a planner."""
         data = {'optimal_control_nk2': [],
-                'system_config': []}
+                'system_config': [],
+                'img_nmkd': []}
         return data
 
     @staticmethod
@@ -75,4 +76,5 @@ class NNControlPlanner(NNPlanner):
         data['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[valid_mask])
         data['optimal_control_nk2'] = tf.boolean_mask(tf.concat(data['optimal_control_nk2'],
                                                                 axis=0), valid_mask)
+        data['img_nmkd'] = np.array(np.concatenate(data['img_nmkd'], axis=0))[valid_mask]
         return data

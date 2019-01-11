@@ -61,7 +61,8 @@ class Planner(object):
                 'trajectory': [],
                 'planning_horizon': [],
                 'K_nkfd': [],
-                'k_nkf1': []}
+                'k_nkf1': [],
+                'img_nmkd': []}
         return data
 
     @staticmethod
@@ -93,4 +94,5 @@ class Planner(object):
         data['planning_horizon_n1'] = np.array(data['planning_horizon'])[valid_mask][:, None]
         data['K_nkfd'] = tf.boolean_mask(tf.concat(data['K_nkfd'], axis=0), valid_mask)
         data['k_nkf1'] = tf.boolean_mask(tf.concat(data['k_nkf1'], axis=0), valid_mask)
+        data['img_nmkd'] = np.array(np.concatenate(data['img_nmkd'], axis=0))[valid_mask]
         return data

@@ -20,4 +20,5 @@ class TurtlebotMap(ObstacleMap):
         """
         Render the robot's current observation
         """
-        return self.imager.image
+        img_mkd = self.imager.image
+        return img_mkd[None]

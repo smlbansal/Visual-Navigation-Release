@@ -54,7 +54,8 @@ class Simulator(object):
         config = self.start_config
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_data = self.planner.empty_data_dict()
-        while vehicle_trajectory.k < self.params.episode_horizon:
+        end_episode = False
+        while not end_episode:
             trajectory_segment, next_config, data = self._iterate(config)
             # Append to Vehicle Data
             for key in vehicle_data.keys():
@@ -62,10 +63,8 @@ class Simulator(object):
 
             vehicle_trajectory.append_along_time_axis(trajectory_segment)
             config = next_config
-
-        episode_data = self._enforce_episode_termination_conditions(vehicle_trajectory,
-                                                                    vehicle_data)
-
+            end_episode, episode_data = self._enforce_episode_termination_conditions(vehicle_trajectory,
+                                                                                     vehicle_data)
         self.vehicle_trajectory, self.vehicle_data, self.episode_type, self.valid_episode = episode_data
         self.obj_val = self._compute_objective_value(self.vehicle_trajectory)
 
@@ -143,45 +142,61 @@ class Simulator(object):
         for condition in p.episode_termination_reasons:
             time_idxs.append(self._compute_time_idx_for_termination_condition(vehicle_trajectory,
                                                                               condition))
-        idx = np.argmin(time_idxs)
-        vehicle_trajectory.clip_along_time_axis(time_idxs[idx].numpy())
-        data = self.planner.mask_and_concat_data_along_batch_dim(data, k=vehicle_trajectory.k)
+        try:
+            idx = np.argmin(time_idxs)
+        except ValueError:
+            idx = np.argmin([time_idx.numpy() for time_idx in time_idxs])
         
-        # If all of the data was masked then
-        # the episode simulated is not valid
-        valid_episode = True
-        if data['system_config'] is None:
-            valid_episode = False
+        if time_idxs[idx] < vehicle_trajectory.k:
+            end_episode = True
+            vehicle_trajectory.clip_along_time_axis(time_idxs[idx].numpy())
+            data = self.planner.mask_and_concat_data_along_batch_dim(data, k=vehicle_trajectory.k)
+            
+            # If all of the data was masked then
+            # the episode simulated is not valid
+            valid_episode = True
+            if data['system_config'] is None:
+                valid_episode = False
+            episode_data = (vehicle_trajectory, data, idx, valid_episode)
+        else:
+            end_episode = False
+            episode_data = None
 
-        return vehicle_trajectory, data, idx, valid_episode
+        return end_episode, episode_data
 
     def _compute_time_idx_for_termination_condition(self, vehicle_trajectory, condition):
         """ For a given trajectory termination condition (i.e. timeout, collision, etc.)
         computes the earliest time index at which this condition is met. Returns
         episode_horizon+1 otherwise."""
-        time_idx = tf.constant(self.params.episode_horizon)
         if condition == 'Timeout':
-            pass
+            time_idx = tf.constant(self.params.episode_horizon)
         elif condition == 'Collision':
-            time_idx += 1
-
-            pos_1k2 = vehicle_trajectory.position_nk2()
-            obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
-            collisions = tf.where(tf.less(obstacle_dists_1k, 0.0))
-            collision_idxs = collisions[:, 1]
-            if tf.size(collision_idxs).numpy() != 0:
-                time_idx = collision_idxs[0]
+            time_idx = self._compute_time_idx_for_collision(vehicle_trajectory)
         elif condition == 'Success':
-            time_idx += 1
-            dist_to_goal_1k = self._dist_to_goal(vehicle_trajectory)
-            successes = tf.where(tf.less(dist_to_goal_1k,
-                                         self.params.goal_cutoff_dist))
-            success_idxs = successes[:, 1]
-            if tf.size(success_idxs).numpy() != 0:
-                time_idx = success_idxs[0]
+            time_idx = self._compute_time_idx_for_success(vehicle_trajectory)
         else:
             raise NotImplementedError
 
+        return time_idx
+
+    def _compute_time_idx_for_collision(self, vehicle_trajectory):
+        time_idx = tf.constant(self.params.episode_horizon+1)
+        pos_1k2 = vehicle_trajectory.position_nk2()
+        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
+        collisions = tf.where(tf.less(obstacle_dists_1k, 0.0))
+        collision_idxs = collisions[:, 1]
+        if tf.size(collision_idxs).numpy() != 0:
+            time_idx = collision_idxs[0]
+        return time_idx
+
+    def _compute_time_idx_for_success(self, vehicle_trajectory):
+        time_idx = tf.constant(self.params.episode_horizon+1)
+        dist_to_goal_1k = self._dist_to_goal(vehicle_trajectory)
+        successes = tf.where(tf.less(dist_to_goal_1k,
+                                     self.params.goal_cutoff_dist))
+        success_idxs = successes[:, 1]
+        if tf.size(success_idxs).numpy() != 0:
+            time_idx = success_idxs[0]
         return time_idx
 
     def reset(self, seed=-1):

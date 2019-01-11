@@ -60,7 +60,8 @@ class NNWaypointPlanner(NNPlanner):
                 'trajectory': Trajectory.copy(self.opt_traj),
                 'planning_horizon': min_horizon,
                 'K_nkfd': controllers['K_nkfd'][min_idx:min_idx + 1],
-                'k_nkf1': controllers['k_nkf1'][min_idx:min_idx + 1]}
+                'k_nkf1': controllers['k_nkf1'][min_idx:min_idx + 1],
+                'img_nmkd': raw_data['img_nmkd']}
 
         return data
 

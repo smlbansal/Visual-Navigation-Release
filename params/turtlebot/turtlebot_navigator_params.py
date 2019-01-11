@@ -17,8 +17,7 @@ def create_params():
     # Ensure the turtlebot takes rgb images 64x64x3
     hardware_params = DotMap(image_size=[64, 64, 3],
                              image_type='rgb',
-                             dt=simulator_params.planner_params.control_pipeline_params.system_dynamics_params.dt,
-                             debug=True)
+                             dt=simulator_params.planner_params.control_pipeline_params.system_dynamics_params.dt)
 
     # Ensure the waypoint grid is uniform
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
@@ -35,6 +34,9 @@ def create_params():
     simulator_params.planner_params.control_pipeline_params.discard_LQR_controller_data = False
     simulator_params.planner_params.control_pipeline_params.real_robot = True
 
+    # Update the goal position
+    simulator_params.reset_params.goal_config.position.goal_pos=[1.0, 1.0]
+
     p = create_trainer_params(simulator_params=simulator_params)
 
     # Image size to [64, 64, 3]
@@ -45,4 +47,7 @@ def create_params():
 
     # There is no expert for rgb images on the turtlebot
     p.test.simulate_expert = False
+
+    # One test at a time so the robot can be physically reset
+    p.test.number_tests = 1
     return p

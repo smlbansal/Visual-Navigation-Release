@@ -6,5 +6,6 @@ def create_params():
     p = DotMap()
 
     p.obstacle_map = TurtlebotMap
+    p.dx = 1.
 
     return p

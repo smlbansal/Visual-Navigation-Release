@@ -15,9 +15,14 @@ class TurtlebotDubinsV2(DubinsV2):
         self.hardware = TurtlebotHardware.get_hardware_interface(params.hardware_params)
 
     def simulate(self, x_nk3, u_nk2, t=None):
-        import pdb; pdb.set_trace()
-        with tf.name_scope('simulate'):
-            delta_x_nk3 = tf.stack([self._saturate_linear_velocity(u_nk2[:, :, 0])*tf.cos(x_nk3[:, :, 2]),
-                                    self._saturate_linear_velocity(u_nk2[:, :, 0])*tf.sin(x_nk3[:, :, 2]),
-                                    self._saturate_angular_velocity(u_nk2[:, :, 1])], axis=2)
-            return x_nk3 + self._dt*delta_x_nk3
+        """
+        Execute a linear and angular velocity command
+        on the actual turtlebot system.
+        """
+        linear_velocity_111 = self._saturate_linear_velocity(u_nk2[:, :, 0])
+        angular_velocity_111 = self._saturate_angular_velocity(u_nk2[:, :, 1])
+        ros_command = [linear_velocity_111[0, 0].numpy(),
+                       angular_velocity_111[0, 0].numpy()]
+        self.hardware.apply_command(ros_command)
+        next_state_3 = self.hardware.state * 1.
+        return tf.constant(next_state_3[None, None], dtype=tf.float32)

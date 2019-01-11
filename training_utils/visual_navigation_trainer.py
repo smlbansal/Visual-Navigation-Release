@@ -229,13 +229,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         simulator = data['simulator']
         dirname = data['dir']
 
-        if hasattr(self.model, 'occupancy_grid_positions_ego_1mk12'):
-            occupancy_grid_positions_ego_1mk12 = self.model.occupancy_grid_positions_ego_1mk12
-            kwargs = {'occupancy_grid_positions_ego_1mk12': occupancy_grid_positions_ego_1mk12}
-        else:
-            kwargs = {}
-
-        imgs_nmkd = simulator.get_observation(simulator.vehicle_data['system_config'], **kwargs)
+        imgs_nmkd = simulator.vehicle_data['img_nmkd']
         fig, _, axs = utils.subplot2(plt, (len(imgs_nmkd), 1), (8, 8), (.4, .4))
         axs = axs[::-1]
         for idx, img_mkd in enumerate(imgs_nmkd):
