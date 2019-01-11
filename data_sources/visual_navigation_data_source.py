@@ -47,9 +47,16 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         return data['vehicle_state_nk3'].shape[0]
     
-    # TODO: Varun- look into efficiency at some point to see
-    # if data collection can be sped up
+    # TODO: Varun- look into efficiency at some point to see if data collection can be sped up
     def generate_data(self):
+        
+        # Note (Somil): Since we moved from a string to a list convention for data directories, we are adding
+        # additional code here to make sure it is backwards compatible. Moreover, only a single data creation directory
+        # can be provided to create the data at the moment.
+        if isinstance(self.p.data_creation.data_dir, list):
+            assert len(self.p.data_creation.data_dir) == 1
+            self.p.data_creation.data_dir = self.p.data_creation.data_dir[0]
+        
         # Create the data directory if required
         if not os.path.exists(self.p.data_creation.data_dir):
             os.makedirs(self.p.data_creation.data_dir)

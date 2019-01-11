@@ -1,4 +1,5 @@
 import tensorflow as tf
+from copy import deepcopy
 
 from models.base import BaseModel
 from training_utils.architecture.simple_cnn import simple_cnn
@@ -71,6 +72,8 @@ class VisualNavigationModelBase(BaseModel):
         """
         Pre-process the NN input.
         """
+        raw_data = deepcopy(raw_data)
+        
         if is_training:
             # Distort images if required
             if self.p.data_processing.input_processing_function in ['distort_images', 'normalize_distort_images']:
