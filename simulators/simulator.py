@@ -33,6 +33,7 @@ class Simulator(object):
         p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
         p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
         p.dt = dt
+
         return p
 
     # TODO: Varun. Make the planner interface at a trajectory level
@@ -147,7 +148,7 @@ class Simulator(object):
         except ValueError:
             idx = np.argmin([time_idx.numpy() for time_idx in time_idxs])
         
-        if time_idxs[idx] < vehicle_trajectory.k:
+        if time_idxs[idx] <= vehicle_trajectory.k:
             end_episode = True
             vehicle_trajectory.clip_along_time_axis(time_idxs[idx].numpy())
             data = self.planner.mask_and_concat_data_along_batch_dim(data, k=vehicle_trajectory.k)
@@ -548,8 +549,10 @@ class Simulator(object):
         angular_speed_k = self.vehicle_trajectory.angular_speed_nk1()[
             0, :, 0].numpy()
 
-        ax0.plot(speed_k, 'r--')
+        time = np.r_[:self.vehicle_trajectory.k]*self.vehicle_trajectory.dt 
+
+        ax0.plot(time, speed_k, 'r--')
         ax0.set_title('Linear Velocity')
 
-        ax1.plot(angular_speed_k, 'r--')
+        ax1.plot(time, angular_speed_k, 'r--')
         ax1.set_title('Angular Velocity')

@@ -402,17 +402,19 @@ class Trajectory(object):
         i = 1
         if plot_heading:
             ax = axs[i]
-            ax.plot(self._heading_nk1[batch_idx, :, 0].numpy(), 'r-')
+            ax.plot(np.r_[:self.k]*self.dt, self._heading_nk1[batch_idx, :, 0].numpy(), 'r-')
             ax.set_title('Theta')
             i += 1
 
         if plot_velocity:
+            time = np.r_[:self.k]*self.dt
+
             ax = axs[i]
-            ax.plot(self._speed_nk1[batch_idx, :, 0].numpy(), 'r-')
+            ax.plot(time, self._speed_nk1[batch_idx, :, 0].numpy(), 'r-')
             ax.set_title('Linear Velocity')
 
             ax = axs[i+1]
-            ax.plot(self._angular_speed_nk1[batch_idx, :, 0].numpy(), 'r-')
+            ax.plot(time, self._angular_speed_nk1[batch_idx, :, 0].numpy(), 'r-')
             ax.set_title('Angular Velocity')
 
 

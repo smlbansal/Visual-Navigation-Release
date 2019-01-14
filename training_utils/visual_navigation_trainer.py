@@ -154,6 +154,34 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             self.simulate(simulator_datas, log_metrics=True,
                           plot_controls=self.p.test.plot_controls,
                           plot_images=self.p.test.plot_images)
+           
+            
+    def plot_measured_states_for_debugging(self, data, axs):
+        """
+        Plot the trajectory the simulator thinks it saw
+        versus what the robot sensors actually measured.
+        Useful for debugging real robots over ROS.
+        """
+        import numpy as np
+        measured_states = 1.*np.array(data['simulator'].system_dynamics.hardware.measured_states)*1.
+        measured_states_dx = 1.*np.array(data['simulator'].system_dynamics.hardware.measured_states_dx)*1.
+
+        ax = axs[0]
+        xs = measured_states[:, 0]
+        ys = measured_states[:, 1]
+        thetas = measured_states[:, 2]
+        ax.plot(xs, ys, 'b-')
+        freq = 100
+        ax.quiver(xs[::freq], ys[::freq],
+                  np.cos(thetas[::freq]), np.sin(thetas[::freq]))
+
+        time = np.r_[:len(measured_states_dx)]/100.
+        
+        ax = axs[1]
+        ax.plot(time, measured_states_dx[:, 0], 'b--')
+
+        ax = axs[2]
+        ax.plot(time, measured_states_dx[:, 1], 'b--')
 
     def simulate(self, simulator_datas, log_metrics=True,
                  plot_controls=False, plot_images=False):
@@ -218,6 +246,10 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         [ax.clear() for ax in axs]
         simulator.render(axs, freq=render_angle_freq, render_velocities=plot_controls,
                          prepend_title=prepend_title)
+        
+        # TODO: this is for debugging ROS/ turtlebot environment
+        #self.plot_measured_states_for_debugging(data, axs) 
+
         if plot_images:
             self._plot_episode_images(i, data)
 

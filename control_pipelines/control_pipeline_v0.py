@@ -41,6 +41,10 @@ class ControlPipelineV0(ControlPipelineBase):
             assert(utils.check_dotmap_equality(cls.pipeline.params, params))
         return cls.pipeline
 
+    # TODO: Varun T. Clean up this code so that it stays memory efficient
+    # (i.e. assign all precomputed variables when goal_config is None, but
+    # only assign one when goal_config is not None). Move the real robot
+    # code up to the planner level
     def plan(self, start_config, goal_config=None):
         """Computes which velocity bin start_config belongs to
         and returns the corresponding waypoints, horizons, lqr_trajectories,
@@ -282,7 +286,9 @@ class ControlPipelineV0(ControlPipelineBase):
             # Create an LQR Solver object to use when applying LQR controllers on the robot
             # Cost function is not needed as LQR controllers have already been computed
             if not hasattr(self, 'lqr_solver'):
-                self.lqr_solver = LQRSolver(T=self.params.planning_horizon - 1,
+                
+                # Set the horizon for LQR to the control horizon - 1
+                self.lqr_solver = LQRSolver(T=self.params.control_horizon - 1,
                                             dynamics=self.system_dynamics,
                                             cost=None)
 

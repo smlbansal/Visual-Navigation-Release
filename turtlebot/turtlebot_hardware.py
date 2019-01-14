@@ -16,10 +16,14 @@ from cv_bridge import CvBridge, CvBridgeError
 
 class TurtlebotHardware():
     hardware_interface = None
-
+    
     def __init__(self, params):
         self.params = params
-        
+    
+        self.measured_states = []
+        self.measured_states_dx = []
+        self.track_states = False
+    
         self.state = np.zeros(3)
         self.state_dx = np.zeros(2)
         self.num_collision_steps = 0
@@ -76,6 +80,9 @@ class TurtlebotHardware():
         self.state[2] = angle_normalize(angle)
         self.state_dx[0] = data.twist.twist.linear.x
         self.state_dx[1] = data.twist.twist.angular.z
+        if self.track_states:
+            self.measured_states.append(1.*np.array(self.state))
+            self.measured_states_dx.append(1.*np.array(self.state_dx))
 
     # TODO Varun T.: Dont convert every image- might block the cpu
     def imager_callback(self, data):
