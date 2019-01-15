@@ -58,6 +58,7 @@ class ImageDataSource(DataSource):
             
             # If the image data already exists, no need to recreate it
             if len(os.listdir(new_data_dirs[-1])) > 0:
+                self._ensure_metadata_exists(new_data_dirs[-1])
                 continue
             # Else create the data
             else:
@@ -74,6 +75,8 @@ class ImageDataSource(DataSource):
                 # List the data files in the directory
                 data_files = [os.path.join(data_directory, f) for f in os.listdir(data_directory) if f.endswith('.pkl')]
     
+                metadata = {}
+
                 # Render the images
                 for data_file in data_files:
                     with open(data_file, 'rb') as f:
@@ -91,7 +94,31 @@ class ImageDataSource(DataSource):
                     
                     with open(img_filename, 'wb') as f:
                         pickle.dump(data, f)
+
+                    # Add {Absolute file path: number of samples} to the
+                    # metadata dictionary
+                    metadata[img_filename] = self._get_n(data['img_nmkd'])
+               
+                # Save metadata
+                metadata_filename = os.path.join(new_data_dirs[-1], 'metadata.pkl')
+                with open(metadata_filename, 'wb') as f:
+                    pickle.dump(metadata, f)
         return new_data_dirs
+
+    def _ensure_metadata_exists(self, img_data_dir):
+        """
+        Ensure that a file metadata.pkl exists img_data_dir.
+        """
+        metadata_filename = os.path.join(img_data_dir, 'metadata.pkl')
+        if not os.path.exists(metadata_filename):
+            metadata = {}
+            data_files = [os.path.join(img_data_dir, f) for f in os.listdir(img_data_dir) if f.endswith('.pkl')]
+            for data_filename in data_files:
+                with open(data_filename, 'rb') as f:
+                    data = pickle.load(f)
+                metadata[data_filename] = self._get_n(data)
+            with open(metadata_filename, 'wb') as f:
+                pickle.dump(metadata, f)
 
     def _extract_file_name_and_number(self, filename, data_dir):
         """
@@ -146,8 +173,24 @@ class ImageDataSource(DataSource):
         # rather than actual data (memory inefficient)
         self.get_placeholder_data_tags = True
 
+        # Load the metadata
+        self._load_metadata()
+
         # Load the new dataset
         super().load_dataset()
+
+    def _load_metadata(self):
+        """
+        Load the metadata for the data_creation_dirs
+        into one dictionary for efficient lookup later.
+        """
+        metadata = {}
+        for img_data_dir in self.p.data_creation.data_dir:
+            metadata_file = os.path.join(img_data_dir, 'metadata.pkl')
+            with open(metadata_file, 'rb') as f:
+                img_metadata = pickle.load(f)
+            metadata.update(img_metadata)
+        self.metadata = metadata
 
     def get_data_tags(self, example_file, file_type='.pkl'):
         """
@@ -174,16 +217,8 @@ class ImageDataSource(DataSource):
         An image data_source deals with references to data
         files, only loading as needed.
         """
-        # Note(Somil): Exact computation of the data samples is just too costly and impractical. A rough number here
-        # should suffice.
-        # print('Warning! Exact computation of the data samples is just too costly and impractical. A rough number is '
-        #       'being used for now. Please change this if it is not desirable.')
-        with open(filename, 'rb') as handle:
-            data_current = pickle.load(handle)
-        n = self._get_n(data_current)
-        # n = 1000
         data = {'filename': [[filename]],
-                'num_samples_n1': [[n]]}
+                'num_samples_n1': [[self.metadata[filename]]]}
         return data
 
     def _get_n(self, data):
@@ -314,6 +349,15 @@ class ImageDataSource(DataSource):
         self.training_shuffle_idxs = self._generate_shuffle_ind_for_data(self.training_dataset)
         self.validation_shuffle_idxs = self._generate_shuffle_ind_for_data(self.validation_dataset)
 
+    def get_file_list(self, file_type='.pkl'):
+        """
+        Get a sorted list of all the data files in the data directory.
+        """
+        file_list = super().get_file_list(file_type)
+        # Remove any metadata files from the data file list
+        file_list = list(filter(lambda x: 'metadata' not in x, file_list))
+        return file_list
+
     def _load_data_into_info_dict(self, data, file_idx, info_dict):
         """
         Load the file in data at index file_idx into
@@ -328,7 +372,7 @@ class ImageDataSource(DataSource):
             with open(filename, 'rb') as f:
                 data_current = pickle.load(f)
             num_samples = data['num_samples_n1'][file_idx, 0]
-            info_dict['data'] = self.clip_data_dictionary(data_current, num_samples)
+            info_dict['data'] = data_current
             info_dict['num_samples'] += num_samples
         else:
             # If the file has already been loaded but num_samples has been reset to 0
@@ -366,12 +410,3 @@ class ImageDataSource(DataSource):
         assert(np.sum(validation_dataset['num_samples_n1']) >= vs)
 
         return training_dataset, validation_dataset
-
-    def clip_data_dictionary(self, data_dictionary, num_samples_to_keep):
-        """
-        Clip a data dictionary so as to only keep the prescribed number of samples.
-        """
-        keys = data_dictionary.keys()
-        for key in keys:
-            data_dictionary[key] = data_dictionary[key][:num_samples_to_keep]
-        return data_dictionary

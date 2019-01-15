@@ -12,7 +12,7 @@ def create_params():
     p.model.num_inputs.image_size = [224, 224, 3]
     
     # Finetune the resnet weights
-    p.model.arch.finetune_resnet_weights = False
+    p.model.arch.finetune_resnet_weights = True
 
     # Change the learning rate and num_samples
     p.trainer.lr = 1e-4
