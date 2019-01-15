@@ -88,6 +88,7 @@ class ImageDataSource(DataSource):
                     # Save the image augmented data to the new directory
                     img_filename = os.path.join(new_data_dirs[-1], filename)
                     data['img_nmkd'] = np.array(img_nmkd)
+                    
                     with open(img_filename, 'wb') as f:
                         pickle.dump(data, f)
         return new_data_dirs
@@ -173,9 +174,14 @@ class ImageDataSource(DataSource):
         An image data_source deals with references to data
         files, only loading as needed.
         """
+        # Note(Somil): Exact computation of the data samples is just too costly and impractical. A rough number here
+        # should suffice.
+        # print('Warning! Exact computation of the data samples is just too costly and impractical. A rough number is '
+        #       'being used for now. Please change this if it is not desirable.')
         with open(filename, 'rb') as handle:
             data_current = pickle.load(handle)
         n = self._get_n(data_current)
+        # n = 1000
         data = {'filename': [[filename]],
                 'num_samples_n1': [[n]]}
         return data
@@ -321,9 +327,9 @@ class ImageDataSource(DataSource):
 
             with open(filename, 'rb') as f:
                 data_current = pickle.load(f)
-
-            info_dict['data'] = data_current
-            info_dict['num_samples'] += data['num_samples_n1'][file_idx, 0]
+            num_samples = data['num_samples_n1'][file_idx, 0]
+            info_dict['data'] = self.clip_data_dictionary(data_current, num_samples)
+            info_dict['num_samples'] += num_samples
         else:
             # If the file has already been loaded but num_samples has been reset to 0
             # increment it so that it correctly reflects the correct number of samples
@@ -360,3 +366,12 @@ class ImageDataSource(DataSource):
         assert(np.sum(validation_dataset['num_samples_n1']) >= vs)
 
         return training_dataset, validation_dataset
+
+    def clip_data_dictionary(self, data_dictionary, num_samples_to_keep):
+        """
+        Clip a data dictionary so as to only keep the prescribed number of samples.
+        """
+        keys = data_dictionary.keys()
+        for key in keys:
+            data_dictionary[key] = data_dictionary[key][:num_samples_to_keep]
+        return data_dictionary

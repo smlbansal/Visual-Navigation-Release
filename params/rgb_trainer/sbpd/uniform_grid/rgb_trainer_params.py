@@ -16,6 +16,7 @@ def create_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.img_channels = 3
     simulator_params.obstacle_map_params.renderer_params.camera_params.width = 64
     simulator_params.obstacle_map_params.renderer_params.camera_params.height = 64
+    simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 1.
 
     p = create_trainer_params(simulator_params=simulator_params)
 

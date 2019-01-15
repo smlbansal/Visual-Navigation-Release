@@ -29,11 +29,12 @@ def create_params():
                                 '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area5a/full_episode_random_v1_100k']
 
     # Change the checkpoint
-    p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/custom_arch/session_2019-01-09_13-38-30/checkpoints/ckpt-5'
+    p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/custom_arch/without_image_distortion/' \
+                          'multiple_areas/session_2019-01-11_08-45-22/checkpoints/ckpt-1'
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
-    p.test.number_tests = 100
+    p.test.number_tests = 200
 
     # Parameters for the metric curves
     p.test.metric_curves = DotMap(start_ckpt=1,

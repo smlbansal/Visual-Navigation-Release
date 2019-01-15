@@ -231,14 +231,18 @@ class ResNet50(tf.keras.Model):
       return _IdentityBlock(
           3, filters, stage=stage, block=block, data_format=data_format)
 
+    # Note(Somil): The zero padding layers have been added and the padding for the conv1 layer has been changed to
+    # match the architecture with Keras API.
+    self.zp1 = layers.ZeroPadding2D(padding=(3, 3), name='conv1_pad')
     self.conv1 = layers.Conv2D(
         64, (7, 7),
         strides=(2, 2),
         data_format=data_format,
-        padding='same',
+        padding='valid',
         name='conv1')
     bn_axis = 1 if data_format == 'channels_first' else 3
     self.bn_conv1 = layers.BatchNormalization(axis=bn_axis, name='bn_conv1')
+    self.zp2 = layers.ZeroPadding2D(padding=(1, 1), name='pool1_pad')
     self.max_pool = layers.MaxPooling2D(
         (3, 3), strides=(2, 2), data_format=data_format)
 
@@ -288,9 +292,11 @@ class ResNet50(tf.keras.Model):
     # 1-5. output_layer=-1 signifies the whole
     # resnet50 model
     assert output_layer in [-1, 1, 2, 3, 4, 5]
-    x = self.conv1(inputs)
+    x = self.zp1(inputs)
+    x = self.conv1(x)
     x = self.bn_conv1(x, training=training)
     x = layers.Activation('relu')(x)
+    x = self.zp2(x)
     x = self.max_pool(x)
 
     if output_layer == 1:

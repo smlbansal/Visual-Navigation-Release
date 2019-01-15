@@ -25,12 +25,18 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     # Optional strided convolution on the output
     # of the Resnet50 to reduce feature dimensionality
     if params.dim_red_conv_2d.use:
+        # Convolutional layer
         x = layers.Conv2D(
                     filters=params.dim_red_conv_2d.num_outputs,
                     kernel_size=params.dim_red_conv_2d.filter_size,
                     strides=params.dim_red_conv_2d.stride,
                     padding=params.dim_red_conv_2d.padding,
                     activation=params.hidden_layer_activation_func)(x)
+        # Max-pooling layer
+        if params.dim_red_conv_2d.use_maxpool:
+            x = layers.MaxPool2D(pool_size=(params.dim_red_conv_2d.size_maxpool_filters,
+                                            params.dim_red_conv_2d.size_maxpool_filters),
+                                 padding='valid')(x)
 
     # Flatten the image
     x = layers.Flatten()(x)

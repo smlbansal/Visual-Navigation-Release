@@ -83,5 +83,8 @@ class VisualNavigationModelBase(BaseModel):
         if self.p.data_processing.input_processing_function in ['normalize_images', 'normalize_distort_images']:
             from training_utils.data_processing.normalize_images import rgb_normalize
             raw_data = rgb_normalize(raw_data)
+            
+        if self.p.data_processing.input_processing_function == 'resnet50_keras_preprocessing':
+            raw_data['img_nmkd'] = tf.keras.applications.resnet50.preprocess_input(raw_data['img_nmkd'], mode='caffe')
         
         return raw_data

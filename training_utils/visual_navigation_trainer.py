@@ -69,41 +69,41 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
 
         return simulator_data
 
-    def callback_fn(self, lcl):
-        """
-        A callback function that is called after a training epoch.
-        lcl is a key, value mapping of the current state of the local
-        variables in the trainer.
-        """
-        epoch = lcl['epoch']
-
-        # Instantiate Various Objects Needed for Callbacks
-        if epoch == 1:
-            self._init_callback_instance_variables()
-
-        # Log losses for visualization on tensorboard
-        validation_loss = lcl['epoch_performance_validation']
-        train_loss = lcl['epoch_performance_training']
-
-        with self.nn_summary_writer.as_default():
-            with tf.contrib.summary.always_record_summaries():
-                tf.contrib.summary.scalar('losses/train', train_loss[-1], step=epoch)
-                tf.contrib.summary.scalar('losses/validation', validation_loss[-1], step=epoch)
-
-        if epoch % self.p.trainer.callback_frequency == 0:
-            self.simulator_data['name'] = '{:s}_Epoch_{:d}'.format(self.simulator_name,
-                                                                   epoch)
-            metrics_keyss, metrics_valss = self.simulate([self.simulator_data],
-                                                         log_metrics=False)
-            metrics_keys = metrics_keyss[0]
-            metrics_vals = metrics_valss[0]
-
-            # Log metrics for visualization via tensorboard
-            with self.nn_summary_writer.as_default():
-                with tf.contrib.summary.always_record_summaries():
-                    for k, v in zip(metrics_keys, metrics_vals):
-                        tf.contrib.summary.scalar('metrics/{:s}'.format(k.replace(" ", "_")),
-                                                  v, step=epoch)
+    # def callback_fn(self, lcl):
+    #     """
+    #     A callback function that is called after a training epoch.
+    #     lcl is a key, value mapping of the current state of the local
+    #     variables in the trainer.
+    #     """
+    #     epoch = lcl['epoch']
+    #
+    #     # Instantiate Various Objects Needed for Callbacks
+    #     if epoch == 1:
+    #         self._init_callback_instance_variables()
+    #
+    #     # Log losses for visualization on tensorboard
+    #     validation_loss = lcl['epoch_performance_validation']
+    #     train_loss = lcl['epoch_performance_training']
+    #
+    #     with self.nn_summary_writer.as_default():
+    #         with tf.contrib.summary.always_record_summaries():
+    #             tf.contrib.summary.scalar('losses/train', train_loss[-1], step=epoch)
+    #             tf.contrib.summary.scalar('losses/validation', validation_loss[-1], step=epoch)
+    #
+    #     if epoch % self.p.trainer.callback_frequency == 0:
+    #         self.simulator_data['name'] = '{:s}_Epoch_{:d}'.format(self.simulator_name,
+    #                                                                epoch)
+    #         metrics_keyss, metrics_valss = self.simulate([self.simulator_data],
+    #                                                      log_metrics=False)
+    #         metrics_keys = metrics_keyss[0]
+    #         metrics_vals = metrics_valss[0]
+    #
+    #         # Log metrics for visualization via tensorboard
+    #         with self.nn_summary_writer.as_default():
+    #             with tf.contrib.summary.always_record_summaries():
+    #                 for k, v in zip(metrics_keys, metrics_vals):
+    #                     tf.contrib.summary.scalar('metrics/{:s}'.format(k.replace(" ", "_")),
+    #                                               v, step=epoch)
 
     def _init_callback_instance_variables(self):
         """Initialize instance variables needed for the callback function."""
