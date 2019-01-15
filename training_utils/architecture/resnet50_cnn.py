@@ -11,6 +11,10 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     x = input_image
 
     # Load the ResNet50 and restore the imagenet weights
+    # Note (Somil): We are initializing ResNet model in this fashion because directly setting the layers.trainable to
+    # false is buggy in Keras applications for the Batch Normalization layer. See these issues for details:
+    # https://github.com/keras-team/keras/pull/9965
+    # http://blog.datumbox.com/the-batch-normalization-layer-of-keras-is-broken/
     with tf.variable_scope('resnet50'):
         resnet50 = ResNet50(data_format='channels_last',
                             name='resnet50',
