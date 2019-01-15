@@ -7,12 +7,12 @@ def create_params():
 
     # Use the output of the 3rd residual block as the pretrained
     # feature embedding (there are 5 total blocks)
-    p.arch.resnet_output_layer = -1
+    p.arch.resnet_output_layer = 5
 
     # Add a conv2d layer after the output of the resnet
     # to reduce feature dimensionality before flattening
-    p.arch.dim_red_conv_2d = DotMap(use=False,
-                                    stride=2,
+    p.arch.dim_red_conv_2d = DotMap(use=True,
+                                    stride=1,
                                     filter_size=3,
                                     num_outputs=128,
                                     padding='same',
