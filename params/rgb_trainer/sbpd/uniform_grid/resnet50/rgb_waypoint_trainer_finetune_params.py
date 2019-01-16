@@ -40,8 +40,8 @@ def create_params():
         '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area5a/full_episode_random_v1_100k']
 
     # Change the checkpoint
-    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/varun_logs/sbpd/rgb/nn_waypoint/uniform_grid/' \
-                          'resnet50_v0_finetune/train_full_episode_50k/session_2019-01-03_16-17-35/checkpoints/ckpt-5'
+    p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/validated_resnet/finetuned/' \
+                          'session_2019-01-14_23-05-46/checkpoints/ckpt-2'
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10

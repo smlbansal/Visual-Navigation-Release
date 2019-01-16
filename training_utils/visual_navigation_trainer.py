@@ -131,16 +131,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         super(VisualNavigationTrainer, self).test()
 
         with tf.device(self.p.device):
-            # Initialize the NN Simulator to be tested
-            nn_simulator_params = self._nn_simulator_params()
-            nn_simulator_data = self._init_simulator_data(nn_simulator_params,
-                                                          self.p.test.number_tests,
-                                                          self.p.test.seed,
-                                                          name=self.simulator_name,
-                                                          dirname=self.simulator_name.lower(),
-                                                          plot_controls=self.p.test.plot_controls)
-            simulator_datas = [nn_simulator_data]
-
+            simulator_datas = []
             # Optionally initialize the Expert Simulator to be tested
             if self.p.test.simulate_expert:
                 expert_simulator_params = self.p.simulator_params
@@ -151,6 +142,16 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                                                                   dirname='expert_simulator',
                                                                   plot_controls=self.p.test.plot_controls)
                 simulator_datas.append(expert_simulator_data)
+                
+            # Initialize the NN Simulator to be tested
+            nn_simulator_params = self._nn_simulator_params()
+            nn_simulator_data = self._init_simulator_data(nn_simulator_params,
+                                                          self.p.test.number_tests,
+                                                          self.p.test.seed,
+                                                          name=self.simulator_name,
+                                                          dirname=self.simulator_name.lower(),
+                                                          plot_controls=self.p.test.plot_controls)
+            simulator_datas.append(nn_simulator_data)
 
             # Test the simulators
             metrics_keys, metrics_values = self.simulate(simulator_datas, log_metrics=True,
