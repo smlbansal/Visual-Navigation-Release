@@ -64,19 +64,21 @@ class VisualNavigationModelBase(BaseModel):
         Initialize the processing functions if required.
         """
         # Initialize the distortion function
-        if self.p.data_processing.input_processing_function in ['distort_images', 'normalize_distort_images']:
+        if self.p.data_processing.input_processing_function in ['distort_images', 'normalize_distort_images',
+                                                                'resnet50_keras_preprocessing_and_distortion']:
             from training_utils.data_processing.distort_images import basic_image_distortor
-            self.image_distortor = basic_image_distortor(self.p.data_processing.input_processing_params.p)
+            self.image_distortor = basic_image_distortor(self.p.data_processing.input_processing_params)
 
     def preprocess_nn_input(self, raw_data, is_training):
         """
         Pre-process the NN input.
         """
         raw_data = deepcopy(raw_data)
-        
+
         if is_training:
             # Distort images if required
-            if self.p.data_processing.input_processing_function in ['distort_images', 'normalize_distort_images']:
+            if self.p.data_processing.input_processing_function in ['distort_images', 'normalize_distort_images',
+                                                                    'resnet50_keras_preprocessing_and_distortion']:
                 raw_data['img_nmkd'] = self.image_distortor.augment_images(raw_data['img_nmkd'])
         
         # Normalize images if required
@@ -84,7 +86,8 @@ class VisualNavigationModelBase(BaseModel):
             from training_utils.data_processing.normalize_images import rgb_normalize
             raw_data = rgb_normalize(raw_data)
             
-        if self.p.data_processing.input_processing_function == 'resnet50_keras_preprocessing':
+        if self.p.data_processing.input_processing_function in \
+                ['resnet50_keras_preprocessing', 'resnet50_keras_preprocessing_and_distortion']:
             raw_data['img_nmkd'] = tf.keras.applications.resnet50.preprocess_input(raw_data['img_nmkd'], mode='caffe')
         
         return raw_data

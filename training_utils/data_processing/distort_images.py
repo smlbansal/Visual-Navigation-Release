@@ -1,7 +1,7 @@
 from imgaug import augmenters as iaa
 
 
-def custom_augmenter(sometimes):
+def custom_augmenter_v1(sometimes):
     seq = iaa.Sequential(
         [
             # execute 0 to 5 of the following (less important) augmenters per image
@@ -46,17 +46,38 @@ def custom_augmenter(sometimes):
     return seq
 
 
-def basic_image_distortor(p):
+def custom_augmenter_v2():
+    # This is a replica of the distortion function in the old Visual-MPC code
+    seq = iaa.Sequential(
+        [
+            # Change brightness of images (by -20 to 20 of original value)
+            iaa.Add((-20, 20), per_channel=0.5),
+            
+            # Change the Hue and Saturation of the image
+            iaa.AddToHueAndSaturation((-20, 20), per_channel=0.5),
+    
+            # Improve or worsen the contrast
+            iaa.ContrastNormalization((0.5, 1.5), per_channel=0.5),
+            
+        ], random_order=True)
+    return seq
+
+
+def basic_image_distortor(params):
     """
     Basic distortion function to distort a series of images.
-    :param p: probability of distortion
+    :param params: a set of parameters for initializing the distortion function
     :return: distorted images
     """
-    # Sometimes(0.5, ...) applies the given augmenter in 50% of all cases,
-    # e.g. Sometimes(0.5, GaussianBlur(0.3)) would blur roughly every second image.
-    sometimes = lambda aug: iaa.Sometimes(p, aug)
-    
     # Create an augmentation object
-    seq = custom_augmenter(sometimes)
+    if params.version == 'v1':
+        # Sometimes(0.5, ...) applies the given augmenter in 50% of all cases,
+        # e.g. Sometimes(0.5, GaussianBlur(0.3)) would blur roughly every second image.
+        sometimes = lambda aug: iaa.Sometimes(params.p, aug)
+        seq = custom_augmenter_v1(sometimes)
+    elif params.version == 'v2':
+        seq = custom_augmenter_v2()
+    else:
+        raise NotImplementedError
     
     return seq
