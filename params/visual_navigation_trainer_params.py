@@ -116,6 +116,9 @@ def create_params(simulator_params):
                     seed=10,
                     
                     simulate_expert=True,
+
+                    expert_success_goals=DotMap(use=False,
+                                                dirname = ''),
                     
                     number_tests=100,
 
