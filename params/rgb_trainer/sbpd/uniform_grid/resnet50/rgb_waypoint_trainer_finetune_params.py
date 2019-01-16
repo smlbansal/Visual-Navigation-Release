@@ -19,18 +19,19 @@ def create_params():
     p.trainer.num_samples = int(150e3)
     
     # Checkpoint settings
-    p.trainer.ckpt_save_frequency = 5
+    p.trainer.ckpt_save_frequency = 2
 
     # Change the number of tests and callback frequency
     p.trainer.callback_frequency = 500
     p.trainer.callback_number_tests = 200
 
     # Change the Data Processing parameters
-    p.data_processing.input_processing_function = 'resnet50_keras_preprocessing'
+    p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
 
     # Input processing parameters
     p.data_processing.input_processing_params = DotMap(
-        p=0.1  # Probability of distortion
+        p=0.1,  # Probability of distortion
+        version='v2'  # Version of the distortion function
     )
 
     # Change the data_dir
