@@ -70,7 +70,8 @@ class VisualNavigationDataSource(ImageDataSource):
         while num_points < self.p.data_creation.data_points:
             # Reset the data dictionary
             data = self.reset_data_dictionary(self.p)
-           
+          
+            self.episode_counter = 0
             while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
                 # Reset the simulator
                 simulator.reset()
@@ -82,6 +83,7 @@ class VisualNavigationDataSource(ImageDataSource):
                 if simulator.valid_episode:
                     # Append the data to the current data dictionary
                     self.append_data_to_dictionary(data, simulator)
+                    self.episode_counter += 1
 
             # Prepare the dictionary for saving purposes
             self.prepare_and_save_the_data_dictionary(data, counter)
@@ -121,6 +123,22 @@ class VisualNavigationDataSource(ImageDataSource):
 
         # Optimal control information
         data['optimal_control_nk2'] = []
+
+        # Episode type information
+        data['episode_type_string_n1'] = []
+        data['episode_number_n1'] = []
+        
+        # Last step information
+        # Saved separately from other episode information
+        # So that we can decide whether to train on this or not
+        data['last_step_vehicle_state_nk3'] = []
+        data['last_step_vehicle_controls_nk2'] = []
+        data['last_step_goal_position_n2'] = []
+        data['last_step_goal_position_ego_n2'] = []
+        data['last_step_optimal_waypoint_n3'] = []
+        data['last_step_optimal_waypoint_ego_n3'] = []
+        data['last_step_optimal_control_nk2'] = []
+
         return data
 
     def _num_data_points(self, data):
@@ -137,6 +155,39 @@ class VisualNavigationDataSource(ImageDataSource):
             return data['vehicle_state_nk3'].shape[0]
         else:
             raise NotImplementedError
+
+    # TODO Varun T.: Clean up this code so the structure isnt repeating
+    # the function below
+    def _append_last_step_info_to_dictionary(self, data, simulator):
+        """
+        Append data from the last trajectory segment
+        to the data dictionary.
+        """
+        data_last_step = simulator.vehicle_data_last_step
+        n = data_last_step['system_config'].n
+
+        data['last_step_vehicle_state_nk3'].append(simulator.vehicle_data_last_step['trajectory'].position_and_heading_nk3().numpy())
+        data['last_step_vehicle_controls_nk2'].append(simulator.vehicle_data_last_step['trajectory'].speed_and_angular_speed_nk2().numpy())
+
+        last_step_goal_n13 = np.broadcast_to(simulator.goal_config.position_and_heading_nk3().numpy(), (n, 1, 3)) 
+        last_step_waypoint_n13 = data_last_step['waypoint_config'].position_and_heading_nk3().numpy()
+        
+        # Convert to egocentric coordinates
+        start_nk3 = data_last_step['system_config'].position_and_heading_nk3().numpy()
+        goal_ego_n13 = DubinsCar.convert_position_and_heading_to_ego_coordinates(start_nk3,
+                                                                                 last_step_goal_n13)
+        waypoint_ego_n13 = DubinsCar.convert_position_and_heading_to_ego_coordinates(start_nk3,
+                                                                                     last_step_waypoint_n13)
+
+        data['last_step_goal_position_n2'].append(last_step_goal_n13)
+        
+        data['last_step_goal_position_ego_n2'].append(goal_ego_n13)
+        
+        data['last_step_optimal_waypoint_n3'].append(last_step_waypoint_n13)
+        data['last_step_optimal_waypoint_ego_n3'].append(waypoint_ego_n13)
+
+        data['last_step_optimal_control_nk2'].append(simulator.vehicle_data_last_step['trajectory'].speed_and_angular_speed_nk2().numpy())
+        return data
 
     def append_data_to_dictionary(self, data, simulator):
         """
@@ -183,8 +234,15 @@ class VisualNavigationDataSource(ImageDataSource):
 
         # Optimal control data
         data['optimal_control_nk2'].append(simulator.vehicle_data['trajectory'].speed_and_angular_speed_nk2().numpy())
+       
+        # Episode Type Information
+        data['episode_type_string_n1'].append([simulator.params.episode_termination_reasons[simulator.episode_type]]*n)
+        data['episode_number_n1'].append([self.episode_counter]*n)
+
+        data = self._append_last_step_info_to_dictionary(data, simulator)
         return data
 
+    
     def prepare_and_save_the_data_dictionary(self, data, counter):
         """
         Stack the lists in the dictionary to make an array, and then save the dictionary.
