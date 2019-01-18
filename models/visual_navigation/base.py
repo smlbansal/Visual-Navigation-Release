@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from copy import deepcopy
 
 from models.base import BaseModel
@@ -79,7 +80,10 @@ class VisualNavigationModelBase(BaseModel):
             # Distort images if required
             if self.p.data_processing.input_processing_function in ['distort_images', 'normalize_distort_images',
                                                                     'resnet50_keras_preprocessing_and_distortion']:
-                raw_data['img_nmkd'] = self.image_distortor.augment_images(raw_data['img_nmkd'])
+              
+                # Image Augmenter works with uint8, but we want images to be float32 for the
+                # network, hence the casting
+                raw_data['img_nmkd'] = self.image_distortor.augment_images(raw_data['img_nmkd'].astype(np.uint8)).astype(np.float32)
         
         # Normalize images if required
         if self.p.data_processing.input_processing_function in ['normalize_images', 'normalize_distort_images']:
