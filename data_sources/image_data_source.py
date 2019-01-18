@@ -97,7 +97,7 @@ class ImageDataSource(DataSource):
 
                     # Add {Absolute file path: number of samples} to the
                     # metadata dictionary
-                    metadata[img_filename] = self._get_n(data['img_nmkd'])
+                    metadata[img_filename] = self._get_n(data)
                
                 # Save metadata
                 metadata_filename = os.path.join(new_data_dirs[-1], 'metadata.pkl')
@@ -202,7 +202,12 @@ class ImageDataSource(DataSource):
             # Save the actual data tags if they havent been already
             if self.actual_data_tags is None:
                 super().get_data_tags(example_file, file_type)
-                self.actual_data_tags = self.data_tags
+
+                if self.p.trainer.include_last_step_data:
+                    self.actual_data_tags = self.data_tags
+                    raise NotImplementedError
+                else:
+                    self.actual_data_tags = list(filter(lambda x: 'last' not in x, self.data_tags))
             
             if self.get_placeholder_data_tags:
                 self.data_tags = self.placeholder_data_tags
