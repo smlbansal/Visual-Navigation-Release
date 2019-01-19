@@ -42,7 +42,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             self.data_source.model = self.model
 
     def _init_simulator_data(self, p, num_tests, seed, name='', dirname='', plot_controls=False,
-                            base_dir=None):
+                             base_dir=None):
         """Initializes a simulator_data dictionary based on the params in p,
         num_test, name, and dirname. This can be later passed to the simulate
         function to test a simulator."""
@@ -137,9 +137,9 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
 
         with tf.device(self.p.device):
             simulator_datas = []
-           
+
             simulate_kwargs = self._ensure_expert_success_data_exists_if_needed()
-            
+
             # Optionally initialize the Expert Simulator to be tested
             if self.p.test.simulate_expert:
                 expert_simulator_params = self.p.simulator_params
@@ -150,7 +150,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                                                                   dirname='expert_simulator',
                                                                   plot_controls=self.p.test.plot_controls)
                 simulator_datas.append(expert_simulator_data)
-                
+
             # Initialize the NN Simulator to be tested
             nn_simulator_params = self._nn_simulator_params()
             nn_simulator_data = self._init_simulator_data(nn_simulator_params,
@@ -171,7 +171,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
     def _ensure_expert_success_data_exists_if_needed(self):
         """
         If params.test.use_expert_success_goals is True
-        ensure that a file exists with the expert success metadata.
+        ensure that a file exists with the expert success data.
         If it doesn't, create it.
         """
         if self.p.test.expert_success_goals.use:
@@ -203,21 +203,33 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                 metrics_key, metrics_values, episode_types = self.simulate(simulator_datas, log_metrics=True,
                                                                            plot_controls=True, plot_images=True,
                                                                            return_episode_type=True)
+                episode_types = np.array(episode_types)
+
+                # Save a boolean mask indicating which episodes were invalid
+                # Replace these episodes of type -1 with type 0
+                invalid_episode_mask = (episode_types == -1)
+                episode_types[invalid_episode_mask] = 0
+
+                # Convert episode type numbers to strings
                 episode_types_string = np.array(self.p.test.simulator_params.episode_termination_reasons)[episode_types]
-                
+
+                # Replace Invalid episodes with -1 and Invalid respectively
+                episode_types_string[invalid_episode_mask] = 'Invalid'
+                episode_types[invalid_episode_mask] = -1
+
                 data = {'episode_type_int': episode_types,
                         'episode_types_string': episode_types_string}
-                
+
                 with open(expert_success_data_filename, 'wb') as f:
                     pickle.dump(data, f)
-                
-                expert_success_data = data 
-                # No need to run the expert anymore
-                self.p.test.simulate_expert = False
-            
-            # Create a boolean valid mask indicating which goals
-            # the expert can complete
-            kwargs = {'goal_valid_mask': (expert_success_data['episode_types_string']=='Success')}
+
+                expert_success_data = data
+
+            # No need to run the expert anymore
+            self.p.test.simulate_expert = False
+
+            # Create a boolean valid mask indicating which goals the expert can complete
+            kwargs = {'goal_valid_mask': (expert_success_data['episode_types_string'] == 'Success')}
         else:
             kwargs = {}
         return kwargs
@@ -246,7 +258,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             for i in range(n):
                 if i != 0:
                     simulator.reset(seed=-1)
-               
+
                 if goal_valid_mask is None or goal_valid_mask[i]:
                     simulator.simulate()
                     if simulator.valid_episode:
@@ -254,6 +266,8 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                         metrics.append(simulator.get_metrics())
                         self._plot_episode(i, data, plot_controls=plot_controls,
                                            plot_images=plot_images)
+                    else:
+                        episode_types.append(-1)
 
             # Collect and Process the metrics
             metrics_keys, metrics_vals = self._process_metrics(data, metrics, log_metrics)
@@ -368,20 +382,20 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         summaries
         """
         raise NotImplementedError
-    
+
     def generate_metric_curves(self):
         """
         Generate a metric curve using a trained network.
         """
         # Extract the number of checkpoints to run
         num_ckpts = self.p.test.metric_curves.end_ckpt - self.p.test.metric_curves.start_ckpt + 1
-     
+
         # Extract the number of seeds to run
         num_seeds = self.p.test.metric_curves.end_seed - self.p.test.metric_curves.start_seed + 1
-     
+
         # Checkpoint directory
         ckpt_directory = os.path.join(self.p.trainer.ckpt_path.split('checkpoints')[0], 'checkpoints')
-        
+
         # Call the test function inside a loop and record the metrics
         for i in range(num_ckpts):
             for j in range(num_seeds):
@@ -390,10 +404,10 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                 self.p.test.simulate_expert = False
                 self.p.trainer.ckpt_path = os.path.join(ckpt_directory,
                                                         'ckpt-%i' % (i + self.p.test.metric_curves.start_ckpt))
-                
+
                 # Call the test function
                 metrics_keys_current, metrics_values_current = self.test()
-                
+
                 # Record the metrics
                 if i == 0 and j == 0:
                     # Placeholders for metrics
@@ -402,9 +416,9 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                     metrics_data['values'] = np.zeros((num_seeds, num_ckpts, num_metrics))
                     metrics_data['keys'] = metrics_keys_current[0]
                 metrics_data['values'][j, i, :] = metrics_values_current[0]
-                
+
             self.dump_and_plot_metrics_data(metrics_data)
-                
+
     def dump_and_plot_metrics_data(self, metrics_data):
         # Dump the metric data
         filename = os.path.join(self.p.session_dir, 'metric_data_ckpts_%i_%i_seeds_%i_%i.pkl' %
@@ -412,7 +426,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                                  self.p.test.metric_curves.start_seed, self.p.test.metric_curves.end_seed))
         with open(filename, 'wb') as handle:
             pickle.dump(metrics_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        
+
         # Plot the metrics
         if self.p.test.metric_curves.plot_curves:
             checkpoints = np.arange(self.p.test.metric_curves.start_ckpt, self.p.test.metric_curves.end_ckpt+1)
@@ -426,7 +440,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                 ax.fill_between(checkpoints, mean-std, mean+std, color='r', alpha=0.3)
                 ax.legend()
                 fig.savefig(os.path.join(self.p.session_dir, 'metric_%s.pdf' % metrics_data['keys'][i]))
-                
+
 
 if __name__ == '__main__':
     VisualNavigationTrainer().run()

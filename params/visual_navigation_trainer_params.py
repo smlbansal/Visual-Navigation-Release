@@ -77,7 +77,11 @@ def create_params(simulator_params):
                         rescale_imageframe_coordinates = False,
 
                         # Custom Simulator Parameters for Training. Add more as needed.
-                        simulator_params=deepcopy(p.simulator_params)
+                        simulator_params=deepcopy(p.simulator_params),
+
+                        # Train on data from the last step
+                        # of the episode
+                        include_last_step_data = False
 
     )
 
