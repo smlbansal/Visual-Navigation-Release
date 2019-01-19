@@ -19,30 +19,38 @@ def create_params():
     p.trainer.num_samples = int(150e3)
     
     # Checkpoint settings
-    p.trainer.ckpt_save_frequency = 2
+    p.trainer.ckpt_save_frequency = 1
+    p.trainer.restore_from_ckpt = True
 
     # Change the number of tests and callback frequency
     p.trainer.callback_frequency = 500
     p.trainer.callback_number_tests = 200
 
     # Change the Data Processing parameters
-    p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
+    p.data_processing.input_processing_function = 'resnet50_keras_preprocessing'
 
     # Input processing parameters
     p.data_processing.input_processing_params = DotMap(
         p=0.1,  # Probability of distortion
-        version='v2'  # Version of the distortion function
+        version=''  # Version of the distortion function
     )
 
     # Change the data_dir
+    # Projected Grid
     p.data_creation.data_dir = [
-        '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area3/full_episode_random_v1_100k',
-        '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area4/full_episode_random_v1_100k',
-        '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area5a/full_episode_random_v1_100k']
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area3/full_episode_random_v1_100k',
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area4/full_episode_random_v1_100k',
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area5a/full_episode_random_v1_100k']
+    
+    # # Uniform Grid
+    # p.data_creation.data_dir = [
+    #     '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area3/full_episode_random_v1_100k',
+    #     '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area4/full_episode_random_v1_100k',
+    #     '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area5a/full_episode_random_v1_100k']
 
     # Change the checkpoint
-    p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/validated_resnet/finetuned/' \
-                          'session_2019-01-14_23-05-46/checkpoints/ckpt-2'
+    p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/session_2019-01-16_17-57-05/' \
+                          'checkpoints/ckpt-5'
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
@@ -50,6 +58,10 @@ def create_params():
     
     # Let's not look at the expert
     p.test.simulate_expert = False
+    
+    # Only use the valid goals
+    p.test.expert_success_goals.use = True
+    p.test.expert_success_goals.dirname = '/home/ext_drive/somilb/data/expert_data/sbpd/uniform_grid'
     
     # Parameters for the metric curves
     p.test.metric_curves = DotMap(start_ckpt=1,

@@ -130,6 +130,9 @@ class TrainerFrontendHelper(object):
 
             # Create a trainer
             self.create_trainer()
+            
+            # Maybe restore a checkpoint
+            self.maybe_restore_checkpoint()
 
             # Start the training
             self.trainer.train(model=self.model, data_source=self.data_source,
@@ -163,7 +166,6 @@ class TrainerFrontendHelper(object):
             # Load the checkpoint
             self.trainer.restore_checkpoint(model=self.model)
 
-        
     def create_params(self, param_file):
         """
         Create the parameters given the path of the parameter file.
@@ -204,7 +206,7 @@ class TrainerFrontendHelper(object):
         
         # Setup a logger
         # TODO(Somil, Varun): This is a hack for now. Maybe make it more sophisticated.
-        #TODO: Put this back
+        # TODO: Put this back
         #log_utils.setup_logger(filename=os.path.join(self.p.session_dir, 'log.txt'))
         
         # Add some basic information to the logger
@@ -216,6 +218,18 @@ class TrainerFrontendHelper(object):
         Generate the metric curve from the starting checkpoint to end checkpoint over the range of specified seeds.
         """
         raise NotImplementedError
+    
+    def maybe_restore_checkpoint(self):
+        """
+        Optionally restore a checkpoint and start training from there
+        """
+        if self.p.trainer.restore_from_ckpt:
+            # Restore the checkpoint
+            self.trainer.restore_checkpoint(model=self.model)
+            
+            # TODO(Somil, Varun): In future, we may wanna save the results in the same session directory in which the
+            # checkpoint currently resides. In that case, we should also set the correct epoch and checkpoint numbers
+            # for saving results.
         
 
 if __name__ == '__main__':

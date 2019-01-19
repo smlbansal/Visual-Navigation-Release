@@ -63,7 +63,8 @@ def create_params(simulator_params):
                         # Checkpoint settings
                         max_num_ckpts_to_keep=int(1e2),
                         ckpt_save_frequency=20,
-                        ckpt_path='',                
+                        ckpt_path='',
+                        restore_from_ckpt=False,
 
                         # Callback settings
                         callback_frequency=20,

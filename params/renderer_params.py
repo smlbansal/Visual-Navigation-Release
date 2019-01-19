@@ -4,7 +4,7 @@ from dotmap import DotMap
 def create_params():
     p = DotMap()
     p.dataset_name = 'sbpd'
-    p.building_name = 'area3'
+    p.building_name = 'area1'
     p.flip = False
 
     p.camera_params = DotMap(modalities=['occupancy_grid'],  # occupancy_grid, rgb, or depth
