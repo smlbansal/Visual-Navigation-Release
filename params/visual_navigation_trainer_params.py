@@ -81,7 +81,10 @@ def create_params(simulator_params):
 
                         # Train on data from the last step
                         # of the episode
-                        include_last_step_data = False
+                        include_last_step_data = False,
+
+                        # Whether to train on only episodes in which the expert was successful
+                        successful_episodes_only = False
 
     )
 

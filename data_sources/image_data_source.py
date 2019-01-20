@@ -105,6 +105,7 @@ class ImageDataSource(DataSource):
                     pickle.dump(metadata, f)
         return new_data_dirs
 
+
     def _ensure_metadata_exists(self, img_data_dir):
         """
         Ensure that a file metadata.pkl exists img_data_dir.
@@ -158,8 +159,7 @@ class ImageDataSource(DataSource):
         """
 
         # Render images for the imageless data
-        # and save the new dataset in a temporary
-        # directory used for training
+        # and save the new dataset in a new subdirectory
         new_data_dirs = self._create_image_dataset()
         self.p.data_creation.data_dir = new_data_dirs
 
@@ -401,8 +401,12 @@ class ImageDataSource(DataSource):
 
         # Find the file index for the training and validation sets
         idx_train = np.where(np.cumsum(data['num_samples_n1']) >= ts)[0][0] + 1
-        idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:]) >= vs)[0][0] + 1
-        idx_valid += idx_train
+        
+        try:
+            idx_valid = np.where(np.cumsum(data['num_samples_n1'][idx_train:]) >= vs)[0][0] + 1
+            idx_valid += idx_train
+        except IndexError:  # There is not enough data to create a validation set:
+            assert False, 'Desired Validation Set: {:d}, Available Number of Samples for Validation: {:d}'.format(vs, np.sum(data['num_samples_n1'][idx_train:]))
 
         training_dataset = {'filename': data['filename'][:idx_train],
                             'num_samples_n1': data['num_samples_n1'][:idx_train]}
