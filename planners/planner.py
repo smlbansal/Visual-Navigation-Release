@@ -91,6 +91,8 @@ class Planner:
         last_mask = (data_times > k)
         data_last = {}
         if len(last_mask) > 0:
+            import pdb; pdb.set_trace()
+            # TODO (Varun T.): Should only get the first segment of the thrown out data, not all of it
             data_last['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[last_mask])
             data_last['waypoint_config'] = SystemConfig.concat_across_batch_dim(np.array(data['waypoint_config'])[last_mask])
             data_last['trajectory'] = Trajectory.concat_across_batch_dim(np.array(data['trajectory'])[last_mask])
