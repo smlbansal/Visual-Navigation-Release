@@ -34,8 +34,9 @@ def create_turtlebot_params():
     simulator_params.planner_params.control_pipeline_params.discard_LQR_controller_data = False
     simulator_params.planner_params.control_pipeline_params.real_robot = True
 
+    # CHANGE THE GOAL HERE!!!!
     # Update the goal position
-    simulator_params.reset_params.goal_config.position.goal_pos=[1.0, 1.0]
+    simulator_params.reset_params.goal_config.position.goal_pos=[5.0, 0.00]
 
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -77,6 +78,7 @@ def create_params():
     )
 
     # Change the checkpoint
+    #### CHANGE THE NETWORK WEIGHTS HERE
     p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/trained_projected_test_uniform/resnet_50_v1/data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'
 
     return p
