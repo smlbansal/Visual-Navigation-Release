@@ -63,7 +63,8 @@ def create_params(simulator_params):
                         # Checkpoint settings
                         max_num_ckpts_to_keep=int(1e2),
                         ckpt_save_frequency=20,
-                        ckpt_path='',                
+                        ckpt_path='',
+                        restore_from_ckpt=False,
 
                         # Callback settings
                         callback_frequency=20,
@@ -76,7 +77,14 @@ def create_params(simulator_params):
                         rescale_imageframe_coordinates = False,
 
                         # Custom Simulator Parameters for Training. Add more as needed.
-                        simulator_params=deepcopy(p.simulator_params)
+                        simulator_params=deepcopy(p.simulator_params),
+
+                        # Train on data from the last step
+                        # of the episode
+                        include_last_step_data = False,
+
+                        # Whether to train on only episodes in which the expert was successful
+                        successful_episodes_only = False
 
     )
 
@@ -116,6 +124,9 @@ def create_params(simulator_params):
                     seed=10,
                     
                     simulate_expert=True,
+
+                    expert_success_goals=DotMap(use=False,
+                                                dirname = ''),
                     
                     number_tests=100,
 

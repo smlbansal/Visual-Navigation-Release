@@ -85,9 +85,21 @@ class Planner(object):
     def mask_and_concat_data_along_batch_dim(data, k):
         """Keeps the elements in data which were produced
         before time index k. Concatenates each list in data
-        along the batch dim after masking."""
+        along the batch dim after masking. Also returns data
+        from the first segment not in the valid mask."""
         data_times = np.cumsum([traj.k for traj in data['trajectory']])
         valid_mask = (data_times <= k)
+        last_mask = (data_times > k)
+        last_mask = np.where(np.logical_not(valid_mask))[0]
+        data_last = {}
+        if len(last_mask) > 0:
+            data_last['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[last_mask])
+            data_last['waypoint_config'] = SystemConfig.concat_across_batch_dim(np.array(data['waypoint_config'])[last_mask])
+            data_last['trajectory'] = Trajectory.concat_across_batch_dim(np.array(data['trajectory'])[last_mask])
+            data_last['planning_horizon_n1'] = np.array(data['planning_horizon'])[last_mask][:, None]
+            data_last['K_nkfd'] = tf.boolean_mask(tf.concat(data['K_nkfd'], axis=0), last_mask)
+            data_last['k_nkf1'] = tf.boolean_mask(tf.concat(data['k_nkf1'], axis=0), last_mask)
+
         data['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[valid_mask])
         data['waypoint_config'] = SystemConfig.concat_across_batch_dim(np.array(data['waypoint_config'])[valid_mask])
         data['trajectory'] = Trajectory.concat_across_batch_dim(np.array(data['trajectory'])[valid_mask])
@@ -95,4 +107,6 @@ class Planner(object):
         data['K_nkfd'] = tf.boolean_mask(tf.concat(data['K_nkfd'], axis=0), valid_mask)
         data['k_nkf1'] = tf.boolean_mask(tf.concat(data['k_nkf1'], axis=0), valid_mask)
         data['img_nmkd'] = np.array(np.concatenate(data['img_nmkd'], axis=0))[valid_mask]
-        return data
+        return data, data_last
+
+        

@@ -66,7 +66,7 @@ class Simulator(object):
             config = next_config
             end_episode, episode_data = self._enforce_episode_termination_conditions(vehicle_trajectory,
                                                                                      vehicle_data)
-        self.vehicle_trajectory, self.vehicle_data, self.episode_type, self.valid_episode = episode_data
+        self.vehicle_trajectory, self.vehicle_data, self.vehicle_data_last_step, self.episode_type, self.valid_episode = episode_data
         self.obj_val = self._compute_objective_value(self.vehicle_trajectory)
 
     # TODO: Varun make the planner interface at a trajectory level
@@ -151,14 +151,14 @@ class Simulator(object):
         if time_idxs[idx] <= vehicle_trajectory.k:
             end_episode = True
             vehicle_trajectory.clip_along_time_axis(time_idxs[idx].numpy())
-            data = self.planner.mask_and_concat_data_along_batch_dim(data, k=vehicle_trajectory.k)
+            data, data_last_step = self.planner.mask_and_concat_data_along_batch_dim(data, k=vehicle_trajectory.k)
             
             # If all of the data was masked then
             # the episode simulated is not valid
             valid_episode = True
             if data['system_config'] is None:
                 valid_episode = False
-            episode_data = (vehicle_trajectory, data, idx, valid_episode)
+            episode_data = (vehicle_trajectory, data, data_last_step, idx, valid_episode)
         else:
             end_episode = False
             episode_data = None

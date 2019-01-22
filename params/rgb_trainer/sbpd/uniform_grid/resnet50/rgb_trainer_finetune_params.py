@@ -3,7 +3,7 @@ from params.visual_navigation_trainer_params import create_params as create_trai
 from training_utils.data_processing.rgb_preprocess_resnet_50 import preprocess as rgb_preprocess
 
 from params.waypoint_grid.uniform_grid_params import create_params as create_waypoint_params
-from params.model.resnet50_arch_v0_params import create_params as create_model_params
+from params.model.resnet50_arch_v1_params import create_params as create_model_params
 
 
 def create_params():
@@ -16,8 +16,9 @@ def create_params():
     # Ensure the renderer modality is rgb
     simulator_params.obstacle_map_params.renderer_params.camera_params.modalities = ['rgb']
     simulator_params.obstacle_map_params.renderer_params.camera_params.img_channels = 3
-    simulator_params.obstacle_map_params.renderer_params.camera_params.width = 64
-    simulator_params.obstacle_map_params.renderer_params.camera_params.height = 64
+    simulator_params.obstacle_map_params.renderer_params.camera_params.width = 1024
+    simulator_params.obstacle_map_params.renderer_params.camera_params.height = 1024
+    simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
 
     p = create_trainer_params(simulator_params=simulator_params)
 

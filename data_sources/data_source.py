@@ -91,8 +91,15 @@ class DataSource(object):
         """
         Get a sorted list of all the files in the data directory.
         """
-        file_list = [os.path.join(self.p.data_creation.data_dir, f) for f in os.listdir(self.p.data_creation.data_dir)
-                     if f.endswith(file_type)]
+        # Note (Somil): Since we moved from a string to a list convention for data directories, we are adding
+        # additional code here to make sure it is backwards compatible.
+        if isinstance(self.p.data_creation.data_dir, str):
+            self.p.data_creation.data_dir = [self.p.data_creation.data_dir]
+        
+        file_list = []
+        for i in range(len(self.p.data_creation.data_dir)):
+            file_list.extend([os.path.join(self.p.data_creation.data_dir[i], f)
+                              for f in os.listdir(self.p.data_creation.data_dir[i]) if f.endswith(file_type)])
         return file_list
 
     def concatenate_file_data(self, file_list):

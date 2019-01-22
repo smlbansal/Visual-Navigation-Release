@@ -47,9 +47,16 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         return data['vehicle_state_nk3'].shape[0]
     
-    # TODO: Varun- look into efficiency at some point to see
-    # if data collection can be sped up
+    # TODO: Varun- look into efficiency at some point to see if data collection can be sped up
     def generate_data(self):
+        
+        # Note (Somil): Since we moved from a string to a list convention for data directories, we are adding
+        # additional code here to make sure it is backwards compatible. Moreover, only a single data creation directory
+        # can be provided to create the data at the moment.
+        if isinstance(self.p.data_creation.data_dir, list):
+            assert len(self.p.data_creation.data_dir) == 1
+            self.p.data_creation.data_dir = self.p.data_creation.data_dir[0]
+        
         # Create the data directory if required
         if not os.path.exists(self.p.data_creation.data_dir):
             os.makedirs(self.p.data_creation.data_dir)
@@ -63,7 +70,8 @@ class VisualNavigationDataSource(ImageDataSource):
         while num_points < self.p.data_creation.data_points:
             # Reset the data dictionary
             data = self.reset_data_dictionary(self.p)
-           
+          
+            self.episode_counter = 0
             while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
                 # Reset the simulator
                 simulator.reset()
@@ -75,6 +83,7 @@ class VisualNavigationDataSource(ImageDataSource):
                 if simulator.valid_episode:
                     # Append the data to the current data dictionary
                     self.append_data_to_dictionary(data, simulator)
+                    self.episode_counter += 1
 
             # Prepare the dictionary for saving purposes
             self.prepare_and_save_the_data_dictionary(data, counter)
@@ -83,7 +92,98 @@ class VisualNavigationDataSource(ImageDataSource):
             counter += 1
             num_points += self._num_data_points(data)
             print(num_points)
-    
+
+    def _create_image_dataset(self):
+        """
+        Create the image dataset by calling the super
+        function. Also if needed created a subfolder
+        with data from successful navigational goals
+        only.
+        """
+        new_data_dirs = super(VisualNavigationDataSource, self)._create_image_dataset()
+        self.p.data_creation.data_dir = new_data_dirs
+
+        # Potentially filter out all the data keeping
+        # only data from successful episodes, saving
+        # the new dataset in a subdirectory
+        new_data_dirs = self._maybe_keep_only_successful_episodes()
+        return new_data_dirs
+
+    def _maybe_keep_only_successful_episodes(self):
+        """
+        If self.p.trainer.successful_episodes_only is
+        True then create a new sudirectory where
+        only data for successful episodes is held
+        to be used during training.
+        """
+         # Old data directories that contain the raw information of the episode
+        old_data_dirs = self.p.data_creation.data_dir
+       
+        if self.p.trainer.successful_episodes_only:
+            # The dimensions of last step data dont match
+            # so currently we only support throwing it out
+            if self.p.trainer.include_last_step_data:
+                raise NotImplementedError
+
+            # Placeholder for new data directories
+            new_data_dirs = []
+
+            for data_directory in old_data_dirs:
+                new_data_dir = os.path.join(data_directory, 'successful_goals')
+                new_data_dirs.append(new_data_dir)
+
+                # Check if the directory already exists
+                if os.path.isdir(new_data_dir):
+                    self._ensure_metadata_exists(new_data_dir)
+                    continue
+                else:
+                    # Make the successful goals directory
+                    os.mkdir(new_data_dir)
+
+                    # List the data files in the directory
+                    data_files = [os.path.join(data_directory, f) for f in os.listdir(data_directory) if f.endswith('.pkl')]
+                    # Remove the metadata file from the file list
+                    data_files = list(filter(lambda x: 'metadata' not in x, data_files))
+
+                    metadata = {}
+
+                    # Render the images
+                    for data_file in data_files:
+                        with open(data_file, 'rb') as f:
+                            data = pickle.load(f)
+            
+                        # Get the filename 'file{:d}.pkl' and file_number '{:d}'
+                        filename, _ = self._extract_file_name_and_number(data_file, data_directory)
+                        
+                        successful_data_filename = os.path.join(new_data_dirs[-1], filename)
+                        
+                        # Filter out the successful data only
+                        successful_episode_mask = (data['episode_type_string_n1'] == 'Success')
+
+                        # TODO (Varun): Add Support for the last step data
+                        for key in data.keys():
+                            if 'last' not in key:
+                                data[key] = data[key][successful_episode_mask]
+                        
+                        # Remove the last step data so it doesnt cause problems later
+                        last_step_keys = list(filter(lambda x: 'last' in x, data.keys()))
+                        [data.pop(key, None) for key in last_step_keys]
+
+                        with open(successful_data_filename, 'wb') as f:
+                            pickle.dump(data, f)
+
+                        # Add {Absolute file path: number of samples} to the
+                        # metadata dictionary
+                        metadata[successful_data_filename] = self._get_n(data)
+                   
+                    # Save metadata
+                    metadata_filename = os.path.join(new_data_dirs[-1], 'metadata.pkl')
+                    with open(metadata_filename, 'wb') as f:
+                        pickle.dump(metadata, f)
+        else:
+            new_data_dirs = old_data_dirs
+        return new_data_dirs
+
     @staticmethod
     def reset_data_dictionary(params):
         """
@@ -114,6 +214,22 @@ class VisualNavigationDataSource(ImageDataSource):
 
         # Optimal control information
         data['optimal_control_nk2'] = []
+
+        # Episode type information
+        data['episode_type_string_n1'] = []
+        data['episode_number_n1'] = []
+        
+        # Last step information
+        # Saved separately from other episode information
+        # So that we can decide whether to train on this or not
+        data['last_step_vehicle_state_nk3'] = []
+        data['last_step_vehicle_controls_nk2'] = []
+        data['last_step_goal_position_n2'] = []
+        data['last_step_goal_position_ego_n2'] = []
+        data['last_step_optimal_waypoint_n3'] = []
+        data['last_step_optimal_waypoint_ego_n3'] = []
+        data['last_step_optimal_control_nk2'] = []
+
         return data
 
     def _num_data_points(self, data):
@@ -130,6 +246,39 @@ class VisualNavigationDataSource(ImageDataSource):
             return data['vehicle_state_nk3'].shape[0]
         else:
             raise NotImplementedError
+
+    # TODO Varun T.: Clean up this code so the structure isnt repeating
+    # the function below
+    def _append_last_step_info_to_dictionary(self, data, simulator):
+        """
+        Append data from the last trajectory segment
+        to the data dictionary.
+        """
+        data_last_step = simulator.vehicle_data_last_step
+        n = data_last_step['system_config'].n
+
+        data['last_step_vehicle_state_nk3'].append(simulator.vehicle_data_last_step['trajectory'].position_and_heading_nk3().numpy())
+        data['last_step_vehicle_controls_nk2'].append(simulator.vehicle_data_last_step['trajectory'].speed_and_angular_speed_nk2().numpy())
+
+        last_step_goal_n13 = np.broadcast_to(simulator.goal_config.position_and_heading_nk3().numpy(), (n, 1, 3)) 
+        last_step_waypoint_n13 = data_last_step['waypoint_config'].position_and_heading_nk3().numpy()
+        
+        # Convert to egocentric coordinates
+        start_nk3 = data_last_step['system_config'].position_and_heading_nk3().numpy()
+        goal_ego_n13 = DubinsCar.convert_position_and_heading_to_ego_coordinates(start_nk3,
+                                                                                 last_step_goal_n13)
+        waypoint_ego_n13 = DubinsCar.convert_position_and_heading_to_ego_coordinates(start_nk3,
+                                                                                     last_step_waypoint_n13)
+
+        data['last_step_goal_position_n2'].append(last_step_goal_n13)
+        
+        data['last_step_goal_position_ego_n2'].append(goal_ego_n13)
+        
+        data['last_step_optimal_waypoint_n3'].append(last_step_waypoint_n13)
+        data['last_step_optimal_waypoint_ego_n3'].append(waypoint_ego_n13)
+
+        data['last_step_optimal_control_nk2'].append(simulator.vehicle_data_last_step['trajectory'].speed_and_angular_speed_nk2().numpy())
+        return data
 
     def append_data_to_dictionary(self, data, simulator):
         """
@@ -176,8 +325,15 @@ class VisualNavigationDataSource(ImageDataSource):
 
         # Optimal control data
         data['optimal_control_nk2'].append(simulator.vehicle_data['trajectory'].speed_and_angular_speed_nk2().numpy())
+       
+        # Episode Type Information
+        data['episode_type_string_n1'].append([simulator.params.episode_termination_reasons[simulator.episode_type]]*n)
+        data['episode_number_n1'].append([self.episode_counter]*n)
+
+        data = self._append_last_step_info_to_dictionary(data, simulator)
         return data
 
+    
     def prepare_and_save_the_data_dictionary(self, data, counter):
         """
         Stack the lists in the dictionary to make an array, and then save the dictionary.

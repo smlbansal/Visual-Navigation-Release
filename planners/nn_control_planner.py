@@ -71,6 +71,8 @@ class NNControlPlanner(NNPlanner):
         """Keeps the elements in data which were produced
         before time index k. Concatenates each list in data
         along the batch dim after masking."""
+        
+        import pdb; pdb.set_trace() # TODO: return data_last_step (see planner.py)
         data_times = np.cumsum([u_nk2.shape[1].value for u_nk2 in data['optimal_control_nk2']])
         valid_mask = (data_times <= k)
         data['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[valid_mask])

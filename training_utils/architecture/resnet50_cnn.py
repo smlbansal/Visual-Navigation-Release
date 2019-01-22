@@ -11,6 +11,10 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     x = input_image
 
     # Load the ResNet50 and restore the imagenet weights
+    # Note (Somil): We are initializing ResNet model in this fashion because directly setting the layers.trainable to
+    # false is buggy in Keras applications for the Batch Normalization layer. See these issues for details:
+    # https://github.com/keras-team/keras/pull/9965
+    # http://blog.datumbox.com/the-batch-normalization-layer-of-keras-is-broken/
     with tf.variable_scope('resnet50'):
         resnet50 = ResNet50(data_format='channels_last',
                             name='resnet50',
@@ -25,12 +29,18 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     # Optional strided convolution on the output
     # of the Resnet50 to reduce feature dimensionality
     if params.dim_red_conv_2d.use:
+        # Convolutional layer
         x = layers.Conv2D(
                     filters=params.dim_red_conv_2d.num_outputs,
                     kernel_size=params.dim_red_conv_2d.filter_size,
                     strides=params.dim_red_conv_2d.stride,
                     padding=params.dim_red_conv_2d.padding,
                     activation=params.hidden_layer_activation_func)(x)
+        # Max-pooling layer
+        if params.dim_red_conv_2d.use_maxpool:
+            x = layers.MaxPool2D(pool_size=(params.dim_red_conv_2d.size_maxpool_filters,
+                                            params.dim_red_conv_2d.size_maxpool_filters),
+                                 padding='valid')(x)
 
     # Flatten the image
     x = layers.Flatten()(x)

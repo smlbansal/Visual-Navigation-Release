@@ -50,6 +50,10 @@ def create_turtlebot_params():
 
     # One test at a time so the robot can be physically reset
     p.test.number_tests = 1
+
+    # Dont use the expert success goals in the real world as they
+    # only exist in simulation
+    p.test.expert_success_goals.use = False
     return p
 
 def create_params():
@@ -59,6 +63,6 @@ def create_params():
     p.model.num_outputs = 3  # (x, y ,theta)
 
     # Change the checkpoint
-    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/nn_waypoint/uniform_grid/train_full_episode_50k/session_2018-12-12_13-34-16/checkpoints/ckpt-20'
+    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/trained_projected_test_uniform/resnet_50_v1/data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'
 
     return p

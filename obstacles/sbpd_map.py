@@ -145,8 +145,9 @@ class SBPDMap(ObstacleMap):
         Render a margin around the occupied space indicating the intensity
         of the obstacle avoidance cost function.
         """
-        xs = np.arange(self.map_bounds[0][0], self.map_bounds[1][0], self.p.dx)
-        ys = np.arange(self.map_bounds[0][1], self.map_bounds[1][1], self.p.dx)
+        y_dim, x_dim = self.occupancy_grid_map.shape
+        xs = np.linspace(self.map_bounds[0][0], self.map_bounds[1][0], x_dim)
+        ys = np.linspace(self.map_bounds[0][1], self.map_bounds[1][1], y_dim)
         xs, ys = np.meshgrid(xs, ys)
         xs = xs.ravel()
         ys = ys.ravel()
