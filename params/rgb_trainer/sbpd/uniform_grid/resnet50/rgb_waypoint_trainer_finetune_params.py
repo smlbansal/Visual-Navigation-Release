@@ -52,7 +52,7 @@ def create_params():
     
     # Checkpoint settings
     p.trainer.ckpt_save_frequency = 1
-    p.trainer.restore_from_ckpt = True
+    p.trainer.restore_from_ckpt = False
 
     # Change the number of tests and callback frequency
     p.trainer.callback_frequency = 500
@@ -64,25 +64,22 @@ def create_params():
     # Input processing parameters
     p.data_processing.input_processing_params = DotMap(
         p=0.1,  # Probability of distortion
-        version='v2'  # Version of the distortion function
+        version='v1'  # Version of the distortion function
     )
 
     # Change the data_dir
     # Projected Grid
-    p.data_creation.data_dir = [
-        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area3/full_episode_random_v1_100k',
-        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area4/full_episode_random_v1_100k',
-        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area5a/full_episode_random_v1_100k']
+    #p.data_creation.data_dir = [
+    #    '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area3/full_episode_random_v1_100k',
+    #    '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area4/full_episode_random_v1_100k',
+    #    '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area5a/full_episode_random_v1_100k']
     
-    # # Uniform Grid
-    # p.data_creation.data_dir = [
-    #     '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area3/full_episode_random_v1_100k',
-    #     '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area4/full_episode_random_v1_100k',
-    #     '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area5a/full_episode_random_v1_100k']
+     # Uniform Grid
+    p.data_creation.data_dir = [
+         '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area3/full_episode_random_v1_100k',
+         '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area4/full_episode_random_v1_100k',
+         '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area5a/full_episode_random_v1_100k']
 
-    # Change the checkpoint
-    # Restart training from here at epoch #16
-    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/data_distortion_v2/session_2019-01-18_12-19-37/checkpoints/ckpt-8'
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
