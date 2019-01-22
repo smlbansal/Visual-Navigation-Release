@@ -90,7 +90,6 @@ class Planner(object):
         data_times = np.cumsum([traj.k for traj in data['trajectory']])
         valid_mask = (data_times <= k)
         last_mask = (data_times > k)
-        last_mask = np.where(np.logical_not(valid_mask))[0]
         data_last = {}
         if len(last_mask) > 0:
             data_last['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[last_mask])

@@ -4,9 +4,9 @@ from dotmap import DotMap
 def create_turtlebot_params():
     from params.simulator.turtlebot_simulator_params import create_params as create_simulator_params
     from params.visual_navigation_trainer_params import create_params as create_trainer_params
-    from training_utils.data_processing.rgb_preprocess import preprocess as preprocess_image_data
     from params.waypoint_grid.uniform_grid_params import create_params as create_waypoint_params
     from params.system_dynamics.turtlebot_dubins_v2_params import create_params as create_system_dynamics_params
+    from params.model.resnet50_arch_v1_params import create_params as create_model_params
 
     # Load the dependencies
     simulator_params = create_simulator_params()
@@ -15,7 +15,7 @@ def create_turtlebot_params():
     simulator_params.planner_params.control_pipeline_params.dir = '/home/vtolani/Documents/Projects/visual_mpc_data/control_pipelines'
 
     # Ensure the turtlebot takes rgb images 64x64x3
-    hardware_params = DotMap(image_size=[64, 64, 3],
+    hardware_params = DotMap(image_size=[224, 224, 3],
                              image_type='rgb',
                              dt=simulator_params.planner_params.control_pipeline_params.system_dynamics_params.dt)
 
@@ -39,11 +39,14 @@ def create_turtlebot_params():
 
     p = create_trainer_params(simulator_params=simulator_params)
 
-    # Image size to [64, 64, 3]
-    p.model.num_inputs.image_size = [64, 64, 3]
+    # Create the model params
+    p.model = create_model_params()
 
-    # Change the Data Processing
-    p.data_processing.input_processing_function = preprocess_image_data
+    # Finetune the resnet weights
+    p.model.arch.finetune_resnet_weights = True
+
+    # Update the path for resnet50 weights
+    p.model.arch.resnet50_weights_path = '/home/vtolani/Documents/Projects/visual_mpc_data/resnet50_weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5' 
 
     # There is no expert for rgb images on the turtlebot
     p.test.simulate_expert = False
@@ -61,6 +64,17 @@ def create_params():
 
     # Change the number of inputs to the model
     p.model.num_outputs = 3  # (x, y ,theta)
+    
+    # Image size to [224, 224, 3]
+    p.model.num_inputs.image_size = [224, 224, 3]
+
+    # Change the Data Processing parameters
+    p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
+    # Input Processing Parameters
+    p.data_processing.input_processing_params = DotMap(
+        p=.1, # Probability of Distortion
+        version='v1' # Version of the distortion function
+    )
 
     # Change the checkpoint
     p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/trained_projected_test_uniform/resnet_50_v1/data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'

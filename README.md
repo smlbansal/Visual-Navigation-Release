@@ -28,6 +28,8 @@ pip install --upgrade tensorflow (make sure to install v1.10.1)
 4. Launch the turtlebot base and camera drivers with
     - roslaunch turtlebot_bringup minimal.launch
     - roslaunch turtlebot_bringup 3dsensor.launch
-5. Launch a preatrained waypoint-based navigator on the real robot
+5. Launch a preatrained waypoint-based navigator on the real robot (uses the custom arch)
 - PYTHONPATH='/opt/ros/kinetic/lib/python2.7/dist-packages:.' python executables/turtlebot/rgb_waypoint_runner.py test --job-dir ./logs/tmp --params params/turtlebot/turtlebot_waypoint_navigator_params.py -d 0
+6. Launch a preatrained waypoint-based navigator on the real robot (uses the resnet arch) 
+- PYTHONPATH='/opt/ros/kinetic/lib/python2.7/dist-packages:.' python executables/turtlebot/resnet50/rgb_waypoint_runner.py test --job-dir ./logs/tmp --params params/turtlebot/turtlebot_waypoint_navigator_params.py -d 0
 ```
