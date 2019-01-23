@@ -289,7 +289,9 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                     simulator.reset(seed=-1)
 
                 if goal_valid_mask is None or goal_valid_mask[i]:
+                    self._maybe_start_recording_video(i, data)
                     simulator.simulate()
+                    self._maybe_stop_recording_video(i, data)
                     if simulator.valid_episode:
                         episode_types.append(simulator.episode_type)
                         metrics.append(simulator.get_metrics())
@@ -371,6 +373,32 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         figname = os.path.join(figdir, '{:d}.pdf'.format(i))
         fig.savefig(figname, bbox_inches='tight')
         plt.close(fig)
+
+    def _maybe_start_recording_video(self, i, data):
+        """
+        If simulator.params.record_video=True then
+        call simulator.start_recording_video.
+        """
+        simulator = data['simulator']
+
+        if simulator.params.record_video:
+            simulator.start_recording_video(i)
+
+    def _maybe_stop_recording_video(self, i, data):
+        """
+        If simulator.params.record_video=True then
+        call simulator.stop_recording_video with 
+        a file name to save to.
+        """
+        simulator = data['simulator']
+        dirname = data['dir']
+        base_dir = data['base_dir']
+
+        if simulator.params.record_video:
+            video_dir = os.path.join(base_dir, dirname, 'videos')
+            utils.mkdir_if_missing(video_dir)
+            video_name = os.path.join(video_dir, '{:d}.mp4'.format(i))
+            simulator.stop_recording_video(i, video_name)
 
     def _save_figures(self, data):
         """

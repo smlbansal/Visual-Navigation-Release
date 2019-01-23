@@ -18,6 +18,9 @@ def create_params():
     p.episode_horizon_s = 20.0
     p.control_horizon_s = 1.5
 
+    # Whether to log videos taken during trajectories
+    p.record_video = False
+
     # Define the Objectives
 
     # Obstacle Avoidance Objective

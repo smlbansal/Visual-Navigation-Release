@@ -1,8 +1,10 @@
+import os
 import numpy as np
 import tensorflow as tf
 from trajectory.trajectory import SystemConfig
 from obstacles.turtlebot_map import TurtlebotMap
 from simulators.simulator import Simulator
+from utils import utils
 
 
 class TurtlebotSimulator(Simulator):
@@ -11,6 +13,7 @@ class TurtlebotSimulator(Simulator):
     def __init__(self, params):
         assert(params.obstacle_map_params.obstacle_map is TurtlebotMap)
         super(TurtlebotSimulator, self).__init__(params=params)
+        self.video_number = None
 
     # TODO Varun T.: this is a hack to make the turtlebot work for now.
     # Change the control pipeline, planner, simulator strcuture so that
@@ -34,6 +37,25 @@ class TurtlebotSimulator(Simulator):
         self.system_dynamics.hardware.track_states = True
         super(TurtlebotSimulator, self).simulate()
         self.system_dynamics.hardware.track_states = False
+
+    def start_recording_video(self, video_number):
+        """ Start recording video on the turtlebot."""
+        tmp_dir = './tmp/turtlebot_videos/{:d}'.format(video_number)
+        utils.mkdir_if_missing(tmp_dir)
+        self.system_dynamics.hardware.start_saving_images(tmp_dir)
+
+    def stop_recording_video(self, video_number, video_filename):
+        """ Stop recording video on the turtlebot."""
+        self.system_dynamics.hardware.stop_saving_images()
+       
+        tmp_dir = './tmp/turtlebot_videos/{:d}'.format(video_number)
+        
+        # Convert Images from the episode into A Video in the session dir
+        video_command = 'ffmpeg -i {:s}/img_%d.png -pix_fmt yuv420p {:s}'.format(tmp_dir, video_filename)
+        os.system(video_command)
+
+        # Delete the temporary directory with images in it
+        utils.delete_if_exists(tmp_dir)
 
     def _init_obj_fn(self):
         """

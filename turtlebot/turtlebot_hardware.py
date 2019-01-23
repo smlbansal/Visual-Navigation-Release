@@ -45,13 +45,14 @@ class TurtlebotHardware():
                                        BumperEvent, self.bump_callback)
         self.wheel_drop = rospy.Subscriber('/mobile_base/events/wheel_drop',
                                            WheelDropEvent,  self.wheel_drop_callback)
+        
+        self.bridge = CvBridge()
         if params.image_type == 'rgb':  # use orbbec astra camera over ros
             self.imager = rospy.Subscriber('/camera/rgb/image_raw', Image, self.imager_callback)
         elif params.image_type == 'depth':
             self.imager = rospy.Subscriber('/camera/depth/image_raw', Image, self.imager_callback)
         else:
             assert(False)
-        self.bridge = CvBridge()
 
         # Initialize Actuators
         self.cmd_vel = rospy.Publisher('cmd_vel_mux/input/navi', Twist, queue_size=10)

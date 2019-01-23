@@ -38,6 +38,9 @@ def create_turtlebot_params():
     # Update the goal position
     simulator_params.reset_params.goal_config.position.goal_pos=[5.0, 0.00]
 
+    # Log videos that the robot sees
+    simulator_params.record_video = True
+
     p = create_trainer_params(simulator_params=simulator_params)
 
     # Create the model params

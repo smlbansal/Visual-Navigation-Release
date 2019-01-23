@@ -486,6 +486,14 @@ class Simulator(object):
             out_vals.append(np.sum(episode_types == i) / num_episodes)
         return out_keys, out_vals
 
+    def start_recording_video(self, video_number):
+        """ By default the simulator does not support video capture."""
+        return None
+
+    def stop_recording_video(self, video_number, video_filename):
+        """ By default the simulator does not support video capture."""
+        return None
+
     def render(self, axs, freq=4, render_velocities=False, prepend_title=''):
         if type(axs) is list or type(axs) is np.ndarray:
             self._render_trajectory(axs[0], freq)
