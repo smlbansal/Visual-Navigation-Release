@@ -159,7 +159,7 @@ class TurtlebotHardware():
         if not self.hit_obstacle:
             cmd.linear.x = u[0]
             cmd.angular.z = u[1]
-        else:
+        else:  # If the robot has hit an obstacle apply 0 velocity
             cmd.linear.x = 0.0
             cmd.linear.z = 0.0
             self.num_collision_steps += 1

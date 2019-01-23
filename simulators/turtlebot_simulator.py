@@ -105,7 +105,7 @@ class TurtlebotSimulator(Simulator):
 
     def _compute_time_idx_for_collision(self, vehicle_trajectory):
         if self.system_dynamics.hardware.hit_obstacle:
-            import pdb; pdb.set_trace()
+            time_idx = tf.constant(vehicle_trajectory.k)
         else:
             time_idx = tf.constant(self.params.episode_horizon+1)
         return time_idx
