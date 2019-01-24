@@ -27,9 +27,10 @@ class VisualNavigationImageWaypointModel(VisualNavigationModelBase):
             goal_direction_indicator_n11 = self.projected_grid.worldframe_waypoint_direction_indicator(goal_x_n11,
                                                                                                        goal_y_n11,
                                                                                                        0.*goal_x_n11)
-            goal_x_n11, goal_y_n11, _, _, _ = self.projected_grid.generate_imageframe_waypoints_from_worldframe_waypoints(goal_x_n11,
-                                                                                                                          goal_y_n11,
-                                                                                                                          0.*goal_x_n11)
+            goal_x_n11, goal_y_n11, _, _, _ = \
+                self.projected_grid.generate_imageframe_waypoints_from_worldframe_waypoints(
+                    goal_x_n11, goal_y_n11, 0.*goal_x_n11)
+            
             # If necessary, scale the goal position to normalized image
             # plane (1 x 1 meters)
             if self.p.model.rescale_imageframe_coordinates:
@@ -118,6 +119,6 @@ class VisualNavigationImageWaypointModel(VisualNavigationModelBase):
         bound_max = self.projected_grid.params.bound_max
 
         wx_n11 = wx_n11 * (bound_max[0] - bound_min[0]) + bound_min[0]
-        wy_n11 = wy_n11 * (bound_max[1] - bound_min[1])  + bound_min[1]
+        wy_n11 = wy_n11 * (bound_max[1] - bound_min[1]) + bound_min[1]
         return wx_n11, wy_n11, wtheta_n11 
 
