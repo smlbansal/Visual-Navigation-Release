@@ -48,7 +48,7 @@ def create_params():
 
     # Change the learning rate and num_samples
     p.trainer.lr = 1e-4
-    p.trainer.num_samples = int(150e3)
+    p.trainer.num_samples = int(75e3)
     
     # Checkpoint settings
     p.trainer.ckpt_save_frequency = 1
