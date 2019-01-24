@@ -90,5 +90,8 @@ class Dubins3D(DubinsCar):
         if self.noise_params.noise_type == 'uniform':
             return tf.random_uniform(required_shape, self.noise_params.noise_lb, self.noise_params.noise_ub,
                                      dtype=data_type)
+        elif self.noise_params.noise_type == 'gaussian':
+            return tf.random_normal(required_shape, mean=self.noise_params.noise_mean,
+                                    stddev=self.noise_params.noise_std, dtype=data_type)
         else:
             raise NotImplementedError('Unknown noise type.')
