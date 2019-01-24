@@ -47,7 +47,6 @@ class TrainerHelper(object):
                 # Compute the loss and gradients
                 with tf.GradientTape() as tape:
                     loss = model.compute_loss_function(training_batch, is_training=True, return_loss_components=False)
-                
                 # Take an optimization step
                 grads = tape.gradient(loss, model.get_trainable_vars())
                 self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),

@@ -254,6 +254,9 @@ class VisualNavigationDataSource(ImageDataSource):
         Append data from the last trajectory segment
         to the data dictionary.
         """
+        import pdb; pdb.set_trace()
+        #TODO: Make sure all dimensions are correct here!!!
+
         data_last_step = simulator.vehicle_data_last_step
         n = data_last_step['system_config'].n
 
@@ -347,3 +350,4 @@ class VisualNavigationDataSource(ImageDataSource):
         filename = os.path.join(self.p.data_creation.data_dir, 'file%i.pkl' % counter)
         with open(filename, 'wb') as handle:
             pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
