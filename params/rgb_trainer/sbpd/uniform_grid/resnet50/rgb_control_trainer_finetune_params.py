@@ -21,7 +21,14 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
     # Ensure the renderer is using area3
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area3'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area1'
+    
+    # Add the noise parameters
+    simulator_params.planner_params.control_pipeline_params.system_dynamics_params.noise_params.is_noisy = True
+    simulator_params.planner_params.control_pipeline_params.system_dynamics_params.noise_params.noise_type = 'uniform'
+    
+    # Change the episode horizon
+    simulator_params.episode_horizon_s = 80.0
     
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -53,6 +60,10 @@ def create_params():
     # Checkpoint settings
     p.trainer.ckpt_save_frequency = 1
     p.trainer.restore_from_ckpt = False
+    
+    # Checkpoint directory
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_control/resnet_50_v1/' \
+                          'data_distortion_v1/session_2019-01-21_18-01-22/checkpoints/ckpt-18'
 
     # Change the number of tests and callback frequency
     p.trainer.callback_frequency = 500
@@ -74,12 +85,11 @@ def create_params():
     #    '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area4/full_episode_random_v1_100k',
     #    '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area5a/full_episode_random_v1_100k']
     
-     # Uniform Grid
+    # Uniform Grid
     p.data_creation.data_dir = [
          '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area3/full_episode_random_v1_100k',
          '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area4/full_episode_random_v1_100k',
          '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area5a/full_episode_random_v1_100k']
-
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10

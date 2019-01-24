@@ -1,7 +1,6 @@
 from dotmap import DotMap
 from utils import utils
 import numpy as np
-from params.system_dynamics_params import create_params as create_system_dynamics_params
 from params.planner_params import create_params as create_planner_params
 
 
@@ -9,7 +8,6 @@ def create_params():
     p = DotMap()
 
     # Load the dependencies
-    p.system_dynamics_params = create_system_dynamics_params()
     p.planner_params = create_planner_params()
 
     p.seed = 10  # seed for the simulator (different than for numpy and tf)
