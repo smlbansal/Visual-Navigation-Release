@@ -27,7 +27,10 @@ def create_params(simulator_params):
                     loss_type='mse',
 
                     # Weight regularization co-efficient
-                    regn=1e-6
+                    regn=1e-6,
+
+                    # Velocity Smoothing co-efficient for end-to-end networks
+                    smoothing_coeff=0.0
     )
     
     # Trainer parameters
