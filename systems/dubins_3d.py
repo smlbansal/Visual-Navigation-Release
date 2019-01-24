@@ -2,6 +2,7 @@ import tensorflow as tf
 from trajectory.trajectory import Trajectory
 from systems.dubins_car import DubinsCar
 
+
 class Dubins3D(DubinsCar):
     """ A discrete time dubins car with state
     [x, y, theta] and actions [v, w]. The dynamics are:
@@ -11,16 +12,25 @@ class Dubins3D(DubinsCar):
     theta(t+1) = theta_t + saturate_angular_velocity(w(t))*delta_t
     """
 
-    def __init__(self, dt):
+    def __init__(self, dt, noise_params=None):
         super().__init__(dt, x_dim=3, u_dim=2)
         self._angle_dims = 2
+        self.noise_params = noise_params
+        if self.noise_params.is_noisy:
+            print('This Dubins car model has some noise. Please turn off the noise if this was not intended.')
 
     def simulate(self, x_nk3, u_nk2, t=None):
         with tf.name_scope('simulate'):
             delta_x_nk3 = tf.stack([self._saturate_linear_velocity(u_nk2[:, :, 0])*tf.cos(x_nk3[:, :, 2]),
                                     self._saturate_linear_velocity(u_nk2[:, :, 0])*tf.sin(x_nk3[:, :, 2]),
                                     self._saturate_angular_velocity(u_nk2[:, :, 1])], axis=2)
-            return x_nk3 + self._dt*delta_x_nk3
+            
+            # Add noise (or disturbance) if required
+            if self.noise_params.is_noisy:
+                noise_component = self.compute_noise_component(required_shape=tf.shape(x_nk3), data_type=x_nk3.dtype)
+                return x_nk3 + self._dt * delta_x_nk3 + noise_component
+            else:
+                return x_nk3 + self._dt * delta_x_nk3
 
     def jac_x(self, trajectory):
         x_nk3, u_nk2 = self.parse_trajectory(trajectory)
@@ -72,3 +82,13 @@ class Dubins3D(DubinsCar):
         return Trajectory(dt=self._dt, n=n, k=k, position_nk2=position_nk2,
                           heading_nk1=heading_nk1, speed_nk1=speed_nk1,
                           angular_speed_nk1=angular_speed_nk1, variable=False)
+    
+    def compute_noise_component(self, required_shape, data_type):
+        """
+        Compute a noise component for the Dubins car.
+        """
+        if self.noise_params.noise_type == 'uniform':
+            return tf.random_uniform(required_shape, self.noise_params.noise_lb, self.noise_params.noise_ub,
+                                     dtype=data_type)
+        else:
+            raise NotImplementedError('Unknown noise type.')

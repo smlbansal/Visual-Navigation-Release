@@ -9,7 +9,7 @@ class DubinsV2(Dubins3D):
     name = 'dubins_v2'
 
     def __init__(self, dt, params):
-        super().__init__(dt)
+        super().__init__(dt, params.noise_params)
         self.v_bounds = params.v_bounds
         self.w_bounds = params.w_bounds
 
