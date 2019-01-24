@@ -70,11 +70,17 @@ class VisualNavigationModelBase(BaseModel):
         """
         Initialize the processing functions if required.
         """
+        
         # Initialize the distortion function
         if self.p.data_processing.input_processing_function in ['distort_images', 'normalize_distort_images',
                                                                 'resnet50_keras_preprocessing_and_distortion']:
             from training_utils.data_processing.distort_images import basic_image_distortor
             self.image_distortor = basic_image_distortor(self.p.data_processing.input_processing_params)
+        else:
+            # Add this assert here to make sure the input processing function isn't
+            # accidently misspelt
+            assert(self.p.data_processing.input_processing_function in ['normalize_images',
+                                                                        'resnet50_keras_preprocessing'])
 
     def preprocess_nn_input(self, raw_data, is_training):
         """

@@ -73,7 +73,14 @@ class ControlPipelineV0(ControlPipelineBase):
         else:
             waypt_idx = self.helper.compute_closest_waypt_idx(goal_config,
                                                               self.waypt_configs_world[idx])
+            
             waypt_configs = self.waypt_configs_world[idx][waypt_idx]
+            
+            #### Debuggging
+            #goal_config_1k3 = goal_config.position_and_heading_nk3()[0, 0].numpy()
+            #waypt_ego_1k3 = waypt_configs.position_and_heading_nk3()[0, 0].numpy()
+            #print('NN Waypoint: [{:f}, {:f}, {:f}], Picked Waypt: [{:f}, {:f}, {:f}]'.format(*goal_config_1k3, *waypt_ego_1k3))
+
             horizons = self.horizons[idx][waypt_idx:waypt_idx+1]
             trajectories = self.trajectories_world[idx][waypt_idx]
            

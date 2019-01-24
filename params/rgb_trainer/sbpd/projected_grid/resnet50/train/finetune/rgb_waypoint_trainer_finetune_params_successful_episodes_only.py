@@ -22,15 +22,12 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
     # Ensure the renderer is using area4
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area3'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area4'
     
     p = create_trainer_params(simulator_params=simulator_params)
 
     # Create the model params
     p.model = create_model_params()
-
-    # Only 70k samples
-    p.data_creation.data_points = int(70e3)
 
     return p
 
@@ -46,13 +43,15 @@ def create_params():
     # Finetune the resnet weights
     p.model.arch.finetune_resnet_weights = True
 
+    # Train on successful episodes only
+    p.trainer.successful_episodes_only = True
+    
     # Change the learning rate and num_samples
     p.trainer.lr = 1e-4
-    p.trainer.num_samples = int(2000)
-    p.trainer.num_epochs = 2
+    p.trainer.num_samples = int(125e3)
     
     # Checkpoint settings
-    p.trainer.ckpt_save_frequency = 100
+    p.trainer.ckpt_save_frequency = 1
 
     # Change the number of tests and callback frequency
     p.trainer.callback_frequency = 500
@@ -70,7 +69,10 @@ def create_params():
     # Change the checkpoint
     p.trainer.ckpt_path = ''
 
-    p.data_creation.data_dir = '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area3/full_episode_random_v1_100k'
+    p.data_creation.data_dir = [
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area3/full_episode_random_v1_100k',
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area4/full_episode_random_v1_100k',
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area5a/full_episode_random_v1_100k']
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
