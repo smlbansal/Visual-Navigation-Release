@@ -15,6 +15,6 @@ def create_params():
                                                        noise_lb=[-0.02, -0.02, 0.],
                                                        noise_ub=[0.02, 0.02, 0.],
                                                        noise_mean=[0., 0., 0.],
-                                                       noise_std=[0.02, 0.02, 0.])
+                                                       noise_std=[0.02, 0.02, 0.]))
 
     return p

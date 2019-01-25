@@ -27,9 +27,9 @@ class Dynamics(object):
             realistic: dyanmics through a real system (physics simulator or real robot)
         """
         if mode == 'ideal':
-            self._simulate_ideal(x_nkd, u_nkf, t=t)
+            return self._simulate_ideal(x_nkd, u_nkf, t=t)
         elif mode == 'realistic':
-            self._simulate_realistic(x_nkd, u_nkf, t=t)
+            return self._simulate_realistic(x_nkd, u_nkf, t=t)
         else:
             raise NotImplementedError
 
