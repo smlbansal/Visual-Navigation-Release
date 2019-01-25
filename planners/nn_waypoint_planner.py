@@ -1,6 +1,7 @@
 import tensorflow as tf
 from planners.nn_planner import NNPlanner
 from trajectory.trajectory import Trajectory, SystemConfig
+from utils.waypoint_conversion_hack import convert_waypoint_from_nn_to_robot
 
 
 class NNWaypointPlanner(NNPlanner):
@@ -26,7 +27,18 @@ class NNWaypointPlanner(NNPlanner):
         # Predict the NN output
         nn_output_113 = model.predict_nn_output_with_postprocessing(processed_data['inputs'],
                                                                     is_training=False)[:, None]
-        
+
+        # Set this to true to convert egocentric waypoint predictions
+        # from a network trained with on one set of camera params
+        # to the robots camera
+        if self.params.convert_waypoint_from_nn_to_robot:
+            wx_n = nn_output_113[0, 0, 0:1]
+            wy_n = nn_output_113[0, 0, 1:2]
+            wtheta_n = nn_output_113[0, 0, 2:3]
+            wx_world_n, wy_world_n, wtheta_n = convert_waypoint_from_nn_to_robot(wx_n, wy_n, wtheta_n)
+            nn_output_113 = tf.concat([wx_world_n, wy_world_n, wtheta_n], axis=0)[tf.newaxis,
+                                                                                  tf.newaxis]
+
         # Transform to World Coordinates
         waypoint_ego_config = SystemConfig(dt=self.params.dt, n=1, k=1,
                                            position_nk2=nn_output_113[:, :, :2],

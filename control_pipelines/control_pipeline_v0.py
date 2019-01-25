@@ -133,9 +133,10 @@ class ControlPipelineV0(ControlPipelineBase):
                                                                                                   self.lqr_ref_trajectory_real_robot_world_nkfd,
                                                                                                   mode='assign')
         robot_trajectory = self.lqr_solver.apply_control(start_config,
-                                                       self.lqr_ref_trajectory_real_robot_world_nkfd,
-                                                       controllers['k_nkf1'],
-                                                       controllers['K_nkfd'])
+                                                         self.lqr_ref_trajectory_real_robot_world_nkfd,
+                                                         controllers['k_nkf1'],
+                                                         controllers['K_nkfd'],
+                                                         sim_mode='realistic')
         return robot_trajectory 
 
     def generate_control_pipeline(self, params=None):
