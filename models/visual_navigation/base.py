@@ -59,7 +59,7 @@ class VisualNavigationModelBase(BaseModel):
 
         # Optimal Supervision
         optimal_labels_n = self._optimal_labels(raw_data)
-
+        
         # Prepare and return the data dictionary
         data = {}
         data['inputs'] = [img_nmkd, state_features_n4]

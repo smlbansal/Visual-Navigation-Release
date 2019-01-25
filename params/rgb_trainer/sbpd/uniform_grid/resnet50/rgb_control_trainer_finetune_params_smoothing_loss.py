@@ -21,7 +21,10 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
     # Ensure the renderer is using area3
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area3'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area6'
+    
+    # Change episode horizon
+    simulator_params.episode_horizon_s = 20.0
     
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -76,12 +79,15 @@ def create_params():
     #    '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area4/full_episode_random_v1_100k',
     #    '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area5a/full_episode_random_v1_100k']
     
-     # Uniform Grid
+    # Uniform Grid
     p.data_creation.data_dir = [
          '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area3/full_episode_random_v1_100k',
          '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area4/full_episode_random_v1_100k',
          '/home/ext_drive/somilb/data/training_data/sbpd/uniform_grid/area5a/full_episode_random_v1_100k']
 
+    # Checkpoint directory
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_control/resnet_50_v1/' \
+                          'data_distortion_v1/smoothing_control_loss/session_2019-01-23_22-33-27/checkpoints/ckpt-18'
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10

@@ -8,11 +8,14 @@ def create_rgb_trainer_params():
     from params.waypoint_grid.sbpd_image_space_grid import create_params as create_waypoint_params
     from params.model.resnet50_arch_v1_params import create_params as create_model_params
 
+    from control_pipelines.control_pipeline_v1 import ControlPipelineV1
+
     # Load the dependencies
     simulator_params = create_simulator_params()
 
     # Ensure the waypoint grid is projected SBPD Grid
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
+    simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV1
 
     # Ensure the renderer modality is rgb
     simulator_params.obstacle_map_params.renderer_params.camera_params.modalities = ['rgb']
@@ -21,8 +24,11 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.height = 1024
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
+    # Change episode horizon
+    simulator_params.episode_horizon_s = 30.0
+    
     # Ensure the renderer is using area4
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area4'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area6'
     
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -30,6 +36,7 @@ def create_rgb_trainer_params():
     p.model = create_model_params()
 
     return p
+
 
 def create_params():
     p = create_rgb_trainer_params()
@@ -49,22 +56,24 @@ def create_params():
     
     # Checkpoint settings
     p.trainer.ckpt_save_frequency = 1
+    p.trainer.restore_from_ckpt = False
 
     # Change the number of tests and callback frequency
     p.trainer.callback_frequency = 500
     p.trainer.callback_number_tests = 200
 
     # Change the Data Processing parameters
-    p.data_processing.input_processing_function = 'resnet50_keras_preprocessing'
+    p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
 
     # Input processing parameters
     p.data_processing.input_processing_params = DotMap(
         p=0.1,  # Probability of distortion
-        version='v2'
+        version='v1'
     )
 
-    # Change the checkpoint
-    p.trainer.ckpt_path = ''
+    # Checkpoint directory
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/' \
+                          'data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'
 
     p.data_creation.data_dir = [
         '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area3/full_episode_random_v1_100k',
@@ -89,10 +98,5 @@ def create_params():
                                   end_seed=10,
                                   plot_curves=True
                                   )
-
-    # from tensorflow.contrib.memory_stats.python.ops.memory_stats_ops import BytesInUse
-    # with tf.device('/device:GPU:1'):  # Replace with device you are interested in
-    #     bytes_in_use = BytesInUse()
-    # print(bytes_in_use / (1024 * 1024), 'before')
     
     return p
