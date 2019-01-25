@@ -6,6 +6,8 @@ from systems.dubins_car import DubinsCar
 
 
 class CircularObstacleMap(ObstacleMap):
+    name = 'CircularObstacleMap'
+
     def __init__(self, map_bounds, centers_m2, radii_m1, params):
         """ initialize a circular obstacle grid
         with map bounds [(x_min,y_min), (x_max,y_max)]

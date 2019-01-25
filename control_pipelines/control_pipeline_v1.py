@@ -10,7 +10,7 @@ class ControlPipelineV1(ControlPipelineBase):
     """
 
     def __init__(self, params):
-        super().__init__(params)
+        super(ControlPipelineV1, self).__init__(params)
         self._init_pipeline()
 
     def plan(self, start_config, goal_config):
@@ -26,6 +26,7 @@ class ControlPipelineV1(ControlPipelineBase):
         self._dynamically_evaluate_spline(start_config, goal_config)
 
         # Run LQR with the spline as a reference trajectory
+        import pdb; pdb.set_trace()
         lqr_trajectory, K_nkfd, k_nkf1 = self._lqr(start_config)
         
         # Update the binary mask over the trajectory indicating

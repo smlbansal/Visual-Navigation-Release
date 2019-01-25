@@ -170,10 +170,16 @@ class TrainerFrontendHelper(object):
         """
         Create the parameters given the path of the parameter file.
         """
-        spec = importlib.util.spec_from_file_location('parameter_loader', param_file)
-        foo = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(foo)
-        return foo.create_params()
+        # Execute this if python > 3.4
+        try:
+            spec = importlib.util.spec_from_file_location('parameter_loader', param_file)
+            foo = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(foo)
+        except AttributeError:
+            # Execute this if python = 2.7 (i.e. when running on real robot with ROS)
+            module_name = param_file.replace('/', '.').replace('.py', '')
+            foo = importlib.import_module(module_name)
+        return foo.create_params() 
         
     def create_session_dir(self, args):
         """

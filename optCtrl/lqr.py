@@ -126,7 +126,7 @@ class LQRSolver:
                                        tf.transpose(error_t_n1d, perm=[0, 2, 1]))
                 u_n1f = u_ref_n1f + tf.transpose(k_array_nTf1[:, t] + fdback_nf1,
                                                  perm=[0, 2, 1])
-                x_next_n1d = self.fwdSim(x_next_n1d, u_n1f)
+                x_next_n1d = self.fwdSim(x_next_n1d, u_n1f, mode='realistic')
                 actions.append(u_n1f)
                 states.append(x_next_n1d)
             u_nkf = tf.concat(actions, axis=1)

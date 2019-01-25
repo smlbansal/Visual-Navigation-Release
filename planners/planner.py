@@ -3,7 +3,7 @@ import numpy as np
 from trajectory.trajectory import Trajectory, SystemConfig
 
 
-class Planner:
+class Planner(object):
     """Plans optimal trajectories (by minimizing an objective function)
     through an environment. """
 
@@ -61,7 +61,8 @@ class Planner:
                 'trajectory': [],
                 'planning_horizon': [],
                 'K_nkfd': [],
-                'k_nkf1': []}
+                'k_nkf1': [],
+                'img_nmkd': []}
         return data
 
     @staticmethod
@@ -106,7 +107,7 @@ class Planner:
         data['planning_horizon_n1'] = np.array(data['planning_horizon'])[valid_mask][:, None]
         data['K_nkfd'] = tf.boolean_mask(tf.concat(data['K_nkfd'], axis=0), valid_mask)
         data['k_nkf1'] = tf.boolean_mask(tf.concat(data['k_nkf1'], axis=0), valid_mask)
-
-        last_mask = np.where(np.logical_not(valid_mask))[0]
-        
+        data['img_nmkd'] = np.array(np.concatenate(data['img_nmkd'], axis=0))[valid_mask]
         return data, data_last
+
+        

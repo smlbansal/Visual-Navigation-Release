@@ -9,7 +9,7 @@ class NNWaypointPlanner(NNPlanner):
     counter = 0
 
     def __init__(self, simulator, params):
-        super().__init__(simulator, params)
+        super(NNWaypointPlanner, self).__init__(simulator, params)
         self.waypoint_world_config = SystemConfig(dt=self.params.dt, n=1, k=1)
 
     def optimize(self, start_config):
@@ -60,7 +60,8 @@ class NNWaypointPlanner(NNPlanner):
                 'trajectory': Trajectory.copy(self.opt_traj),
                 'planning_horizon': min_horizon,
                 'K_nkfd': controllers['K_nkfd'][min_idx:min_idx + 1],
-                'k_nkf1': controllers['k_nkf1'][min_idx:min_idx + 1]}
+                'k_nkf1': controllers['k_nkf1'][min_idx:min_idx + 1],
+                'img_nmkd': raw_data['img_nmkd']}
 
         return data
 

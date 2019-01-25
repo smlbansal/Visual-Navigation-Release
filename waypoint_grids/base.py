@@ -1,4 +1,4 @@
-class WaypointGridBase():
+class WaypointGridBase(object):
     """An abstract class representing an egocentric waypoint grid
     for a mobile ground robot."""
     def __init__(self, params):

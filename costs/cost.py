@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class DiscreteCost:
+class DiscreteCost(object):
 
     def __init__(self, x_dim, u_dim, running_cost=None, terminal_cost=None,
                  Horizon=np.inf):
