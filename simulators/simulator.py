@@ -27,9 +27,9 @@ class Simulator(object):
         # Parse the dependencies
         p.planner_params.planner.parse_params(p.planner_params)
         p.obstacle_map_params.obstacle_map.parse_params(p.obstacle_map_params)
-        p.system_dynamics_params.system.parse_params(p.system_dynamics_params)
 
-        dt = p.system_dynamics_params.dt
+        dt = p.planner_params.control_pipeline_params.system_dynamics_params.dt
+    
         p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
         p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
         p.dt = dt
@@ -374,7 +374,7 @@ class Simulator(object):
         raise NotImplementedError
 
     def _init_system_dynamics(self):
-        p = self.params.system_dynamics_params
+        p = self.params.planner_params.control_pipeline_params.system_dynamics_params
         return p.system(dt=p.dt, params=p)
 
     def _init_obj_fn(self):

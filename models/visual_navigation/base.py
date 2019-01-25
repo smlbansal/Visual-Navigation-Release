@@ -33,6 +33,12 @@ class VisualNavigationModelBase(BaseModel):
         coordinates.
         """
         return raw_data['goal_position_ego_n2']
+    
+    def _vehicle_controls(self, raw_data):
+        """
+        Return the vehicle linear and angular speed.
+        """
+        return raw_data['vehicle_controls_nk2'][:, 0]
 
     def create_nn_inputs_and_outputs(self, raw_data, is_training=None):
         """
@@ -48,8 +54,8 @@ class VisualNavigationModelBase(BaseModel):
 
         # Concatenate the goal position in an egocentric frame with vehicle's speed information
         goal_position = self._goal_position(raw_data)
-        state_features_n4 = tf.concat(
-            [goal_position, raw_data['vehicle_controls_nk2'][:, 0]], axis=1)
+        vehicle_controls = self._vehicle_controls(raw_data)
+        state_features_n4 = tf.concat([goal_position, vehicle_controls], axis=1)
 
         # Optimal Supervision
         optimal_labels_n = self._optimal_labels(raw_data)

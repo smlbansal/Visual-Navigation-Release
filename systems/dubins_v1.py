@@ -7,6 +7,9 @@ class DubinsV1(Dubins3D):
     functions (i.e. no saturation) on linear or angular velocity.
     """
     name = 'dubins_v1'
+    
+    def __init__(self, dt, params):
+        super().__init__(dt, params.noise_params)
 
     def _saturate_linear_velocity(self, vtilde_nk):
         """ Identity saturation function for linear velocity"""

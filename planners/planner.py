@@ -89,15 +89,17 @@ class Planner(object):
         from the first segment not in the valid mask."""
         data_times = np.cumsum([traj.k for traj in data['trajectory']])
         valid_mask = (data_times <= k)
-        last_mask = (data_times > k)
         data_last = {}
-        if len(last_mask) > 0:
-            data_last['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[last_mask])
-            data_last['waypoint_config'] = SystemConfig.concat_across_batch_dim(np.array(data['waypoint_config'])[last_mask])
-            data_last['trajectory'] = Trajectory.concat_across_batch_dim(np.array(data['trajectory'])[last_mask])
-            data_last['planning_horizon_n1'] = np.array(data['planning_horizon'])[last_mask][:, None]
-            data_last['K_nkfd'] = tf.boolean_mask(tf.concat(data['K_nkfd'], axis=0), last_mask)
-            data_last['k_nkf1'] = tf.boolean_mask(tf.concat(data['k_nkf1'], axis=0), last_mask)
+        last_data_idxs = np.where(np.logical_not(valid_mask))[0]
+        if len(last_data_idxs) > 0:
+            # Take the first last_data_idx
+            last_data_idx = last_data_idxs[0]
+            data_last['system_config'] = data['system_config'][last_data_idx]
+            data_last['waypoint_config'] = data['waypoint_config'][last_data_idx]
+            data_last['trajectory'] = data['trajectory'][last_data_idx]
+            data_last['planning_horizon_n1'] = [data['planning_horizon'][last_data_idx]] 
+            data_last['K_nkfd'] = [data['K_nkfd'][last_data_idx]]
+            data_last['k_nkf1'] = [data['k_nkf1'][last_data_idx]] 
 
         data['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[valid_mask])
         data['waypoint_config'] = SystemConfig.concat_across_batch_dim(np.array(data['waypoint_config'])[valid_mask])

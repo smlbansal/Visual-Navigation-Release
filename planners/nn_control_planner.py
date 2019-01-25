@@ -72,11 +72,18 @@ class NNControlPlanner(NNPlanner):
         before time index k. Concatenates each list in data
         along the batch dim after masking."""
         
-        import pdb; pdb.set_trace() # TODO: return data_last_step (see planner.py)
         data_times = np.cumsum([u_nk2.shape[1].value for u_nk2 in data['optimal_control_nk2']])
         valid_mask = (data_times <= k)
+        data_last = {} 
+        last_data_idxs = np.where(np.logical_not(valid_mask))[0]
+        if len(last_data_idxs) > 0:
+            # Take the first last_data_idx
+            last_data_idx = last_data_idxs[0]
+            data_last['system_config'] = data['system_config'][last_data_idx]
+            data_last['optimal_control_nk2'] = data['optimal_control_nk2'][last_data_idx]
+
         data['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[valid_mask])
         data['optimal_control_nk2'] = tf.boolean_mask(tf.concat(data['optimal_control_nk2'],
                                                                 axis=0), valid_mask)
         data['img_nmkd'] = np.array(np.concatenate(data['img_nmkd'], axis=0))[valid_mask]
-        return data
+        return data, data_last

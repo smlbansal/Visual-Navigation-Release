@@ -20,7 +20,8 @@ class BaseModel(object):
                                num_outputs=self.p.model.num_outputs,
                                params=self.p.model.arch)
     
-    def compute_loss_function(self, raw_data, is_training=None, return_loss_components=False):
+    def compute_loss_function(self, raw_data, is_training=None, return_loss_components=False,
+                              return_loss_components_and_output=False):
         """
         Compute the loss function for a given dataset.
         """
@@ -45,8 +46,10 @@ class BaseModel(object):
             raise NotImplementedError
         
         total_loss = prediction_loss + regularization_loss
-        
-        if return_loss_components:
+       
+        if return_loss_components_and_output:
+            return regularization_loss, prediction_loss, total_loss, nn_output
+        elif return_loss_components:
             return regularization_loss, prediction_loss, total_loss
         else:
             return total_loss
