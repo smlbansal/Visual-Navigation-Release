@@ -314,7 +314,29 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                          prepend_title=prepend_title)
         if plot_images:
             self._plot_episode_images(i, data)
+        
+    def _save_trajectory_data_for_debugging(self, i, data):
+        """
+        A useful function to save robot vehicle trajectory information
+        so that it can be easily run open loop on a real robot.
+        """
+        simulator = data['simulator']
+        dirname = data['dir']
+        base_dir = data['base_dir']
 
+        trajectory_data_dir = os.path.join(base_dir, dirname, 'trajectory_data')
+        utils.mkdir_if_missing(trajectory_data_dir)
+
+        data = {}
+        data['trajectory_info'] = simulator.vehicle_trajectory.to_numpy_repr()
+        data['occupancy_grid'] = simulator.obstacle_map.occupancy_grid_map
+        data['map_bounds_extent'] = np.array(simulator.obstacle_map.map_bounds).flatten(order='F')
+
+        trajectory_file = os.path.join(trajectory_data_dir, 'traj_{:d}.pkl'.format(i))
+        with open(trajectory_file, 'wb') as f:
+            # rospy only runs in py27 so save with protocol = 2
+            pickle.dump(data, f, protocol=2)
+        
     def _plot_episode_images(self, i, data):
         """
         Plot the images the robot saw during a particular episode.
