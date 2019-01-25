@@ -14,7 +14,7 @@ class TurtlebotDubinsV2(DubinsV2):
         super(TurtlebotDubinsV2, self).__init__(dt, params)
         self.hardware = TurtlebotHardware.get_hardware_interface(params.hardware_params)
 
-    def simulate(self, x_nk3, u_nk2, t=None):
+    def _simulate_realistic(self, x_nk3, u_nk2, t=None):
         """
         Execute a linear and angular velocity command
         on the actual turtlebot system.

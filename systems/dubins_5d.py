@@ -17,7 +17,7 @@ class Dubins5D(DubinsCar):
         super().__init__(dt, x_dim=5, u_dim=2)
         self._angle_dims = 2
 
-    def simulate(self, x_nkd, u_nkf, t=None):
+    def _simulate_ideal(self, x_nkd, u_nkf, t=None):
         with tf.name_scope('simulate'):
             theta_nk1 = x_nkd[:, :, 2:3]
             v_nk1 = x_nkd[:, :, 3:4]

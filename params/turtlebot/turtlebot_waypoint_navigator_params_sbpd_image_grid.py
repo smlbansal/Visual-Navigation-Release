@@ -43,7 +43,7 @@ def create_turtlebot_params():
 
     # CHANGE THE GOAL HERE!!!!
     # Update the goal position
-    simulator_params.reset_params.goal_config.position.goal_pos=[5.0, 0.00]
+    simulator_params.reset_params.goal_config.position.goal_pos=[3.0, 3.00]
 
     # Log videos that the robot sees
     simulator_params.record_video = True
@@ -57,7 +57,7 @@ def create_turtlebot_params():
     p.model.arch.finetune_resnet_weights = True
 
     # Update the path for resnet50 weights
-    p.model.arch.resnet50_weights_path = '/home/vtolani/Documents/Projects/visual_mpc_data/resnet50_weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5' 
+    #p.model.arch.resnet50_weights_path = '/home/vtolani/Documents/Projects/visual_mpc_data/resnet50_weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5' 
 
     # There is no expert for rgb images on the turtlebot
     p.test.simulate_expert = False
@@ -89,6 +89,7 @@ def create_params():
 
     # Change the checkpoint
     #### CHANGE THE NETWORK WEIGHTS HERE
-    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/trained_projected_test_uniform/resnet_50_v1/data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'
+    #p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/trained_projected_test_uniform/resnet_50_v1/data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'
 
     return p
