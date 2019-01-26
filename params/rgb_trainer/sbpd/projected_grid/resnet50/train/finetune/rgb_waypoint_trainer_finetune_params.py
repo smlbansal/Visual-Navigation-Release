@@ -32,6 +32,9 @@ def create_rgb_trainer_params():
     simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.fov = np.deg2rad(30.)
     simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.tilt = np.deg2rad(36.)
     
+    # Hack to convert from the simulation camera parameters to turtlebot parameters
+    simulator_params.planner_params.convert_waypoint_from_nn_to_robot = True
+    
     # Change episode horizon
     simulator_params.episode_horizon_s = 30.0
     

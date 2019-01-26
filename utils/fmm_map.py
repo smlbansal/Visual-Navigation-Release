@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import skfmm
-from voxel_map_utils import VoxelMap
+from utils.voxel_map_utils import VoxelMap
 
 
 class FmmMap(object):
