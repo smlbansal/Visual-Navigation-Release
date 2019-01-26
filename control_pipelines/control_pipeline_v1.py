@@ -26,7 +26,6 @@ class ControlPipelineV1(ControlPipelineBase):
         self._dynamically_evaluate_spline(start_config, goal_config)
 
         # Run LQR with the spline as a reference trajectory
-        import pdb; pdb.set_trace()
         lqr_trajectory, K_nkfd, k_nkf1 = self._lqr(start_config)
         
         # Update the binary mask over the trajectory indicating
@@ -54,16 +53,33 @@ class ControlPipelineV1(ControlPipelineBase):
         """
         return []
 
+    # TODO (Varun T.) This is kind of hacky- put it somewhere
+    # better.
+    # If running on the real robot you only want 
+    # to simulate forward for control horizon steps
+    @property
+    def planning_horizon(self):
+        if self.params.real_robot:
+            horizon = self.params.control_horizon
+        else:
+            horizon = self.params.planning_horizon
+        return horizon
+
+    @property
+    def planning_horizon_s(self):
+        return self.planning_horizon * self.system_dynamics._dt
+
     def _init_pipeline(self):
         p = self.params
+
         self.spline_trajectory = p.spline_params.spline(dt=p.system_dynamics_params.dt, n=1,
-                                                        k=p.planning_horizon,
+                                                        k=self.planning_horizon,
                                                         params=p.spline_params)
 
         self.cost_fn = p.lqr_params.cost_fn(trajectory_ref=self.spline_trajectory,
                                             system=self.system_dynamics,
                                             params=p.lqr_params)
-        self.lqr_solver = LQRSolver(T=p.planning_horizon - 1,
+        self.lqr_solver = LQRSolver(T=self.planning_horizon- 1,
                                     dynamics=self.system_dynamics,
                                     cost=self.cost_fn)
 
@@ -73,10 +89,10 @@ class ControlPipelineV1(ControlPipelineBase):
         p = self.params
         
         # Timepoints over which to evaluate spline
-        times_nk = tf.linspace(0., p.planning_horizon_s, p.planning_horizon)[None]
+        times_nk = tf.linspace(0., self.planning_horizon_s, self.planning_horizon)[None]
         
         # Set the final time for the spline
-        final_times_n1 = tf.ones((1, 1), dtype=tf.float32) * p.planning_horizon_s
+        final_times_n1 = tf.ones((1, 1), dtype=tf.float32) * self.planning_horizon_s
         
         # Fit and Evaluate Spline
         self.spline_trajectory.fit(start_config, goal_config, final_times_n1=final_times_n1)
