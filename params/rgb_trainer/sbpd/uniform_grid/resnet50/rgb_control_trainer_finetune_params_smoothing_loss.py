@@ -21,10 +21,11 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
     # Ensure the renderer is using area3
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area6'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area1'
     
     # Change episode horizon
-    simulator_params.episode_horizon_s = 20.0
+    simulator_params.episode_horizon_s = 80.0
+    simulator_params.control_horizon_s = 0.75
     
     p = create_trainer_params(simulator_params=simulator_params)
 

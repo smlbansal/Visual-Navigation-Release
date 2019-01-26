@@ -1,4 +1,5 @@
 from dotmap import DotMap
+import numpy as np
 
 
 def create_rgb_trainer_params():
@@ -24,11 +25,18 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.height = 1024
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
+    # Change the camera parameters to turtlebot parameters
+    simulator_params.obstacle_map_params.renderer_params.camera_params.fov_horizontal = 60.
+    simulator_params.obstacle_map_params.renderer_params.camera_params.fov_vertical = 49.5
+    simulator_params.obstacle_map_params.renderer_params.robot_params.camera_elevation_degree = -36.
+    simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.fov = np.deg2rad(30.)
+    simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.tilt = np.deg2rad(36.)
+    
     # Change episode horizon
     simulator_params.episode_horizon_s = 30.0
     
     # Ensure the renderer is using area4
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area6'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area1'
     
     p = create_trainer_params(simulator_params=simulator_params)
 

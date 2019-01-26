@@ -1,10 +1,4 @@
-import os
-import json
-import copy
 import numpy as np
-import tensorflow as tf
-import dotmap
-import shutil
 from dotmap import DotMap
 
 
@@ -15,7 +9,7 @@ different set of camera parameters.
 
 params = DotMap()
 params.nn = DotMap(f=0.01, h=0.8, t=45.0*np.pi/180.0, half_fov_x=45.0*np.pi/180.0, half_fov_y=45.0*np.pi/180.0)
-params.robot = DotMap(f=0.01, h=0.8, t=45.0*np.pi/180.0, half_fov_x=25.0*np.pi/180.0, half_fov_y=25.0*np.pi/180.0)
+params.robot = DotMap(f=0.01, h=0.8, t=36.0*np.pi/180.0, half_fov_x=25.0*np.pi/180.0, half_fov_y=25.0*np.pi/180.0)
 
 
 def project_to_image_plane_as_per_nn_parameters(wx_n, wy_n):
