@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 trajectory_dir = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_control/resnet_50_v1/data_distortion_v1/session_2019-01-21_18-01-22/test/checkpoint_18/session_2019-01-24_16-27-22/rgb_resnet50_nn_control_simulator/trajectory_data'
 #trajectory_dir = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_control/resnet_50_v1/data_distortion_v1/session_2019-01-21_18-01-22/test/checkpoint_18/session_2019-01-24_15-41-26/rgb_resnet50_nn_control_simulator/trajectory_data'
 
-output_dir = './tmp/open_loop_gazebo'
+output_dir = './tmp/gazebo_tests/velocity_joint_motors_driver_pid_p_.02_i_2e-5_d_4e-3'
 
 
 class GazeboTrajectoryRunner(object):
@@ -92,13 +92,15 @@ class GazeboTrajectoryRunner(object):
         axs[2].plot(w_n, 'r--')
         axs[2].set_title('# {:d}, Angular Velocity (m/s)'.format(goal_num))
 
-    def run_goals(self):
-        # Remove old data that is sitting around
-        delete_if_exists(self.output_dir)
+    def run_goals(self, n):
+        if os.path.exists(self.output_dir):
+            assert False, 'Output directory already exists'
+
         mkdir_if_missing(self.output_dir)
         
         traj_filenames = os.listdir(trajectory_dir)
         traj_filenames.sort(key=lambda x: int(x.split('traj_')[-1].split('.pkl')[0]))
+        traj_filenames = traj_filenames[:n]
         
         fig, axss, _ = subplot2(plt, (2, 3), (8, 8), (.4, .4))
 
@@ -163,7 +165,7 @@ def main():
     tf.enable_eager_execution()
     matplotlib.style.use('ggplot')
     gz = GazeboTrajectoryRunner(trajectory_dir, output_dir, .05)
-    gz.run_goals()
+    gz.run_goals(n=10)
 
 if __name__ == '__main__':
     main()
