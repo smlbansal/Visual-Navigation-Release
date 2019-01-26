@@ -2,6 +2,7 @@ import numpy as np
 
 
 class ObstacleMap(object):
+    name = 'ObstacleMapBase'
 
     @staticmethod
     def parse_params(p):

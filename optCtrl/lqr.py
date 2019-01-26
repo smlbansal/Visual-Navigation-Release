@@ -96,7 +96,8 @@ class LQRSolver:
             return res_dict
 
     def apply_control(self, start_config, trajectory,
-                      k_array_nTf1, K_array_nTfd):
+                      k_array_nTf1, K_array_nTfd,
+                      sim_mode='ideal'):
         """
         apply the derived control to the error system to derive a new
         trajectory. Here k_array_nTf1 and K_aaray_nTfd are
@@ -126,7 +127,7 @@ class LQRSolver:
                                        tf.transpose(error_t_n1d, perm=[0, 2, 1]))
                 u_n1f = u_ref_n1f + tf.transpose(k_array_nTf1[:, t] + fdback_nf1,
                                                  perm=[0, 2, 1])
-                x_next_n1d = self.fwdSim(x_next_n1d, u_n1f)
+                x_next_n1d = self.fwdSim(x_next_n1d, u_n1f, mode=sim_mode)
                 actions.append(u_n1f)
                 states.append(x_next_n1d)
             u_nkf = tf.concat(actions, axis=1)

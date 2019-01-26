@@ -12,21 +12,21 @@ class Dubins3D(DubinsCar):
     theta(t+1) = theta_t + saturate_angular_velocity(w(t))*delta_t
     """
 
-    def __init__(self, dt, noise_params=None):
-        super().__init__(dt, x_dim=3, u_dim=2)
+    def __init__(self, dt, simulation_params=None):
+        super(Dubins3D, self).__init__(dt, x_dim=3, u_dim=2)
         self._angle_dims = 2
-        self.noise_params = noise_params
-        if self.noise_params.is_noisy:
+        self.simulation_params = simulation_params
+        if self.simulation_params.noise_params.is_noisy:
             print('This Dubins car model has some noise. Please turn off the noise if this was not intended.')
 
-    def simulate(self, x_nk3, u_nk2, t=None):
+    def _simulate_ideal(self, x_nk3, u_nk2, t=None):
         with tf.name_scope('simulate'):
             delta_x_nk3 = tf.stack([self._saturate_linear_velocity(u_nk2[:, :, 0])*tf.cos(x_nk3[:, :, 2]),
                                     self._saturate_linear_velocity(u_nk2[:, :, 0])*tf.sin(x_nk3[:, :, 2]),
                                     self._saturate_angular_velocity(u_nk2[:, :, 1])], axis=2)
             
             # Add noise (or disturbance) if required
-            if self.noise_params.is_noisy:
+            if self.simulation_params.noise_params.is_noisy:
                 noise_component = self.compute_noise_component(required_shape=tf.shape(x_nk3), data_type=x_nk3.dtype)
                 return x_nk3 + self._dt * delta_x_nk3 + noise_component
             else:
@@ -87,11 +87,12 @@ class Dubins3D(DubinsCar):
         """
         Compute a noise component for the Dubins car.
         """
-        if self.noise_params.noise_type == 'uniform':
-            return tf.random_uniform(required_shape, self.noise_params.noise_lb, self.noise_params.noise_ub,
+        if self.simulation_params.noise_params.noise_type == 'uniform':
+            return tf.random_uniform(required_shape, self.simulation_params.noise_params.noise_lb,
+                                     self.simulation_params.noise_params.noise_ub,
                                      dtype=data_type)
-        elif self.noise_params.noise_type == 'gaussian':
-            return tf.random_normal(required_shape, mean=self.noise_params.noise_mean,
-                                    stddev=self.noise_params.noise_std, dtype=data_type)
+        elif self.simulation_params.noise_params.noise_type == 'gaussian':
+            return tf.random_normal(required_shape, mean=self.simulation_params.noise_params.noise_mean,
+                                    stddev=self.simulation_params.noise_params.noise_std, dtype=data_type)
         else:
             raise NotImplementedError('Unknown noise type.')

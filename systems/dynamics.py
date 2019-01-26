@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-class Dynamics:
+class Dynamics(object):
 
     def __init__(self, dt, x_dim, u_dim, ctrlBounds=None):
         self._dt = dt
@@ -20,18 +20,41 @@ class Dynamics:
         """
         return p
 
-    def simulate(self, x_nkd, u_nkf, t=None):
-        """ Apply one action u from state x
+    def simulate(self, x_nkd, u_nkf, t=None, mode='ideal'):
+        """
+        Apply one action u from state x. Allowed modes are:
+            ideal: ideal dynamics
+            realistic: dyanmics through a real system (physics simulator or real robot)
+        """
+        if mode == 'ideal':
+            return self._simulate_ideal(x_nkd, u_nkf, t=t)
+        elif mode == 'realistic':
+            return self._simulate_realistic(x_nkd, u_nkf, t=t)
+        else:
+            raise NotImplementedError
+
+    def _simulate_ideal(self, x_nkd, u_nkf, t=None):
+        """
+        Apply one action u from state x using ideal system dynamics
         """
         raise NotImplementedError
 
-    def simulate_T(self, x_n1d, u_nkf, T, pad_mode='zero'):
-        """ Apply T actions from state x_n1d
+    def _simulate_realistic(self, x_nkd, u_nkf, t=None):
+        """
+        Apply one action u from state x using realistic system dynamics.
+        Defaults to using ideal system dynamics.
+        """
+        return self._simulate_ideal(x_nkd, u_nkf, t=t)
+
+    def simulate_T(self, x_n1d, u_nkf, T, pad_mode='zero',
+                   mode='ideal'):
+        """
+        Apply T actions from state x_n1d
         return the resulting trajectory object.
         """
         states = [x_n1d*1.]
         for t in range(T):
-            x_n1d = self.simulate(x_n1d, u_nkf[:, t:t+1])
+            x_n1d = self.simulate(x_n1d, u_nkf[:, t:t+1], mode=mode)
             states.append(x_n1d)
         trajectory = self.assemble_trajectory(tf.concat(states, axis=1), u_nkf,
                                               pad_mode=pad_mode)

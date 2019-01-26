@@ -5,7 +5,7 @@ import numpy as np
 
 class Spline3rdOrder(Spline):
     def __init__(self, dt, n, k, params):
-        super().__init__(dt=dt, n=n, k=k)
+        super(Spline3rdOrder, self).__init__(dt=dt, n=n, k=k)
         self.params = params
 
     """ A class representing a 3rd order spline for a mobile ground robot

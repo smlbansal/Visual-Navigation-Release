@@ -1,5 +1,6 @@
 from utils import utils
 import os
+import sys
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
@@ -16,12 +17,16 @@ class ControlPipelineV0(ControlPipelineBase):
     pipeline = None
 
     def __init__(self, params):
+        # If using a real robot then LQR data should not be discarded. Else
+        # does not matter
+        assert (params.real_robot and not params.discard_LQR_controller_data) or (not params.real_robot)
+
         self.waypoint_grid = params.waypoint_params.grid(params.waypoint_params)
         self.start_velocities = np.linspace(
             0.0, params.binning_parameters.max_speed, params.binning_parameters.num_bins)
         self.helper = ControlPipelineV0Helper()
         self.instance_variables_loaded = False
-        super().__init__(params)
+        super(ControlPipelineV0, self).__init__(params)
 
     @classmethod
     def get_pipeline(cls, params):
@@ -36,6 +41,10 @@ class ControlPipelineV0(ControlPipelineBase):
             assert(utils.check_dotmap_equality(cls.pipeline.params, params))
         return cls.pipeline
 
+    # TODO: Varun T. Clean up this code so that it stays memory efficient
+    # (i.e. assign all precomputed variables when goal_config is None, but
+    # only assign one when goal_config is not None). Move the real robot
+    # code up to the planner level
     def plan(self, start_config, goal_config=None):
         """Computes which velocity bin start_config belongs to
         and returns the corresponding waypoints, horizons, lqr_trajectories,
@@ -51,8 +60,12 @@ class ControlPipelineV0(ControlPipelineBase):
         # for this velocity bin into world coordinates
         self.waypt_configs_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.waypt_configs[idx],
                                                                                   self.waypt_configs_world[idx], mode='assign')
-        self.trajectories_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.lqr_trajectories[idx],
-                                                                                 self.trajectories_world[idx], mode='assign')
+       
+        # When using the real robot the precomputed lqr_trajectories
+        # are not used
+        if not self.params.real_robot:
+            self.trajectories_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.lqr_trajectories[idx],
+                                                                                     self.trajectories_world[idx], mode='assign')
         # Converting K to world coordinates is slow
         # so only set this to true when LQR data is needed
         if self.params.convert_K_to_world_coordinates:
@@ -71,29 +84,60 @@ class ControlPipelineV0(ControlPipelineBase):
             trajectories = self.trajectories_world[idx]
             controllers = {'K_nkfd': self.Ks_world_nkfd[idx], 'k_nkf1': self.k_nkf1[idx]}
         else:
-            waypt_idx = self.helper.compute_closest_waypt_idx(goal_config,
-                                                              self.waypt_configs_world[idx])
+            waypt_configs, horizons, trajectories, controllers = self._plan_with_goal_config(idx, start_config, goal_config)
             
-            waypt_configs = self.waypt_configs_world[idx][waypt_idx]
-            
-            #### Debuggging
-            #goal_config_1k3 = goal_config.position_and_heading_nk3()[0, 0].numpy()
-            #waypt_ego_1k3 = waypt_configs.position_and_heading_nk3()[0, 0].numpy()
-            #print('NN Waypoint: [{:f}, {:f}, {:f}], Picked Waypt: [{:f}, {:f}, {:f}]'.format(*goal_config_1k3, *waypt_ego_1k3))
+        trajectories.update_valid_mask_nk()
+        return waypt_configs, horizons, trajectories, controllers
 
-            horizons = self.horizons[idx][waypt_idx:waypt_idx+1]
+    def _plan_with_goal_config(self, idx, start_config, goal_config):
+        """
+        Find the closest waypoint to goal_config and return the associated
+        waypoint, splien horizon, trajectory, and lqr controllers.
+        """
+        waypt_idx = self.helper.compute_closest_waypt_idx(goal_config,
+                                                          self.waypt_configs_world[idx])
+        waypt_configs = self.waypt_configs_world[idx][waypt_idx]
+        horizons = self.horizons[idx][waypt_idx:waypt_idx+1]
+       
+        controllers = {'K_nkfd': self.Ks_world_nkfd[idx][waypt_idx:waypt_idx+1],
+                       'k_nkf1': self.k_nkf1[idx][waypt_idx:waypt_idx+1]}
+        
+        if self.params.real_robot:
+            lqr_ref_trajectory = self.spline_trajectories[idx][waypt_idx]
+            trajectories = self._apply_lqr_controllers_to_real_robot(start_config, controllers, lqr_ref_trajectory)
+        else:
             trajectories = self.trajectories_world[idx][waypt_idx]
-           
-            # If LQR controller data is being ignored
-            # just return the first element
-            if self.params.discard_LQR_controller_data:
-                waypt_idx = 0
-
+            
+        # If LQR controller data is being ignored
+        # just return the first element
+        if self.params.discard_LQR_controller_data:
+            waypt_idx = 0
             controllers = {'K_nkfd': self.Ks_world_nkfd[idx][waypt_idx:waypt_idx+1],
                            'k_nkf1': self.k_nkf1[idx][waypt_idx:waypt_idx+1]}
 
-        trajectories.update_valid_mask_nk()
+        
         return waypt_configs, horizons, trajectories, controllers
+
+    def _apply_lqr_controllers_to_real_robot(self, start_config, controllers, lqr_ref_trajectory):
+        # Convert K to world coordinates if it has not been already
+        if not self.params.convert_K_to_world_coordinates:
+            self.K_real_robot_world_nkfd = self.system_dynamics.convert_K_to_world_coordinates(start_config,
+                                                                                               controllers['K_nkfd'],
+                                                                                               self.K_real_robot_world_nkfd,
+                                                                                               mode='assign')
+        else:
+            self.K_real_robot_world_nkfd = controllers['K_nkfd']
+
+        # Convert the LQR reference trajectory to the world frame
+        self.lqr_ref_trajectory_real_robot_world_nkfd = self.system_dynamics.to_world_coordinates(start_config, lqr_ref_trajectory,
+                                                                                                  self.lqr_ref_trajectory_real_robot_world_nkfd,
+                                                                                                  mode='assign')
+        robot_trajectory = self.lqr_solver.apply_control(start_config,
+                                                         self.lqr_ref_trajectory_real_robot_world_nkfd,
+                                                         controllers['k_nkf1'],
+                                                         controllers['K_nkfd'],
+                                                         sim_mode='realistic')
+        return robot_trajectory 
 
     def generate_control_pipeline(self, params=None):
         p = self.params
@@ -204,7 +248,9 @@ class ControlPipelineV0(ControlPipelineBase):
                 filename = self._data_file_name(v0=v0)
                 assert(filename == expected_filename)
                 data_bin = self.helper.load_and_process_data(filename,
-                                                             self.params.discard_LQR_controller_data)
+                                                             discard_lqr_controller_data=self.params.discard_LQR_controller_data,
+                                                             discard_precomputed_lqr_trajectories=self.params.real_robot,
+                                                             track_trajectory_acceleration=self.params.track_trajectory_acceleration)
                 self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
             self._set_instance_variables(pipeline_data)
 
@@ -219,16 +265,43 @@ class ControlPipelineV0(ControlPipelineBase):
         self.lqr_trajectories = data['lqr_trajectories']
         self.K_nkfd = data['K_nkfd']
         self.k_nkf1 = data['k_nkf1']
-        
+     
         # Initialize variable tensors for waypoints and trajectories in world coordinates
         dt = self.params.system_dynamics_params.dt
         self.waypt_configs_world = [SystemConfig(
-            dt=dt, n=config.n, k=1, variable=True) for config in data['start_configs']]
-        self.trajectories_world = [Trajectory(
-            dt=dt, n=config.n, k=self.params.planning_horizon, variable=True)
-           for config in data['start_configs']]
+            dt=dt, n=config.n, k=1, variable=True,
+            track_trajectory_acceleration=self.params.track_trajectory_acceleration) for config in data['start_configs']]
+        
+        # Adjust instance variables if running on real robot
+        if self.params.real_robot:
+            # Dont need precomputed LQR trajectories when running on the real robot
+            self.trajectories_world = self.lqr_trajectories
+            
+            # Placeholder for lqr controllers and reference trajectory in the world frame
+            self.K_real_robot_world_nkfd = tfe.Variable(tf.zeros_like(data['K_nkfd'][0][0:1]))
+            self.lqr_ref_trajectory_real_robot_world_nkfd = Trajectory(dt=dt, n=1,
+                                                                       k=self.params.planning_horizon,
+                                                                       variable=True,
+                                                                       track_trajectory_acceleration=self.params.track_trajectory_acceleration)
 
-        if not self.params.discard_LQR_controller_data:
+            # Create an LQR Solver object to use when applying LQR controllers on the robot
+            # Cost function is not needed as LQR controllers have already been computed
+            if not hasattr(self, 'lqr_solver'):
+                
+                # Set the horizon for LQR to the control horizon - 1
+                self.lqr_solver = LQRSolver(T=self.params.control_horizon - 1,
+                                            dynamics=self.system_dynamics,
+                                            cost=None)
+
+        else:
+            self.trajectories_world = [Trajectory(
+                dt=dt, n=config.n, k=self.params.planning_horizon, variable=True,
+                track_trajectory_acceleration=self.params.track_trajectory_acceleration)
+               for config in data['start_configs']]
+
+        # If LQR feedback matrices are needed in world
+        # coordinates setup a variable to store them
+        if self.params.convert_K_to_world_coordinates:
             self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(K)) for K in data['K_nkfd']]
         else:
             self.Ks_world_nkfd = self.K_nkfd
@@ -328,6 +401,14 @@ class ControlPipelineV0(ControlPipelineBase):
         base_dir = os.path.join(base_dir, self.waypoint_grid.descriptor_string)
         base_dir = os.path.join(base_dir,
                                 '{:d}_velocity_bins'.format(p.binning_parameters.num_bins))
+
+        # If using python 2.7 on the real robot
+        # the control pipeline will need to be converted to
+        # a python 2.7 friendly pickle format and will be
+        # stored in the subfolder py27
+        if sys.version_info[0] == 2: # If using python 2.7 on real robot
+            base_dir = os.path.join(base_dir, 'py27')
+
         utils.mkdir_if_missing(base_dir)
 
         if v0 is not None:

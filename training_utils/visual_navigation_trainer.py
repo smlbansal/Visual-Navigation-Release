@@ -204,7 +204,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                                                                            plot_controls=True, plot_images=True,
                                                                            return_episode_type=True)
                 episode_types = np.array(episode_types)
-
+            
                 # Save a boolean mask indicating which episodes were invalid
                 # Replace these episodes of type -1 with type 0
                 invalid_episode_mask = (episode_types == -1)
@@ -234,6 +234,35 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             kwargs = {}
         return kwargs
 
+           
+    def plot_measured_states_for_debugging(self, data, axs):
+        """
+        Plot the trajectory the simulator thinks it saw
+        versus what the robot sensors actually measured.
+        Useful for debugging real robots over ROS.
+        """
+        import numpy as np
+        measured_states = 1.*np.array(data['simulator'].system_dynamics.hardware.measured_states)*1.
+        measured_states_dx = 1.*np.array(data['simulator'].system_dynamics.hardware.measured_states_dx)*1.
+
+        ax = axs[0]
+        xs = measured_states[:, 0]
+        ys = measured_states[:, 1]
+        thetas = measured_states[:, 2]
+        ax.plot(xs, ys, 'b-')
+        freq = 100
+        ax.quiver(xs[::freq], ys[::freq],
+                  np.cos(thetas[::freq]), np.sin(thetas[::freq]))
+
+        time = np.r_[:len(measured_states_dx)]/100.
+        
+        ax = axs[1]
+        ax.plot(time, measured_states_dx[:, 0], 'b--')
+
+        ax = axs[2]
+        ax.plot(time, measured_states_dx[:, 1], 'b--')
+
+
     def simulate(self, simulator_datas, log_metrics=True,
                  plot_controls=False, plot_images=False,
                  return_episode_type=False, goal_valid_mask=None):
@@ -260,7 +289,9 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                     simulator.reset(seed=-1)
 
                 if goal_valid_mask is None or goal_valid_mask[i]:
+                    self._maybe_start_recording_video(i, data)
                     simulator.simulate()
+                    self._maybe_stop_recording_video(i, data)
                     if simulator.valid_episode:
                         episode_types.append(simulator.episode_type)
                         metrics.append(simulator.get_metrics())
@@ -312,6 +343,10 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         [ax.clear() for ax in axs]
         simulator.render(axs, freq=render_angle_freq, render_velocities=plot_controls,
                          prepend_title=prepend_title)
+        
+        # TODO: this is for debugging ROS/ turtlebot environment
+        #self.plot_measured_states_for_debugging(data, axs) 
+
         if plot_images:
             self._plot_episode_images(i, data)
         
@@ -346,13 +381,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         dirname = data['dir']
         base_dir = data['base_dir']
 
-        if hasattr(self.model, 'occupancy_grid_positions_ego_1mk12'):
-            occupancy_grid_positions_ego_1mk12 = self.model.occupancy_grid_positions_ego_1mk12
-            kwargs = {'occupancy_grid_positions_ego_1mk12': occupancy_grid_positions_ego_1mk12}
-        else:
-            kwargs = {}
-
-        imgs_nmkd = simulator.get_observation(simulator.vehicle_data['system_config'], **kwargs)
+        imgs_nmkd = simulator.vehicle_data['img_nmkd']
         fig, _, axs = utils.subplot2(plt, (len(imgs_nmkd), 1), (8, 8), (.4, .4))
         axs = axs[::-1]
         for idx, img_mkd in enumerate(imgs_nmkd):
@@ -366,6 +395,32 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         figname = os.path.join(figdir, '{:d}.pdf'.format(i))
         fig.savefig(figname, bbox_inches='tight')
         plt.close(fig)
+
+    def _maybe_start_recording_video(self, i, data):
+        """
+        If simulator.params.record_video=True then
+        call simulator.start_recording_video.
+        """
+        simulator = data['simulator']
+
+        if simulator.params.record_video:
+            simulator.start_recording_video(i)
+
+    def _maybe_stop_recording_video(self, i, data):
+        """
+        If simulator.params.record_video=True then
+        call simulator.stop_recording_video with 
+        a file name to save to.
+        """
+        simulator = data['simulator']
+        dirname = data['dir']
+        base_dir = data['base_dir']
+
+        if simulator.params.record_video:
+            video_dir = os.path.join(base_dir, dirname, 'videos')
+            utils.mkdir_if_missing(video_dir)
+            video_name = os.path.join(video_dir, '{:d}.mp4'.format(i))
+            simulator.stop_recording_video(i, video_name)
 
     def _save_figures(self, data):
         """

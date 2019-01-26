@@ -46,32 +46,60 @@ class ControlPipelineV0Helper():
             data_bin[key] = pipeline_data[key][idx]
         return data_bin
 
-    def load_and_process_data(self, filename, discard_lqr_controller_data=False):
+
+    # TODO: Varun T. tensorflow eager mode does not currently
+    # garbage collect tensors properly so when saving memory (below)
+    # we must explicitly never construct the tensors, else the memory will be
+    # used anyway.
+    # i.e.
+    # x = tf.zeros((100, 10, 10), dtype=tf.float32)
+    # x = None
+    # this does not release the memory used by the zeros tensor!!!
+    def load_and_process_data(self, filename, discard_lqr_controller_data=False,
+                              discard_precomputed_lqr_trajectories=False,
+                              track_trajectory_acceleration=False):
         """Load control pipeline data from a pickle file
         and process it so that it can be used by the pipeline."""
         with open(filename, 'rb') as f:
             data = pickle.load(f)
 
+        # To save memory, when discard_precomputed_lqr_trajectories is true
+        # the lqr_trajectories variables can be discarded
+        # as it will be recomputed using the saved LQR controllers
+        if discard_precomputed_lqr_trajectories:
+            lqr_trajectories = None
+        else:
+            lqr_trajectories = Trajectory.init_from_numpy_repr(track_trajectory_acceleration=track_trajectory_acceleration,
+                                                               **data['lqr_trajectories'])
+
+        # To save memory the LQR controllers and reference
+        # trajectories (spline trajectories) can be discarded
+        # when not needed (i.e. in simulation when the saved lqr_trajectory
+        # is the exact result of applying the saved LQR controllers
         if discard_lqr_controller_data:
             spline_trajectories = None
             K_nkfd = tf.zeros((2, 1, 1, 1), dtype=np.float32)
             k_nkf1 = tf.zeros((2, 1, 1, 1), dtype=np.float32)
         else:
-            spline_trajectories = Trajectory.init_from_numpy_repr(**data['spline_trajectories'])
+            spline_trajectories = Trajectory.init_from_numpy_repr(track_trajectory_acceleration=track_trajectory_acceleration,
+                                                                  **data['spline_trajectories'])
             K_nkfd = tf.constant(data['K_nkfd'])
             k_nkf1 = tf.constant(data['k_nkf1'])
 
+        # Load remaining variables
+        start_speeds = tf.constant(data['start_speeds'])
+        start_configs = SystemConfig.init_from_numpy_repr(track_trajectory_acceleration=track_trajectory_acceleration,
+                                                          **data['start_configs'])
+        waypt_configs = SystemConfig.init_from_numpy_repr(track_trajectory_acceleration=track_trajectory_acceleration,
+                                                          **data['waypt_configs'])
+        horizons = tf.constant(data['horizons'])
 
-        # Restore tensors and trajectory objects from numpy representations
-        data_processed = {'start_speeds': tf.constant(data['start_speeds']),
-                          'start_configs':
-                          SystemConfig.init_from_numpy_repr(**data['start_configs']),
-                          'waypt_configs':
-                          SystemConfig.init_from_numpy_repr(**data['waypt_configs']),
+        data_processed = {'start_speeds': start_speeds,
+                          'start_configs': start_configs,
+                          'waypt_configs': waypt_configs,
                           'spline_trajectories': spline_trajectories,
-                          'horizons': tf.constant(data['horizons']),
-                          'lqr_trajectories':
-                          Trajectory.init_from_numpy_repr(**data['lqr_trajectories']),
+                          'horizons': horizons,
+                          'lqr_trajectories': lqr_trajectories,
                           'K_nkfd': K_nkfd,
                           'k_nkf1': k_nkf1}
         return data_processed
