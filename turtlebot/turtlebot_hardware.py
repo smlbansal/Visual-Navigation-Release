@@ -24,8 +24,8 @@ class TurtlebotHardware():
         self.measured_states_dx = []
         self.track_states = False
     
-        self.state = np.zeros(3)
-        self.state_dx = np.zeros(2)
+        self.state = np.zeros(3, dtype=np.float32)
+        self.state_dx = np.zeros(2, dtype=np.float32)
         self.num_collision_steps = 0
         self.hit_obstacle = False
         self.raw_image = None

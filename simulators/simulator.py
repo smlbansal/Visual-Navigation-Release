@@ -286,6 +286,12 @@ class Simulator(object):
                                          speed_nk1=speed_111,
                                          angular_speed_nk1=ang_speed_111)
 
+        # When Using a Realistic Simulator (physics simulator)
+        # The system dynamics may need the current starting position for
+        # coordinate transforms in realistic simulation
+        if self.system_dynamics.simulation_params.simulation_mode == 'realistic':
+            self.system_dynamics.reset_start_state(self.start_config)
+
     def _reset_goal_configuration(self, rng):
         p = self.params.reset_params.goal_config
         goal_norm = self.params.goal_dist_norm
@@ -471,6 +477,8 @@ class Simulator(object):
     @staticmethod
     def collect_metrics(ms, termination_reasons=['Timeout', 'Collision', 'Success']):
         ms = np.array(ms)
+        if len(ms) == 0:
+            return None, None
         obj_vals, init_dists, final_dists, episode_length, collisions, min_obs_distances, episode_types = ms.T
         keys = ['Objective Value', 'Initial Distance', 'Final Distance',
                 'Episode Length', 'Collisions_Mu', 'Min Obstacle Distance']

@@ -5,8 +5,8 @@ def create_rgb_trainer_params():
     from params.visual_navigation_trainer_params import create_params as create_trainer_params
     from params.waypoint_grid.uniform_grid_params import create_params as create_waypoint_params
     from params.model.resnet50_arch_v1_params import create_params as create_model_params
-    from params.system_dynamics.dubins_v2_params import create_params as create_system_dynamics_params
-    #from params.system_dynamics.turtlebot_dubins_v2_params import create_params as create_system_dynamics_params
+    #from params.system_dynamics.dubins_v2_params import create_params as create_system_dynamics_params
+    from params.system_dynamics.turtlebot_dubins_v2_params import create_params as create_system_dynamics_params
     from control_pipelines.control_pipeline_v1 import ControlPipelineV1
 
     # Load the dependencies
@@ -30,12 +30,15 @@ def create_rgb_trainer_params():
     
     # Ensure the renderer is using area3
     simulator_params.obstacle_map_params.renderer_params.building_name = 'area1'
-    
-    simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV1
+   
+    #### Note- there is a bug with control pipeline v1 and real robot = True
+    #simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV1
 
     # Ensure the control pipeline runs the LQR controllers on the robot
     simulator_params.planner_params.control_pipeline_params.discard_LQR_controller_data = False
     simulator_params.planner_params.control_pipeline_params.real_robot = True
+
+    simulator_params.episode_horizon_s = 30.0
 
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -98,7 +101,7 @@ def create_params():
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
-    p.test.number_tests = 5
+    p.test.number_tests = 200
  
     # Test the network only on goals where the expert succeeded
     p.test.expert_success_goals = DotMap(use=True,
