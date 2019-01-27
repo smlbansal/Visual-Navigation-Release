@@ -9,13 +9,16 @@ def create_rgb_trainer_params():
     from params.waypoint_grid.sbpd_image_space_grid import create_params as create_waypoint_params
     from params.model.resnet50_arch_v1_params import create_params as create_model_params
 
-    from control_pipelines.control_pipeline_v1 import ControlPipelineV1
-
     # Load the dependencies
     simulator_params = create_simulator_params()
 
     # Ensure the waypoint grid is projected SBPD Grid
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
+
+    # from control_pipelines.control_pipeline_v0 import ControlPipelineV0
+    # simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV0
+
+    from control_pipelines.control_pipeline_v1 import ControlPipelineV1
     simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV1
 
     # Ensure the renderer modality is rgb
@@ -25,21 +28,21 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.height = 1024
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
-    # Change the camera parameters to turtlebot parameters
-    simulator_params.obstacle_map_params.renderer_params.camera_params.fov_horizontal = 60.
-    simulator_params.obstacle_map_params.renderer_params.camera_params.fov_vertical = 49.5
-    simulator_params.obstacle_map_params.renderer_params.robot_params.camera_elevation_degree = -36.
-    simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.fov = np.deg2rad(30.)
-    simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.tilt = np.deg2rad(36.)
-    
-    # Hack to convert from the simulation camera parameters to turtlebot parameters
-    simulator_params.planner_params.convert_waypoint_from_nn_to_robot = True
+    # # Change the camera parameters to turtlebot parameters
+    # simulator_params.obstacle_map_params.renderer_params.camera_params.fov_horizontal = 60.
+    # simulator_params.obstacle_map_params.renderer_params.camera_params.fov_vertical = 49.5
+    # simulator_params.obstacle_map_params.renderer_params.robot_params.camera_elevation_degree = -36.
+    # simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.fov = np.deg2rad(30.)
+    # simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.tilt = np.deg2rad(36.)
+    #
+    # # Hack to convert from the simulation camera parameters to turtlebot parameters
+    # simulator_params.planner_params.convert_waypoint_from_nn_to_robot = True
     
     # Change episode horizon
     simulator_params.episode_horizon_s = 30.0
     
-    # Ensure the renderer is using area4
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area1'
+    # Ensure the renderer is using area3
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area6'
     
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -63,7 +66,7 @@ def create_params():
 
     # Change the learning rate and num_samples
     p.trainer.lr = 1e-4
-    p.trainer.num_samples = int(150e3)
+    p.trainer.num_samples = int(125e3)
     
     # Checkpoint settings
     p.trainer.ckpt_save_frequency = 1
@@ -83,13 +86,18 @@ def create_params():
     )
 
     # Checkpoint directory
-    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/' \
-                          'data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'
+    # p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/session_2019-01-26_20-44-06/checkpoints/ckpt-9'
+    p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/session_2019-01-27_00-08-31/checkpoints/ckpt-9'
 
     p.data_creation.data_dir = [
-        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area3/full_episode_random_v1_100k',
-        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area4/full_episode_random_v1_100k',
-        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area5a/full_episode_random_v1_100k']
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step_successful_goals_only/area3/full_episode_random_v1_100k',
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step_successful_goals_only/area4/full_episode_random_v1_100k',
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step_successful_goals_only/area5a/full_episode_random_v1_100k']
+
+    # p.data_creation.data_dir = [
+    #     '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step/area3/full_episode_random_v1_100k',
+    #     '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step/area4/full_episode_random_v1_100k',
+    #     '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step/area5a/full_episode_random_v1_100k']
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10

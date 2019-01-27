@@ -234,7 +234,6 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             kwargs = {}
         return kwargs
 
-           
     def plot_measured_states_for_debugging(self, data, axs):
         """
         Plot the trajectory the simulator thinks it saw
@@ -261,7 +260,6 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
 
         ax = axs[2]
         ax.plot(time, measured_states_dx[:, 1], 'b--')
-
 
     def simulate(self, simulator_datas, log_metrics=True,
                  plot_controls=False, plot_images=False,
