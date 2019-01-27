@@ -495,11 +495,16 @@ class Simulator(object):
                 _ = fn(v)
                 out_keys.append('{:s}_{:s}'.format(k, name))
                 out_vals.append(_)
-        num_episodes = len(episode_types)
 
+        # Log the number of episodes
+        num_episodes = len(episode_types)
+        out_keys.append('Number Episodes')
+        out_vals.append(num_episodes)
+
+        # Log Percet Collision, Timeout, Success, Etc.
         for i, reason in enumerate(termination_reasons):
             out_keys.append('Percent {:s}'.format(reason))
-            out_vals.append(np.sum(episode_types == i) / num_episodes)
+            out_vals.append(1.*np.sum(episode_types == i) / num_episodes)
         return out_keys, out_vals
 
     def start_recording_video(self, video_number):

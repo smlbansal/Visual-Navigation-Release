@@ -7,7 +7,7 @@ def create_rgb_trainer_params():
     from params.model.resnet50_arch_v1_params import create_params as create_model_params
     #from params.system_dynamics.dubins_v2_params import create_params as create_system_dynamics_params
     from params.system_dynamics.turtlebot_dubins_v2_params import create_params as create_system_dynamics_params
-    from control_pipelines.control_pipeline_v1 import ControlPipelineV1
+    #from control_pipelines.control_pipeline_v1 import ControlPipelineV1
 
     # Load the dependencies
     simulator_params = create_simulator_params()
