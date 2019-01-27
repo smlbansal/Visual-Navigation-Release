@@ -61,7 +61,7 @@ class LQRSolver:
         _, J = self.cost.compute_trajectory_cost(trajectory)
         return J
 
-    def lqr(self, start_config, trajectory, verbose=True):
+    def lqr(self, start_config, trajectory, verbose=True, sim_mode='ideal'):
         """
         Perform the iLQR iterations.
         start_config:             Initial system configuration
@@ -80,7 +80,8 @@ class LQRSolver:
             # (n, self.T-1, u_dim, 1) and (n, self.T-1, u_dim, x_dim) respectively
             k_array_nTf1, K_array_nTfd = self.back_propagation(trajectory)
             trajectory_new = self.apply_control(start_config, trajectory,
-                                                k_array_nTf1, K_array_nTfd)
+                                                k_array_nTf1, K_array_nTfd,
+                                                sim_mode=sim_mode)
 
             # evaluate the cost of this trial
             J_new_n = self.evaluate_trajectory_cost(trajectory_new)

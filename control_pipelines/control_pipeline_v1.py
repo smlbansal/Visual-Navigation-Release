@@ -105,7 +105,8 @@ class ControlPipelineV1(ControlPipelineBase):
 
     def _lqr(self, start_config):
         lqr_res = self.lqr_solver.lqr(start_config, self.spline_trajectory,
-                                      verbose=False)
+                                      verbose=False,
+                                      sim_mode=self.system_dynamics.simulation_params.simulation_mode)
         # The LQR trajectory's valid_horizon is the same as the spline
         # reference trajectory that it tracks
         lqr_res['trajectory_opt'].valid_horizons_n1 = 1.*self.spline_trajectory.valid_horizons_n1
