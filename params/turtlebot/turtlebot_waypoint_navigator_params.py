@@ -42,16 +42,18 @@ def create_turtlebot_params():
 
     # CHANGE THE GOAL HERE!!!!
     # Update the goal position
-    simulator_params.reset_params.goal_config.position.goal_pos=[5.0, -1.0]
+    simulator_params.reset_params.goal_config.position.goal_pos=[8.0, 3.0]
+
+    simulator_params.episode_horizon_s = 80.0
 
     # CHANGE THIS IF YOU TRAIN/TEST On Different Cameras!!!!
     simulator_params.planner_params.convert_waypoint_from_nn_to_robot = False
 
     # Using Realtime control pipeline
-    simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV1
+    #simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV0
 
     # Log videos that the robot sees
-    simulator_params.record_video = True
+    simulator_params.record_video = False
 
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -98,6 +100,7 @@ def create_params():
     if hostname == 'gigagreen':
         p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/sbpd_projected_grid/nn_waypoint/tmp_session_dir/checkpoints/ckpt-18'
     elif hostname == 'dawkins':
+        pass
         p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'
     else:
         raise NotImplementedError
