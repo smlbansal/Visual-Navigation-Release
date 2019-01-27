@@ -2,6 +2,10 @@ from mp_env.render import swiftshader_renderer as sr
 from mp_env import sbpd, map_utils as mu
 from utils import depth_utils as du
 import numpy as np
+import sys
+import os
+from utils import utils
+import pickle
 
 
 class SBPDRenderer():
@@ -129,5 +133,32 @@ class SBPDRenderer():
         return imgs, count, isvalid
 
     def get_config(self):
-        resolution, traversible = self.building.env.resolution, self.building.traversible
+        """
+        Return the resolution and traversible of the SBPD building. If python version
+        is 2.7 return a precomputed traversible (from python 3.6) as some of the
+        loading libraries do not match currently.
+        """
+        
+        traversible_dir = self.p.traversible_dir
+        traversible_dir = os.path.join(traversible_dir, self.p.building_name)
+
+        if sys.version[0] == '2':
+            filename = os.path.join(traversible_dir, 'data.pkl')
+            with open(filename, 'rb') as f:
+                data = pickle.load(f)
+            resolution = data['resolution']
+            traversible = data['traversible']
+        elif sys.version[0] == '3':
+            resolution, traversible = self.building.env.resolution, self.building.traversible
+            
+            utils.mkdir_if_missing(traversible_dir)
+
+            filenames = os.listdir(traversible_dir)
+            if 'data.pkl' not in filenames:
+                data = {'resolution': resolution,
+                        'traversible': traversible}
+                with open(os.path.join(traversible_dir, 'data.pkl'), 'wb') as f:
+                    pickle.dump(data, f, protocol=2) # Save with protocol = 2 for python2.7
+        else:
+            raise NotImplementedError
         return resolution, traversible

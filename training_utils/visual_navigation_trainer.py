@@ -6,6 +6,7 @@ import os
 from utils.image_utils import plot_image_observation
 import numpy as np
 import pickle
+import sys
 
 
 class VisualNavigationTrainer(TrainerFrontendHelper):
@@ -182,6 +183,10 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             expert_dir = os.path.join(expert_dir,
                                       '{:d}_goals_{:d}_seed'.format(self.p.test.number_tests,
                                                                     self.p.test.seed))
+            # For Python 2.7 Look for py27 pickle compatibles files
+            # in the subdirectory py27
+            if sys.version_info[0] == 2:
+                expert_dir = os.path.join(expert_dir, 'py27')
             expert_success_data_filename = os.path.join(expert_dir, 'expert_success_data.pkl')
 
             # If the file exists already just load it

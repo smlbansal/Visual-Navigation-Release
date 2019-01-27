@@ -5,7 +5,8 @@ def create_rgb_trainer_params():
     from params.visual_navigation_trainer_params import create_params as create_trainer_params
     from params.waypoint_grid.uniform_grid_params import create_params as create_waypoint_params
     from params.model.resnet50_arch_v1_params import create_params as create_model_params
-    from params.system_dynamics.turtlebot_dubins_v2_params import create_params as create_system_dynamics_params
+    from params.system_dynamics.dubins_v2_params import create_params as create_system_dynamics_params
+    #from params.system_dynamics.turtlebot_dubins_v2_params import create_params as create_system_dynamics_params
     from control_pipelines.control_pipeline_v1 import ControlPipelineV1
 
     # Load the dependencies
@@ -97,7 +98,7 @@ def create_params():
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10
-    p.test.number_tests = 1
+    p.test.number_tests = 5
  
     # Test the network only on goals where the expert succeeded
     p.test.expert_success_goals = DotMap(use=True,

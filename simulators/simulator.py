@@ -33,7 +33,15 @@ class Simulator(object):
         p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
         p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
         p.dt = dt
+    
+        # TODO Varun T.: this is a hack to make the real robot work for now.
+        # Change the control pipeline, planner, simulator strcuture so that
+        # this is not needed (more info in TOD0 in control_pipeline_v0.plan)
 
+        if p.planner_params.control_pipeline_params.real_robot:
+            p.planner_params.planning_horizon = p.control_horizon
+            p.planner_params.control_pipeline_params.control_horizon = p.control_horizon
+            p.planner_params.control_pipeline_params.control_horizon_s = p.control_horizon_s
         return p
 
     # TODO: Varun. Make the planner interface at a trajectory level
