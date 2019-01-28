@@ -10,7 +10,7 @@ class NNControlPlanner(NNPlanner):
     counter = 0
 
     def __init__(self, simulator, params):
-        super().__init__(simulator, params)
+        super(NNControlPlanner, self).__init__(simulator, params)
 
     def optimize(self, start_config):
         """ Optimize the objective over a trajectory
@@ -32,7 +32,8 @@ class NNControlPlanner(NNPlanner):
         optimal_control_hat_1k2 = tf.reshape(nn_output_112k, (1, -1, 2))
 
         data = {'optimal_control_nk2': optimal_control_hat_1k2,
-                'system_config': SystemConfig.copy(start_config)}
+                'system_config': SystemConfig.copy(start_config),
+                'img_nmkd': raw_data['img_nmkd']}
         return data
 
     def _plot_img(self, img_nmkd):
