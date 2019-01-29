@@ -302,6 +302,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                         metrics.append(simulator.get_metrics())
                         self._plot_episode(i, data, plot_controls=plot_controls,
                                            plot_images=plot_images)
+                        #self._save_trajectory_data_for_debugging(i, data)
                     else:
                         episode_types.append(-1)
 
@@ -360,6 +361,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         A useful function to save robot vehicle trajectory information
         so that it can be easily run open loop on a real robot.
         """
+        from trajectory.trajectory import Trajectory
         simulator = data['simulator']
         dirname = data['dir']
         base_dir = data['base_dir']
@@ -371,6 +373,13 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         data['trajectory_info'] = simulator.vehicle_trajectory.to_numpy_repr()
         data['occupancy_grid'] = simulator.obstacle_map.occupancy_grid_map
         data['map_bounds_extent'] = np.array(simulator.obstacle_map.map_bounds).flatten(order='F')
+        
+        # Save data needed to run the computed LQR controllers somewhere else
+        if 'K_nkfd' in simulator.vehicle_data.keys():
+            data['K_nkfd'] = simulator.vehicle_data['K_nkfd'].numpy()
+            data['k_nkf1'] = simulator.vehicle_data['k_nkf1'].numpy()
+            n = simulator.vehicle_data['K_nkfd'].shape[0].value
+            data['planned_trajectory'] = Trajectory.concat_across_batch_dim(simulator.splines[:n]).to_numpy_repr()
 
         trajectory_file = os.path.join(trajectory_data_dir, 'traj_{:d}.pkl'.format(i))
         with open(trajectory_file, 'wb') as f:
