@@ -40,9 +40,11 @@ def create_turtlebot_params():
 
     # CHANGE THE GOAL HERE!!!!
     # Update the goal position
-    simulator_params.reset_params.goal_config.position.goal_pos=[4.0, 0.0]
+    simulator_params.reset_params.goal_config.position.goal_pos=[6.0, 0.0]
 
-    simulator_params.episode_horizon_s = 50.0
+    simulator_params.episode_horizon_s = 20.0
+
+    simulator_params.control_horizon_s = .3
 
     # CHANGE THIS IF YOU TRAIN/TEST On Different Cameras!!!!
     simulator_params.planner_params.convert_waypoint_from_nn_to_robot = False
@@ -57,7 +59,7 @@ def create_turtlebot_params():
 
     # Create the model params
     p.model = create_model_params()
-
+    
     ### DONT NORMALIZE THE GOAL DISTANCE
     p.model.max_goal_l2_dist = 10e3
 
@@ -83,7 +85,7 @@ def create_params():
     p = create_turtlebot_params()
 
     # Change the number of inputs to the model
-    p.model.num_outputs = 3  # (x, y ,theta)
+    p.model.num_outputs = 60  # (x, y ,theta)
     
     # Image size to [224, 224, 3]
     p.model.num_inputs.image_size = [224, 224, 3]
@@ -99,7 +101,7 @@ def create_params():
     # Change the checkpoint
     #### CHANGE THE NETWORK WEIGHTS HERE
     if hostname == 'gigagreen':
-        p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/sbpd_projected_grid/nn_waypoint/resnet_50_v1/include_last_step/only_successful_episodes/training_continued_from_epoch9/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
+        p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
     elif hostname == 'dawkins':
         import pdb; pdb.set_trace()
         p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'

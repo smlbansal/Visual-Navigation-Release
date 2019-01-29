@@ -37,6 +37,8 @@ def create_params():
                              
                              # Dropout rate (in case dropout is used)
                              dropout_rate=0.2,
-                 )
+                 ),
+
+                max_goal_l2_dist = 6.0
     )
     return p

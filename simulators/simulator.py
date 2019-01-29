@@ -98,9 +98,10 @@ class Simulator(object):
         """ Returns a trajectory resulting from simulating
         control_nk2 from start_config using self.system_dynamics."""
         x_n1d, _ = self.system_dynamics.parse_trajectory(start_config)
-        T = control_nk2.shape[1].value
-        trajectory = self.system_dynamics.simulate_T(x_n1d, control_nk2,
-                                                     T, pad_mode='repeat')
+        T = self.params.control_horizon 
+        trajectory = self.system_dynamics.simulate_T(x_n1d, control_nk2[:, :T],
+                                                     T, pad_mode='repeat',
+                                                     mode=self.system_dynamics.simulation_params.simulation_mode)
         return trajectory
 
     def get_observation(self, config=None, pos_n3=None, **kwargs):
