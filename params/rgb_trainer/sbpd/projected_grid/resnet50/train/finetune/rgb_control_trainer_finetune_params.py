@@ -1,10 +1,11 @@
 from dotmap import DotMap
 
+
 def create_rgb_trainer_params():
     from params.simulator.sbpd_simulator_params import create_params as create_simulator_params
     from params.visual_navigation_trainer_params import create_params as create_trainer_params
 
-    from params.waypoint_grid.uniform_grid_params import create_params as create_waypoint_params
+    from params.waypoint_grid.sbpd_image_space_grid import create_params as create_waypoint_params
     from params.model.resnet50_arch_v1_params import create_params as create_model_params
 
     # Load the dependencies

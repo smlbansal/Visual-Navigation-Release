@@ -20,6 +20,13 @@ class Dynamics(object):
         """
         return p
 
+    def reset_start_state(self, start_config):
+        """
+        Reset the systems state to start_config (if necessary). 
+        The system dynamics classes by default do not track state
+        ."""
+        return None
+
     def simulate(self, x_nkd, u_nkf, t=None, mode='ideal'):
         """
         Apply one action u from state x. Allowed modes are:
