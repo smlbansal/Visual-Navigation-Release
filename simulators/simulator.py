@@ -64,8 +64,14 @@ class Simulator(object):
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_data = self.planner.empty_data_dict()
         end_episode = False
+        self.splines = []
         while not end_episode:
             trajectory_segment, next_config, data = self._iterate(config)
+            
+            # Uncomment if you want access to the spline used to plan this trajectory.
+            # TODO: Varun T. . This is hacky, spline should be passed around planner_data
+            #self.splines.append(Trajectory.copy(self.planner.control_pipeline.lqr_ref_trajectory_real_robot_world_nkfd))
+
             # Append to Vehicle Data
             for key in vehicle_data.keys():
                 vehicle_data[key].append(data[key])
@@ -506,6 +512,15 @@ class Simulator(object):
         for i, reason in enumerate(termination_reasons):
             out_keys.append('Percent {:s}'.format(reason))
             out_vals.append(1.*np.sum(episode_types == i) / num_episodes)
+
+            # Log the Mean Episode Length for Each Episode Type
+            episode_idxs = np.where(episode_types == i)[0]
+            episode_length_for_this_episode_type = episode_length[episode_idxs]
+            if len(episode_length_for_this_episode_type) > 0:
+                mean_episode_length_for_this_episode_type = np.mean(episode_length_for_this_episode_type)
+                out_keys.append('Mean Episode Length for {:s} Episodes'.format(reason))
+                out_vals.append(mean_episode_length_for_this_episode_type)
+
         return out_keys, out_vals
 
     def start_recording_video(self, video_number):
