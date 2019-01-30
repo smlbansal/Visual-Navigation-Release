@@ -22,11 +22,14 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
     # Ensure the renderer is using area3
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area6'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area3'
+
+    # # Make goals harder
+    # simulator_params.reset_params.goal_config.position.max_fmm_dist = 10.0
     
-    # Change the episode horizon
-    simulator_params.episode_horizon_s = 80.0
-    # simulator_params.control_horizon_s = 0.75
+    # # Change the episode horizon
+    # simulator_params.episode_horizon_s = 80.0
+    # # simulator_params.control_horizon_s = 0.5
     
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -35,6 +38,9 @@ def create_rgb_trainer_params():
 
     # Finetune the resnet weights
     p.model.arch.finetune_resnet_weights = True
+
+    # Smoothing cost
+    p.loss.smoothing_coeff = 1e-2
 
     return p
 
@@ -53,14 +59,16 @@ def create_params():
 
     # Change the learning rate and num_samples
     p.trainer.lr = 1e-5
-    p.trainer.num_samples = int(150e3)
+    p.trainer.num_samples = int(125e3)
     
     # Checkpoint settings
     p.trainer.ckpt_save_frequency = 1
     p.trainer.restore_from_ckpt = False
     
     # Checkpoint directory
-    p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/session_2019-01-25_18-05-09/checkpoints/ckpt-18'
+    p.trainer.ckpt_path = ''
+    # p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/' \
+    #                       'include_last_step/only_successful_episodes/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
 
     # Change the number of tests and callback frequency
     p.trainer.callback_frequency = 500
@@ -78,9 +86,14 @@ def create_params():
     # Change the data_dir
     # Projected Grid
     p.data_creation.data_dir = [
-       '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area3/full_episode_random_v1_100k',
-       '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area4/full_episode_random_v1_100k',
-       '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area5a/full_episode_random_v1_100k']
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step_successful_goals_only/area3/full_episode_random_v1_100k',
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step_successful_goals_only/area4/full_episode_random_v1_100k',
+        '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step_successful_goals_only/area5a/full_episode_random_v1_100k']
+    
+    # p.data_creation.data_dir = [
+    #    '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area3/full_episode_random_v1_100k',
+    #    '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area4/full_episode_random_v1_100k',
+    #    '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area5a/full_episode_random_v1_100k']
 
     # Seed for selecting the test scenarios and the number of such scenarios
     p.test.seed = 10

@@ -91,6 +91,8 @@ class Simulator(object):
 
         horizon = min(min_horizon, self.params.control_horizon)
         traj, data = self._clip_along_time_axis(traj, data, horizon)
+        # TODO(Varun, Somil): We are not fetching the correct velocity values. Velocity values should be obtained
+        # from the 2nd last step.
         next_config = SystemConfig.init_config_from_trajectory_time_index(traj, t=-1)
         return traj, next_config, data
 
@@ -463,6 +465,8 @@ class Simulator(object):
     @staticmethod
     def collect_metrics(ms, termination_reasons=['Timeout', 'Collision', 'Success']):
         ms = np.array(ms)
+        if len(ms) == 0:
+            return None, None
         obj_vals, init_dists, final_dists, episode_length, collisions, min_obs_distances, episode_types = ms.T
         keys = ['Objective Value', 'Initial Distance', 'Final Distance',
                 'Episode Length', 'Collisions_Mu', 'Min Obstacle Distance']
@@ -479,11 +483,25 @@ class Simulator(object):
                 _ = fn(v)
                 out_keys.append('{:s}_{:s}'.format(k, name))
                 out_vals.append(_)
-        num_episodes = len(episode_types)
 
+        # Log the number of episodes
+        num_episodes = len(episode_types)
+        out_keys.append('Number Episodes')
+        out_vals.append(num_episodes)
+
+        # Log Percet Collision, Timeout, Success, Etc.
         for i, reason in enumerate(termination_reasons):
             out_keys.append('Percent {:s}'.format(reason))
-            out_vals.append(np.sum(episode_types == i) / num_episodes)
+            out_vals.append(1.*np.sum(episode_types == i) / num_episodes)
+
+            # Log the Mean Episode Length for Each Episode Type
+            episode_idxs = np.where(episode_types == i)[0]
+            episode_length_for_this_episode_type = episode_length[episode_idxs]
+            if len(episode_length_for_this_episode_type) > 0:
+                mean_episode_length_for_this_episode_type = np.mean(episode_length_for_this_episode_type)
+                out_keys.append('Mean Episode Length for {:s} Episodes'.format(reason))
+                out_vals.append(mean_episode_length_for_this_episode_type)
+
         return out_keys, out_vals
 
     def start_recording_video(self, video_number):

@@ -1,4 +1,6 @@
 from imgaug import augmenters as iaa
+import numpy as np
+import cv2
 
 
 def custom_augmenter_v1(sometimes):
@@ -63,6 +65,80 @@ def custom_augmenter_v2():
     return seq
 
 
+def custom_augmenter_v3(params):
+    # Create a sequencer to apply the typical distortions
+    sometimes = lambda aug: iaa.Sometimes(params.p, aug)
+    seq1 = custom_augmenter_v1(sometimes)
+    
+    # Create a distortion for fov
+    # TODO (Somil): The base renderer parameters are hard-coded for now. This should be changed to accept the SBPD
+    # renderer parameters directly.
+    base_tilt = np.float32(45.0*np.pi/180.0)
+    base_fov = np.float32(45.0*np.pi/180.0)
+    base_f = np.float32(0.01)
+    tilt_min = np.float32(20.0*np.pi/180.0)
+    tilt_max = np.float32(50.0*np.pi/180.0)
+    # The FOVs are all half field of views
+    fov_hor_min = np.float32(25.0*np.pi/180.0)
+    fov_hor_max = np.float32(35.0*np.pi/180.0)
+    fov_ver_min = np.float32(20.0*np.pi/180.0)
+    fov_ver_max = np.float32(30.0*np.pi/180.0)
+    
+    def create_four_image_points(tilts_n, fovs_hor_n, fovs_ver_n):
+        n = tilts_n.shape[0]
+        
+        tan_fovs_hor_n = np.tan(fovs_hor_n)
+        tan_fovs_ver_n = np.tan(fovs_ver_n)
+    
+        # Create four world points in the space of the new fov
+        wX_n4 = np.stack((-tan_fovs_hor_n, tan_fovs_hor_n, tan_fovs_hor_n, -tan_fovs_hor_n), axis=1)
+        wY_n4 = np.stack((-tan_fovs_ver_n, -tan_fovs_ver_n, tan_fovs_ver_n, tan_fovs_ver_n), axis=1)
+        wZ_n4 = np.ones((n, 4), dtype=np.float32)
+        wXYZ_n431 = np.stack((wX_n4, wY_n4, wZ_n4), axis=2)[:, :, :, None] * base_f
+
+        # Define the rotation matrix
+        diff_tilt_n = base_tilt - tilts_n
+        float32_1 = np.float32(1.)
+        float32_0x5 = np.float32(0.5)
+        R_n133 = np.zeros((n, 1, 3, 3), dtype=np.float32)
+        R_n133[:, 0, 0, 0] = float32_1
+        R_n133[:, 0, 1, 1] = np.cos(diff_tilt_n)
+        R_n133[:, 0, 1, 2] = -np.sin(diff_tilt_n)
+        R_n133[:, 0, 2, 1] = np.sin(diff_tilt_n)
+        R_n133[:, 0, 2, 2] = np.cos(diff_tilt_n)
+
+        # Project the points back in the old fov
+        wXYZ_n431 = np.matmul(R_n133, wXYZ_n431)
+        
+        # Project the points to the image space
+        wx_image_n4 = wXYZ_n431[:, :, 0, 0] / (np.maximum(wXYZ_n431[:, :, 2, 0], base_f) * np.tan(base_fov))
+        wy_image_n4 = wXYZ_n431[:, :, 1, 0] / (np.maximum(wXYZ_n431[:, :, 2, 0], base_f) * np.tan(base_fov))
+
+        return np.stack((float32_0x5 * (wx_image_n4 + float32_1), float32_0x5 * (wy_image_n4 + float32_1)), axis=2)
+    
+    def fov_and_tilt_distortion(images_nmkd):
+        # Figure out the image shape
+        n, m, k, d = images_nmkd.shape
+        
+        # Create a random list of fov and tilts
+        tilts = np.random.uniform(tilt_min, tilt_max, n).astype(np.float32)
+        fovs_hor = np.random.uniform(fov_hor_min, fov_hor_max, n).astype(np.float32)
+        fovs_ver = np.random.uniform(fov_ver_min, fov_ver_max, n).astype(np.float32)
+        
+        # Create a list of four image points to distort
+        image_points_n42 = create_four_image_points(tilts, fovs_hor, fovs_ver)
+        dst = np.array([[0, 0], [k - 1, 0], [k - 1, m - 1], [0, m - 1]], dtype="float32")
+        
+        warped_images = []
+        for i in range(n):
+            M = cv2.getPerspectiveTransform(m * image_points_n42[i], dst)
+            warped_images.append(cv2.warpPerspective(images_nmkd[i], M, (k, m)))
+        
+        return np.stack(warped_images, axis=0)
+        
+    return [seq1, fov_and_tilt_distortion]
+
+
 def basic_image_distortor(params):
     """
     Basic distortion function to distort a series of images.
@@ -74,10 +150,11 @@ def basic_image_distortor(params):
         # Sometimes(0.5, ...) applies the given augmenter in 50% of all cases,
         # e.g. Sometimes(0.5, GaussianBlur(0.3)) would blur roughly every second image.
         sometimes = lambda aug: iaa.Sometimes(params.p, aug)
-        seq = custom_augmenter_v1(sometimes)
+        seq = [custom_augmenter_v1(sometimes)]
     elif params.version == 'v2':
-        seq = custom_augmenter_v2()
+        seq = [custom_augmenter_v2()]
+    elif params.version == 'v3':
+        seq = custom_augmenter_v3(params)
     else:
         raise NotImplementedError
-    
     return seq
