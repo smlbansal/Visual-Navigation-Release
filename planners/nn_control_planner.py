@@ -12,6 +12,12 @@ class NNControlPlanner(NNPlanner):
     def __init__(self, simulator, params):
         super(NNControlPlanner, self).__init__(simulator, params)
 
+    def _init_control_pipeline(self):
+        """
+        NN Control Planner has no control pipeline.
+        """
+        return None
+    
     def optimize(self, start_config):
         """ Optimize the objective over a trajectory
         starting from start_config.

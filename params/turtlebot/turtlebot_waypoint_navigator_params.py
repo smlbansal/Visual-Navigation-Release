@@ -40,9 +40,10 @@ def create_turtlebot_params():
 
     # CHANGE THE GOAL HERE!!!!
     # Update the goal position
-    simulator_params.reset_params.goal_config.position.goal_pos=[4.0, 0.0]
+    simulator_params.reset_params.goal_config.position.goal_pos=[-20.0, -4.0]
 
-    simulator_params.episode_horizon_s = 50.0
+    simulator_params.episode_horizon_s = 200.0
+    simulator_params.control_horizon_s = 1.5
 
     # CHANGE THIS IF YOU TRAIN/TEST On Different Cameras!!!!
     simulator_params.planner_params.convert_waypoint_from_nn_to_robot = False
@@ -51,7 +52,7 @@ def create_turtlebot_params():
     #simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV0
 
     # Log videos that the robot sees
-    simulator_params.record_video = False
+    simulator_params.record_video = True
 
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -59,7 +60,7 @@ def create_turtlebot_params():
     p.model = create_model_params()
 
     ### DONT NORMALIZE THE GOAL DISTANCE
-    p.model.max_goal_l2_dist = 10e3
+    p.model.max_goal_l2_dist = 10.0
 
     # Finetune the resnet weights
     p.model.arch.finetune_resnet_weights = True
@@ -99,7 +100,8 @@ def create_params():
     # Change the checkpoint
     #### CHANGE THE NETWORK WEIGHTS HERE
     if hostname == 'gigagreen':
-        p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/sbpd_projected_grid/nn_waypoint/resnet_50_v1/include_last_step/only_successful_episodes/training_continued_from_epoch9/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
+        #p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/sbpd_projected_grid/nn_waypoint/resnet_50_v1/include_last_step/only_successful_episodes/training_continued_from_epoch9/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
+        p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/sbpd_projected_grid/nn_waypoint/resnet_50_v1/include_last_step/only_successful_episodes/data_distortion_v3/session_2019-01-28_21-02-53/checkpoints/ckpt-20'
     elif hostname == 'dawkins':
         import pdb; pdb.set_trace()
         p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'

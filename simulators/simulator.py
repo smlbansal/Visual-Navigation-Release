@@ -170,7 +170,6 @@ class Simulator(object):
         T = self.params.control_horizon
         trajectory, applied_control = self.apply_control_open_loop(start_config, control_nk2, T,
                                                                   sim_mode=self.system_dynamics.simulation_params.simulation_mode)
-        import pdb; pdb.set_trace() # check length of trajectory
         #trajectory = self.system_dynamics.simulate_T(x_n1d, control_nk2,
         #                                             T, pad_mode='repeat',
         #                                             mode=self.system_dynamics.simulation_params.simulation_mode)

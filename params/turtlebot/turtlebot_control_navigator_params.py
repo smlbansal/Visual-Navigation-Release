@@ -40,7 +40,7 @@ def create_turtlebot_params():
 
     # CHANGE THE GOAL HERE!!!!
     # Update the goal position
-    simulator_params.reset_params.goal_config.position.goal_pos=[6.0, 0.0]
+    simulator_params.reset_params.goal_config.position.goal_pos=[3.0, 0.0]
 
     simulator_params.episode_horizon_s = 20.0
 
