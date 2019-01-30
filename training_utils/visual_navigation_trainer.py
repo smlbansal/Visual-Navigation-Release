@@ -296,7 +296,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                         metrics.append(simulator.get_metrics())
                         self._plot_episode(i, data, plot_controls=plot_controls,
                                            plot_images=plot_images)
-                        self._maybe_save_trajectory_data(i, data)
+                        self._save_trajectory_data(i, data)
                     else:
                         episode_types.append(-1)
 
@@ -351,9 +351,11 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             self._plot_episode_images(i, data)
         
 
-    def _maybe_save_trajectory_data(self, i, data):
+    def _save_trajectory_data(self, i, data):
         """
         Optionally log all trajectory data to a pickle file.
+        Additionally create a metadata.pkl file which saves
+        the episode number and type of every trajectory.
         """
         simulator = data['simulator']
         dirname = data['dir']
@@ -381,29 +383,28 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             trajectory_file = os.path.join(trajectory_data_dir, 'traj_{:d}.pkl'.format(i))
             with open(trajectory_file, 'wb') as f:
                 pickle.dump(data, f)
+            
+           
+            # Add Trajectory Metadata
+            metadata_file = os.path.join(trajectory_data_dir, 'metadata.pkl')
+            if os.path.exists(metadata_file):
+                with open(metadata_file, 'rb') as f:
+                    metadata = pickle.load(f)
+
+                metadata['episode_number'].append(i)
+                metadata['episode_type_int'].append(data['episode_type_int'])
+                metadata['episode_type_string'].append(data['episode_type_string'])
+                metadata['valid_episode'].append(data['valid_episode'])
+            else:
+                metadata = {}
+                metadata['episode_number'] = [i]
+                metadata['episode_type_int'] = [data['episode_type_int']]
+                metadata['episode_type_string'] = [data['episode_type_string']]
+                metadata['valid_episode'] = [data['valid_episode']]
+            
+            with open(metadata_file, 'wb') as f:
+                pickle.dump(metadata, f)
     
-    def _save_trajectory_data_for_debugging(self, i, data):
-        """
-        A useful function to save robot vehicle trajectory information
-        so that it can be easily run open loop on a real robot.
-        """
-        simulator = data['simulator']
-        dirname = data['dir']
-        base_dir = data['base_dir']
-
-        trajectory_data_dir = os.path.join(base_dir, dirname, 'trajectory_data')
-        utils.mkdir_if_missing(trajectory_data_dir)
-
-        data = {}
-        data['trajectory_info'] = simulator.vehicle_trajectory.to_numpy_repr()
-        data['occupancy_grid'] = simulator.obstacle_map.occupancy_grid_map
-        data['map_bounds_extent'] = np.array(simulator.obstacle_map.map_bounds).flatten(order='F')
-
-        trajectory_file = os.path.join(trajectory_data_dir, 'traj_{:d}.pkl'.format(i))
-        with open(trajectory_file, 'wb') as f:
-            # rospy only runs in py27 so save with protocol = 2
-            pickle.dump(data, f, protocol=2)
-        
     def _plot_episode_images(self, i, data):
         """
         Plot the images the robot saw during a particular episode.

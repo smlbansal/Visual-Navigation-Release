@@ -96,6 +96,8 @@ class NNControlPlanner(NNPlanner):
         Convert any tensors into numpy arrays in a
         planner data dictionary.
         """
+        if len(data.keys()) == 0:
+            return data
         data_numpy = {}
         data_numpy['system_config'] = data['system_config'].to_numpy_repr()
         data_numpy['optimal_control_nk2'] = data['optimal_control_nk2'].numpy()
