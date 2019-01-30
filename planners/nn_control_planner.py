@@ -82,9 +82,22 @@ class NNControlPlanner(NNPlanner):
             last_data_idx = last_data_idxs[0]
             data_last['system_config'] = data['system_config'][last_data_idx]
             data_last['optimal_control_nk2'] = data['optimal_control_nk2'][last_data_idx]
+            data_last['img_nmkd'] = data['img_nmkd'][last_data_idx]
 
         data['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[valid_mask])
         data['optimal_control_nk2'] = tf.boolean_mask(tf.concat(data['optimal_control_nk2'],
                                                                 axis=0), valid_mask)
         data['img_nmkd'] = np.array(np.concatenate(data['img_nmkd'], axis=0))[valid_mask]
         return data, data_last
+
+    @staticmethod
+    def convert_planner_data_to_numpy_repr(data):
+        """
+        Convert any tensors into numpy arrays in a
+        planner data dictionary.
+        """
+        data_numpy = {}
+        data_numpy['system_config'] = data['system_config'].to_numpy_repr()
+        data_numpy['optimal_control_nk2'] = data['optimal_control_nk2'].numpy()
+        data_numpy['img_nmkd'] = data['img_nmkd']
+        return data_numpy

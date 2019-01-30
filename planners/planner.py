@@ -98,8 +98,9 @@ class Planner(object):
             data_last['waypoint_config'] = data['waypoint_config'][last_data_idx]
             data_last['trajectory'] = data['trajectory'][last_data_idx]
             data_last['planning_horizon_n1'] = [data['planning_horizon'][last_data_idx]] 
-            data_last['K_nkfd'] = [data['K_nkfd'][last_data_idx]]
-            data_last['k_nkf1'] = [data['k_nkf1'][last_data_idx]] 
+            data_last['K_nkfd'] = data['K_nkfd'][last_data_idx]
+            data_last['k_nkf1'] = data['k_nkf1'][last_data_idx]
+            data_last['img_nmkd'] = data['img_nmkd'][last_data_idx]
 
         data['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[valid_mask])
         data['waypoint_config'] = SystemConfig.concat_across_batch_dim(np.array(data['waypoint_config'])[valid_mask])
@@ -110,4 +111,19 @@ class Planner(object):
         data['img_nmkd'] = np.array(np.concatenate(data['img_nmkd'], axis=0))[valid_mask]
         return data, data_last
 
-        
+
+    @staticmethod
+    def convert_planner_data_to_numpy_repr(data):
+        """
+        Convert any tensors into numpy arrays in a
+        planner data dictionary.
+        """
+        data_numpy = {}
+        data_numpy['system_config'] = data['system_config'].to_numpy_repr()
+        data_numpy['waypoint_config'] = data['waypoint_config'].to_numpy_repr()
+        data_numpy['trajectory'] = data['trajectory'].to_numpy_repr()
+        data_numpy['planning_horizon_n1'] = data['planning_horizon_n1']
+        data_numpy['K_nkfd'] = data['K_nkfd'].numpy()
+        data_numpy['k_nkf1'] = data['k_nkf1'].numpy()
+        data_numpy['img_nmkd'] = data['img_nmkd']
+        return data_numpy

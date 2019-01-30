@@ -1,4 +1,5 @@
 from training_utils.trainer_frontend_helper import TrainerFrontendHelper
+from trajectory.trajectory import Trajectory
 from utils import utils
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -295,6 +296,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                         metrics.append(simulator.get_metrics())
                         self._plot_episode(i, data, plot_controls=plot_controls,
                                            plot_images=plot_images)
+                        self._maybe_save_trajectory_data(i, data)
                     else:
                         episode_types.append(-1)
 
@@ -348,6 +350,38 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         if plot_images:
             self._plot_episode_images(i, data)
         
+
+    def _maybe_save_trajectory_data(self, i, data):
+        """
+        Optionally log all trajectory data to a pickle file.
+        """
+        simulator = data['simulator']
+        dirname = data['dir']
+        base_dir = data['base_dir']
+
+        if simulator.params.save_trajectory_data:
+            trajectory_data_dir = os.path.join(base_dir, dirname, 'trajectories')
+            utils.mkdir_if_missing(trajectory_data_dir)
+
+            data = {}
+            vehicle_trajectory, vehicle_data, vehicle_data_last_step = simulator.get_simulator_data_numpy_repr()
+            data['vehicle_trajectory'] = vehicle_trajectory
+            data['vehicle_data'] = vehicle_data
+            data['vehicle_data_last_step'] = vehicle_data_last_step
+
+            data['episode_number'] = i
+            data['episode_type_int'] = simulator.episode_type
+            data['episode_type_string'] = simulator.params.episode_termination_reasons[simulator.episode_type]
+            data['valid_episode'] = simulator.valid_episode
+            
+            # Current Occupancy Grid- Useful for plotting these trajectories later
+            data['occupancy_grid'] = simulator.obstacle_map.occupancy_grid_map
+            data['map_bounds_extent'] = np.array(simulator.obstacle_map.map_bounds).flatten(order='F')
+            
+            trajectory_file = os.path.join(trajectory_data_dir, 'traj_{:d}.pkl'.format(i))
+            with open(trajectory_file, 'wb') as f:
+                pickle.dump(data, f)
+    
     def _save_trajectory_data_for_debugging(self, i, data):
         """
         A useful function to save robot vehicle trajectory information

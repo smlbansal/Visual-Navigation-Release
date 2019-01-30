@@ -139,6 +139,18 @@ class Simulator(object):
 
         return traj, data
 
+    def get_simulator_data_numpy_repr(self):
+        """
+        Convert the vehicle trajectory, vehicle data,
+        and vehicle data last step to numpy representations
+        and return them.
+        """
+        vehicle_trajectory = self.vehicle_trajectory.to_numpy_repr()
+        vehicle_data = self.planner.convert_planner_data_to_numpy_repr(self.vehicle_data)
+        vehicle_data_last_step = self.planner.convert_planner_data_to_numpy_repr(self.vehicle_data_last_step)
+        return vehicle_trajectory, vehicle_data, vehicle_data_last_step
+
+
     def _enforce_episode_termination_conditions(self, vehicle_trajectory, data):
         p = self.params
         time_idxs = []

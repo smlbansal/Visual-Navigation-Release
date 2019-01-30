@@ -19,6 +19,10 @@ def create_params():
     # Whether to log videos taken during trajectories
     p.record_video = False
 
+    # Whether or not to log all trajectory data to pickle
+    # files when running this simulator
+    p.save_trajectory_data = False
+
     # Define the Objectives
 
     # Obstacle Avoidance Objective
