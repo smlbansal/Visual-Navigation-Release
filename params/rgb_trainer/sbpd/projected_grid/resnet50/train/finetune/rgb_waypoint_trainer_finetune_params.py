@@ -25,24 +25,27 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.height = 1024
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
-    # # Change the camera parameters to turtlebot parameters
-    # simulator_params.obstacle_map_params.renderer_params.camera_params.fov_horizontal = 60.
-    # simulator_params.obstacle_map_params.renderer_params.camera_params.fov_vertical = 49.5
-    # simulator_params.obstacle_map_params.renderer_params.robot_params.camera_elevation_degree = -29.
+    # Change the camera parameters to turtlebot parameters
+    simulator_params.obstacle_map_params.renderer_params.camera_params.fov_horizontal = 60.
+    simulator_params.obstacle_map_params.renderer_params.camera_params.fov_vertical = 49.5
+    simulator_params.obstacle_map_params.renderer_params.robot_params.camera_elevation_degree = -29.
     # simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.fov = np.deg2rad(30.)
     # simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.tilt = np.deg2rad(36.)
     #
     # # Hack to convert from the simulation camera parameters to turtlebot parameters
     # simulator_params.planner_params.convert_waypoint_from_nn_to_robot = True
     
-    # Make goals harder
-    simulator_params.reset_params.goal_config.position.max_fmm_dist = 10.0
+    # # Make goals harder
+    # simulator_params.reset_params.goal_config.position.max_fmm_dist = 10.0
     
     # Change episode horizon
-    simulator_params.episode_horizon_s = 80.0
+    simulator_params.episode_horizon_s = 30.0
     
     # Ensure the renderer is using area3
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area1'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area6'
+    
+    # Save trajectory data
+    simulator_params.save_trajectory_data = True
     
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -86,10 +89,13 @@ def create_params():
     )
 
     # Checkpoint directory
-    # p.trainer.ckpt_path = '/home/somilb/Documents/Projects/visual_mpc/tmp/session_2019-01-28_21-02-53/checkpoints/ckpt-12'
-    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_waypoint/' \
-                          'resnet_50_v1/include_last_step/only_successful_episodes/training_continued_from_epoch9/' \
-                          'session_2019-01-27_23-32-01/checkpoints/ckpt-9'
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_waypoint/resnet_50_v1/' \
+                          'include_last_step/only_successful_episodes/data_distortion_v3/session_2019-01-28_21-02-53/' \
+                          'checkpoints/ckpt-20'
+    
+    # p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_waypoint/' \
+    #                       'resnet_50_v1/include_last_step/only_successful_episodes/training_continued_from_epoch9/' \
+    #                       'session_2019-01-27_23-32-01/checkpoints/ckpt-9'
 
     p.data_creation.data_dir = [
         '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step_successful_goals_only/area3/full_episode_random_v1_100k',
@@ -105,13 +111,13 @@ def create_params():
     p.test.seed = 10
     p.test.number_tests = 200
 
-    # # Test the network only on goals where the expert succeeded
-    # p.test.expert_success_goals = DotMap(use=True,
-    #                                      dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid')
-    
     # Test the network only on goals where the expert succeeded
     p.test.expert_success_goals = DotMap(use=True,
-                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
+                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid')
+    
+    # # Test the network only on goals where the expert succeeded
+    # p.test.expert_success_goals = DotMap(use=True,
+    #                                      dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
 
     # Let's not look at the expert
     p.test.simulate_expert = False

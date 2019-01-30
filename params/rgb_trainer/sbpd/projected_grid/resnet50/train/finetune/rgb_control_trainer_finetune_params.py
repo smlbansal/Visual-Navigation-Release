@@ -22,14 +22,17 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
     # Ensure the renderer is using area3
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area1'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area6'
 
-    # Make goals harder
-    simulator_params.reset_params.goal_config.position.max_fmm_dist = 10.0
+    # # Make goals harder
+    # simulator_params.reset_params.goal_config.position.max_fmm_dist = 10.0
     
     # Change the episode horizon
     simulator_params.episode_horizon_s = 80.0
     # # simulator_params.control_horizon_s = 0.5
+    
+    # Save trajectory data
+    simulator_params.save_trajectory_data = True
     
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -99,13 +102,13 @@ def create_params():
     p.test.seed = 10
     p.test.number_tests = 200
 
-    # # Test the network only on goals where the expert succeeded
-    # p.test.expert_success_goals = DotMap(use=True,
-    #                                      dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid')
-
     # Test the network only on goals where the expert succeeded
     p.test.expert_success_goals = DotMap(use=True,
-                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
+                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid')
+
+    # # Test the network only on goals where the expert succeeded
+    # p.test.expert_success_goals = DotMap(use=True,
+    #                                      dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
 
     # Let's not look at the expert
     p.test.simulate_expert = False
