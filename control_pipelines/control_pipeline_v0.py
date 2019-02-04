@@ -8,6 +8,7 @@ from optCtrl.lqr import LQRSolver
 from trajectory.trajectory import Trajectory, SystemConfig
 from control_pipelines.base import ControlPipelineBase
 from control_pipelines.control_pipeline_v0_helper import ControlPipelineV0Helper
+from utils.angle_utils import angle_normalize
 
 
 class ControlPipelineV0(ControlPipelineBase):
@@ -107,6 +108,7 @@ class ControlPipelineV0(ControlPipelineBase):
             trajectories = self._apply_lqr_controllers_to_real_robot(start_config, controllers, lqr_ref_trajectory)
         else:
             trajectories = self.trajectories_world[idx][waypt_idx]
+            self.applied_control = []
             
         # If LQR controller data is being ignored
         # just return the first element
@@ -132,12 +134,102 @@ class ControlPipelineV0(ControlPipelineBase):
         self.lqr_ref_trajectory_real_robot_world_nkfd = self.system_dynamics.to_world_coordinates(start_config, lqr_ref_trajectory,
                                                                                                   self.lqr_ref_trajectory_real_robot_world_nkfd,
                                                                                                   mode='assign')
-        robot_trajectory = self.lqr_solver.apply_control(start_config,
-                                                         self.lqr_ref_trajectory_real_robot_world_nkfd,
-                                                         controllers['k_nkf1'],
-                                                         controllers['K_nkfd'],
-                                                         sim_mode='realistic')
+        
+        
+        robot_trajectory, applied_control = self.apply_control_with_acc_limits(start_config,
+                                                              self.lqr_ref_trajectory_real_robot_world_nkfd,
+                                                              controllers['k_nkf1'],
+                                                              controllers['K_nkfd'],
+                                                              self.params.control_horizon-1,
+                                                              sim_mode='realistic')
+        #robot_trajectory = self.lqr_solver.apply_control(start_config,
+        #                                                 self.lqr_ref_trajectory_real_robot_world_nkfd,
+        #                                                 controllers['k_nkf1'],
+        #                                                 controllers['K_nkfd'],
+        #                                                 sim_mode='realistic')
+        self.applied_control = applied_control
         return robot_trajectory 
+
+    def apply_control_with_acc_limits(self, start_config, trajectory,
+                                      k_array_nTf1, K_array_nTfd, T,
+                                      sim_mode='ideal'):
+        """
+        apply the derived control to the error system to derive a new
+        trajectory. Here k_array_nTf1 and K_aaray_nTfd are
+        tensors of dimension (n, self.T-1, f, 1) and (n, self.T-1, f, d) respectively.
+        """
+        #print('Start[{.3f}, {:.3f}, {:.3f}]\n')
+        #print('\n')
+        
+        p = self.params.system_dynamics_params
+        applied_control = []
+        with tf.name_scope('apply_control'):
+            x0_n1d, _ = self.system_dynamics.parse_trajectory(start_config)
+            assert(len(x0_n1d.shape) == 3)  # [n,1,x_dim]
+            angle_dims = self.system_dynamics._angle_dims
+            actions = []
+            states = [x0_n1d*1.]
+            x_ref_nkd, u_ref_nkf = self.system_dynamics.parse_trajectory(trajectory)
+            x_next_n1d = x0_n1d*1.
+            for t in range(T):
+                x_ref_n1d, u_ref_n1f = x_ref_nkd[:, t:t+1], u_ref_nkf[:, t:t+1]
+                error_t_n1d = x_next_n1d - x_ref_n1d
+            
+                # TODO: Currently calling numpy() here as tfe.DEVICE_PLACEMENT_SILENT
+                # is not working to place non-gpu ops (i.e. mod) on the cpu
+                # turning tensors into numpy arrays is a hack around this.
+                error_t_n1d = tf.concat([error_t_n1d[:, :, :angle_dims],
+                                         angle_normalize(error_t_n1d[:, :,
+                                                                     angle_dims:angle_dims+1].numpy()),
+                                         error_t_n1d[:, :, angle_dims+1:]],
+                                        axis=2)
+                fdback_nf1 = tf.matmul(K_array_nTfd[:, t],
+                                       tf.transpose(error_t_n1d, perm=[0, 2, 1]))
+                u_n1f = u_ref_n1f + tf.transpose(k_array_nTf1[:, t] + fdback_nf1,
+                                                 perm=[0, 2, 1])
+                
+                if t == 0:
+                    linear_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 0:1])-start_config.speed_nk1(),
+                                               p.linear_acc_max)
+                    angular_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :,
+                                                              1:2])-start_config.angular_speed_nk1(),
+                                                p.angular_acc_max)
+
+                    v_next_n11 = start_config.speed_nk1() + linear_acc_n11 * tf.sign(u_n1f[:, :, 0:1])
+                    w_next_n11 = start_config.angular_speed_nk1() + angular_acc_n11 * tf.sign(u_n1f[:, :, 1:2])
+
+                else:
+                    linear_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 0:1] - applied_control[-1][0]),
+                                               p.linear_acc_max)
+                    angular_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 1:2] - applied_control[-1][1]),
+                                                p.angular_acc_max)
+
+                    v_next_n11 =  applied_control[-1][0] + linear_acc_n11 * tf.sign(u_n1f[:, :, 0:1] -
+                                                                             applied_control[-1][0])
+                    w_next_n11 =  applied_control[-1][1] + angular_acc_n11 * tf.sign(u_n1f[:, :, 1:2] - applied_control[-1][1])
+                #print('Linear Acc: {:.3f} Angular Acc: {:.3f}'.format(linear_acc_n11[0, 0, 0].numpy(),
+                #                                                      angular_acc_n11[0, 0,
+                #                                                                      0].numpy()))
+
+                u_n1f = tf.concat([v_next_n11, w_next_n11], axis=2)
+                x_next_n1d = self.system_dynamics.simulate(x_next_n1d, u_n1f, mode=sim_mode)
+                try:
+                    applied_control.append(self.system_dynamics.hardware.state_dx*1.)
+                except:
+                    applied_control.append(u_n1f[0, 0].numpy())
+                actions.append(u_n1f)
+                states.append(x_next_n1d)
+            u_nkf = tf.concat(actions, axis=1)
+            x_nkd = tf.concat(states, axis=1)
+            trajectory = self.system_dynamics.assemble_trajectory(x_nkd,
+                                                                  u_nkf,
+                                                                  pad_mode='repeat')
+            try:
+                applied_control.append(self.system_dynamics.hardware.state_dx*1.)
+            except:
+                applied_control.append(u_n1f[0, 0].numpy())
+            return trajectory, applied_control
+
 
     def generate_control_pipeline(self, params=None):
         p = self.params

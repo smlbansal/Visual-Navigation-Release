@@ -33,7 +33,15 @@ class Simulator(object):
         p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
         p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
         p.dt = dt
+    
+        # TODO Varun T.: this is a hack to make the real robot work for now.
+        # Change the control pipeline, planner, simulator strcuture so that
+        # this is not needed (more info in TOD0 in control_pipeline_v0.plan)
 
+        if p.planner_params.control_pipeline_params.real_robot:
+            p.planner_params.planning_horizon = p.control_horizon
+            p.planner_params.control_pipeline_params.control_horizon = p.control_horizon
+            p.planner_params.control_pipeline_params.control_horizon_s = p.control_horizon_s
         return p
 
     # TODO: Varun. Make the planner interface at a trajectory level
@@ -56,8 +64,16 @@ class Simulator(object):
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_data = self.planner.empty_data_dict()
         end_episode = False
+        self.splines = []
+        self.applied_control = []
         while not end_episode:
-            trajectory_segment, next_config, data = self._iterate(config)
+            trajectory_segment, next_config, data, applied_control = self._iterate(config)
+           
+            self.applied_control.append(applied_control)
+            # Uncomment if you want access to the spline used to plan this trajectory.
+            # TODO: Varun T. . This is hacky, spline should be passed around planner_data
+            #self.splines.append(Trajectory.copy(self.planner.control_pipeline.lqr_ref_trajectory_real_robot_world_nkfd))
+
             # Append to Vehicle Data
             for key in vehicle_data.keys():
                 vehicle_data[key].append(data[key])
@@ -83,27 +99,83 @@ class Simulator(object):
         data = self.planner.optimize(config)
 
         if 'trajectory' not in data.keys():
-            traj = self._simulate_control(config, data['optimal_control_nk2'])
+            traj, applied_control = self._simulate_control(config, data['optimal_control_nk2'])
             min_horizon = data['optimal_control_nk2'].shape[1].value
         else:
             traj = data['trajectory']
             min_horizon = data['planning_horizon']
+            applied_control = self.planner.control_pipeline.applied_control
 
         horizon = min(min_horizon, self.params.control_horizon)
         traj, data = self._clip_along_time_axis(traj, data, horizon)
         # TODO(Varun, Somil): We are not fetching the correct velocity values. Velocity values should be obtained
         # from the 2nd last step.
         next_config = SystemConfig.init_config_from_trajectory_time_index(traj, t=-1)
-        return traj, next_config, data
+        return traj, next_config, data, applied_control
+
+    def apply_control_open_loop(self, start_config, control_nk2,
+                                T, sim_mode='ideal'):
+       
+        p = self.params.planner_params.control_pipeline_params.system_dynamics_params
+
+        applied_control = []
+        x0_n1d, _ = self.system_dynamics.parse_trajectory(start_config)
+        actions = []
+        states = [x0_n1d*1.]
+        x_next_n1d = x0_n1d*1.
+        for t in range(T):
+            u_n1f = control_nk2[:, t:t+1] 
+           
+            if t == 0:
+                linear_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 0:1])-start_config.speed_nk1(),
+                                           p.linear_acc_max)
+                angular_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :,
+                                                          1:2])-start_config.angular_speed_nk1(),
+                                            p.angular_acc_max)
+
+                v_next_n11 = start_config.speed_nk1() + linear_acc_n11 * tf.sign(u_n1f[:, :, 0:1])
+                w_next_n11 = start_config.angular_speed_nk1() + angular_acc_n11 * tf.sign(u_n1f[:, :, 1:2])
+
+            else:
+                linear_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 0:1] - applied_control[-1][0]),
+                                           p.linear_acc_max)
+                angular_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 1:2] - applied_control[-1][1]),
+                                            p.angular_acc_max)
+
+                v_next_n11 =  applied_control[-1][0] + linear_acc_n11 * tf.sign(u_n1f[:, :, 0:1] -
+                                                                         applied_control[-1][0])
+                w_next_n11 =  applied_control[-1][1] + angular_acc_n11 * tf.sign(u_n1f[:, :, 1:2] - applied_control[-1][1])
+
+            u_n1f = tf.concat([v_next_n11, w_next_n11], axis=2)
+            x_next_n1d = self.system_dynamics.simulate(x_next_n1d, u_n1f, mode=sim_mode)
+            try:
+                applied_control.append(self.system_dynamics.hardware.state_dx*1.)
+            except:
+                applied_control.append(u_n1f[0, 0].numpy())
+            actions.append(u_n1f)
+            states.append(x_next_n1d)
+        u_nkf = tf.concat(actions, axis=1)
+        x_nkd = tf.concat(states, axis=1)
+        trajectory = self.system_dynamics.assemble_trajectory(x_nkd,
+                                                              u_nkf,
+                                                              pad_mode='repeat')
+        try:
+            applied_control.append(self.system_dynamics.hardware.state_dx*1.)
+        except:
+            applied_control.append(u_n1f[0, 0].numpy())
+        return trajectory, applied_control
 
     def _simulate_control(self, start_config, control_nk2):
         """ Returns a trajectory resulting from simulating
         control_nk2 from start_config using self.system_dynamics."""
         x_n1d, _ = self.system_dynamics.parse_trajectory(start_config)
-        T = control_nk2.shape[1].value
-        trajectory = self.system_dynamics.simulate_T(x_n1d, control_nk2,
-                                                     T, pad_mode='repeat')
-        return trajectory
+        T = self.params.control_horizon
+        trajectory, applied_control = self.apply_control_open_loop(start_config, control_nk2, T,
+                                                                  sim_mode=self.system_dynamics.simulation_params.simulation_mode)
+        #trajectory = self.system_dynamics.simulate_T(x_n1d, control_nk2,
+        #                                             T, pad_mode='repeat',
+        #                                             mode=self.system_dynamics.simulation_params.simulation_mode)
+        return trajectory, applied_control
 
     def get_observation(self, config=None, pos_n3=None, **kwargs):
         """
@@ -291,6 +363,12 @@ class Simulator(object):
                                          heading_nk1=heading_111,
                                          speed_nk1=speed_111,
                                          angular_speed_nk1=ang_speed_111)
+
+        # When Using a Realistic Simulator (physics simulator)
+        # The system dynamics may need the current starting position for
+        # coordinate transforms in realistic simulation
+        if self.system_dynamics.simulation_params.simulation_mode == 'realistic':
+            self.system_dynamics.reset_start_state(self.start_config)
 
     def _reset_goal_configuration(self, rng):
         p = self.params.reset_params.goal_config
@@ -588,9 +666,22 @@ class Simulator(object):
             0, :, 0].numpy()
 
         time = np.r_[:self.vehicle_trajectory.k]*self.vehicle_trajectory.dt 
+        
+        if self.params.planner_params.control_pipeline_params.real_robot:
+            applied_control_k2 = np.concatenate(self.applied_control, axis=0)[:self.vehicle_trajectory.k]
+            ax0.plot(time, speed_k, 'r--', label='Commanded')
+            ax0.plot(time, applied_control_k2[:, 0], 'b--', label='Applied')
+            ax0.set_title('Linear Velocity')
+            ax0.legend()
 
-        ax0.plot(time, speed_k, 'r--')
-        ax0.set_title('Linear Velocity')
+            ax1.plot(time, angular_speed_k, 'r--', label='Commanded')
+            ax1.plot(time, applied_control_k2[:, 1], 'b--', label='Applied')
+            ax1.set_title('Angular Velocity')
+            ax1.legend()
+        else:
 
-        ax1.plot(time, angular_speed_k, 'r--')
-        ax1.set_title('Angular Velocity')
+            ax0.plot(time, speed_k, 'r--')
+            ax0.set_title('Linear Velocity')
+
+            ax1.plot(time, angular_speed_k, 'r--')
+            ax1.set_title('Angular Velocity')

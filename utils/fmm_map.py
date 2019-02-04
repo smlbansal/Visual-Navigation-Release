@@ -1,7 +1,11 @@
 import tensorflow as tf
 import numpy as np
 import skfmm
-from utils.voxel_map_utils import VoxelMap
+import sys
+if sys.version[0] == '2':
+    from voxel_map_utils import VoxelMap
+else:  # python3
+    from utils.voxel_map_utils import VoxelMap
 
 
 class FmmMap(object):

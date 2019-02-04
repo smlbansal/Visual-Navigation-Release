@@ -30,5 +30,8 @@ def create_params():
                             sensor_height=80,
                             camera_elevation_degree=-45,  # camera tilt
                             delta_theta=1.0)
+    
+    # Traversible dir
+    p.traversible_dir = '/home/ext_drive/somilb/data/stanford_building_parser_dataset/traversibles' 
 
     return p

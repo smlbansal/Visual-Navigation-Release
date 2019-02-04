@@ -15,24 +15,6 @@ class TurtlebotSimulator(Simulator):
         super(TurtlebotSimulator, self).__init__(params=params)
         self.video_number = None
 
-    # TODO Varun T.: this is a hack to make the turtlebot work for now.
-    # Change the control pipeline, planner, simulator strcuture so that
-    # this is not needed (more info in TOD0 in control_pipeline_v0.plan)
-    @staticmethod
-    def parse_params(p):
-        """
-        Parse the parameters to add some additional helpful parameters.
-        """
-        p = super(TurtlebotSimulator, TurtlebotSimulator).parse_params(p)
-
-        # Pass the control horizon to the control pipeline. Normally
-        # control pipeline simulates controls for length planning_horizon,
-        # however when running on the real robot we only want to simulate
-        # controls for control_horizon
-        p.planner_params.control_pipeline_params.control_horizon = p.control_horizon
-        p.planner_params.planning_horizon = p.control_horizon
-        return p
-
     def simulate(self):
         self.system_dynamics.hardware.track_states = True
         super(TurtlebotSimulator, self).simulate()

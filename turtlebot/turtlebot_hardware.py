@@ -24,8 +24,8 @@ class TurtlebotHardware():
         self.measured_states_dx = []
         self.track_states = False
     
-        self.state = np.zeros(3)
-        self.state_dx = np.zeros(2)
+        self.state = np.zeros(3, dtype=np.float32)
+        self.state_dx = np.zeros(2, dtype=np.float32)
         self.num_collision_steps = 0
         self.hit_obstacle = False
         self.raw_image = None
@@ -59,8 +59,8 @@ class TurtlebotHardware():
 
         # Initialize rospy
         rospy.sleep(1)
-        self.reset_odom()
         self.r = rospy.Rate(int(1./params.dt))  # Set the actuator frequency in Hz
+        self.reset_odom()
 
     @staticmethod
     def get_hardware_interface(params):
@@ -140,7 +140,18 @@ class TurtlebotHardware():
         self.save_images = False
 
     def reset_odom(self):
+        # Keep sending the command speed = 0
+        # Until the measured speed actually gets to 0
+        cmd = Twist()
+        cmd.linear.x = 0.0
+        cmd.angular.z = 0.0
+        while np.linalg.norm(self.state_dx) > .001:
+            self.cmd_vel.publish(cmd)
+            self.r.sleep()
+
         self.num_collision_steps = 0
+        
+        # Reset the odometer to read [0, 0, 0]
         self.odom_reset.publish(Empty())
         rospy.sleep(1)
 

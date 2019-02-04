@@ -10,7 +10,7 @@ class NNControlPlanner(NNPlanner):
     counter = 0
 
     def __init__(self, simulator, params):
-        super().__init__(simulator, params)
+        super(NNControlPlanner, self).__init__(simulator, params)
 
     def optimize(self, start_config):
         """ Optimize the objective over a trajectory
