@@ -22,8 +22,16 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
     
     # Ensure the renderer is using area4
-    simulator_params.obstacle_map_params.renderer_params.building_name = 'area4'
+    simulator_params.obstacle_map_params.renderer_params.building_name = 'area1'
     
+    # Change the episode horizon
+    simulator_params.episode_horizon_s = 50.0
+
+    simulator_params.goal_config.max_fmm_dist = 10.0
+
+    # Save trajectory data
+    simulator_params.save_trajectory_data = True
+
     p = create_trainer_params(simulator_params=simulator_params)
 
     # Create the model params
@@ -63,11 +71,11 @@ def create_params():
     # Input processing parameters
     p.data_processing.input_processing_params = DotMap(
         p=0.1,  # Probability of distortion
-        version='v2'
+        version='v1'
     )
 
     # Change the checkpoint
-    p.trainer.ckpt_path = ''
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_waypoint/resnet_50_v1/include_last_step/only_successful_episodes/training_continued_from_epoch9/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
 
     p.data_creation.data_dir = [
         '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid/area3/full_episode_random_v1_100k',
@@ -80,7 +88,7 @@ def create_params():
 
     # Test the network only on goals where the expert succeeded
     p.test.expert_success_goals = DotMap(use=True,
-                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid')
+                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
 
     # Let's not look at the expert
     p.test.simulate_expert = False

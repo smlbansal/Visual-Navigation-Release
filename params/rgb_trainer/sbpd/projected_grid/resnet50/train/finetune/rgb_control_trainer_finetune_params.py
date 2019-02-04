@@ -31,6 +31,8 @@ def create_rgb_trainer_params():
     simulator_params.episode_horizon_s = 80.0
     # # simulator_params.control_horizon_s = 0.5
     
+    simulator_params.goal_config.max_fmm_dist = 10.0
+    
     # Save trajectory data
     simulator_params.save_trajectory_data = True
     
@@ -69,9 +71,9 @@ def create_params():
     p.trainer.restore_from_ckpt = False
     
     # Checkpoint directory
-    # p.trainer.ckpt_path = ''
-    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/' \
-                          'include_last_step/only_successful_episodes/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
+    #p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/' \
+    #                      'include_last_step/only_successful_episodes/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
 
     # Change the number of tests and callback frequency
     p.trainer.callback_frequency = 500
@@ -104,7 +106,7 @@ def create_params():
 
     # Test the network only on goals where the expert succeeded
     p.test.expert_success_goals = DotMap(use=True,
-                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid')
+                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
 
     # # Test the network only on goals where the expert succeeded
     # p.test.expert_success_goals = DotMap(use=True,
