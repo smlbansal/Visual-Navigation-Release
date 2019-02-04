@@ -187,7 +187,7 @@ class ControlPipelineV0(ControlPipelineBase):
                                        tf.transpose(error_t_n1d, perm=[0, 2, 1]))
                 u_n1f = u_ref_n1f + tf.transpose(k_array_nTf1[:, t] + fdback_nf1,
                                                  perm=[0, 2, 1])
-                
+               
                 if t == 0:
                     linear_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 0:1])-start_config.speed_nk1(),
                                                p.linear_acc_max)
