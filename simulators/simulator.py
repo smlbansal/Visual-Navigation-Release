@@ -5,11 +5,12 @@ from objectives.angle_distance import AngleDistance
 from objectives.goal_distance import GoalDistance
 from objectives.obstacle_avoidance import ObstacleAvoidance
 from trajectory.trajectory import SystemConfig, Trajectory
+from simulators.simulator_helper import SimulatorHelper
 from utils.fmm_map import FmmMap
 import matplotlib
 
 
-class Simulator(object):
+class Simulator(SimulatorHelper):
 
     def __init__(self, params):
         self.params = params.simulator.parse_params(params)
@@ -34,14 +35,6 @@ class Simulator(object):
         p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
         p.dt = dt
     
-        # TODO Varun T.: this is a hack to make the real robot work for now.
-        # Change the control pipeline, planner, simulator strcuture so that
-        # this is not needed (more info in TOD0 in control_pipeline_v0.plan)
-
-        if p.planner_params.control_pipeline_params.real_robot:
-            p.planner_params.planning_horizon = p.control_horizon
-            p.planner_params.control_pipeline_params.control_horizon = p.control_horizon
-            p.planner_params.control_pipeline_params.control_horizon_s = p.control_horizon_s
         return p
 
     # TODO: Varun. Make the planner interface at a trajectory level
@@ -54,8 +47,6 @@ class Simulator(object):
     # TODO: Dont clip the vehicle trajectory object, but store the time index of when
     # the episode ends. Use this when plotting stuff
     # TODO: Does clipping the vehicle_data on success ever mess up data collection?
-    # TODO: Do simulated vs LQR generated trajectories match the standard of
-    # trajectory length??
     def simulate(self):
         """ A function that simulates an entire episode. The agent starts at self.start_config, repeatedly
         calling _iterate to generate subtrajectories. Generates a vehicle_trajectory for the episode, calculates its
@@ -64,15 +55,8 @@ class Simulator(object):
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_data = self.planner.empty_data_dict()
         end_episode = False
-        self.splines = []
-        self.applied_control = []
         while not end_episode:
-            trajectory_segment, next_config, data, applied_control = self._iterate(config)
-           
-            self.applied_control.append(applied_control)
-            # Uncomment if you want access to the spline used to plan this trajectory.
-            # TODO: Varun T. . This is hacky, spline should be passed around planner_data
-            #self.splines.append(Trajectory.copy(self.planner.control_pipeline.lqr_ref_trajectory_real_robot_world_nkfd))
+            trajectory_segment, next_config, data = self._iterate(config)
 
             # Append to Vehicle Data
             for key in vehicle_data.keys():
@@ -85,97 +69,51 @@ class Simulator(object):
         self.vehicle_trajectory, self.vehicle_data, self.vehicle_data_last_step, self.episode_type, self.valid_episode = episode_data
         self.obj_val = self._compute_objective_value(self.vehicle_trajectory)
 
-    # TODO: Varun make the planner interface at a trajectory level
-    # TODO: Varun. Call _simulate control for control_horizon steps
     def _iterate(self, config):
         """ Runs the planner for one step from config to generate a
         subtrajectory, the resulting robot config after the robot executes
         the subtrajectory, and relevant planner data"""
 
-        # Optimize will return data, a dictionary with either
-        # an optimal subtrajectory mapped to the key 'trajectory'
-        # or a sequence of optimal controls mapped to the key
-        # 'optimal_control_nk2'
-        data = self.planner.optimize(config)
+        planner_data = self.planner.optimize(config)
+        trajectory_segment, trajectory_data = self._process_planner_data(config, planner_data)
 
-        if 'trajectory' not in data.keys():
-            traj, applied_control = self._simulate_control(config, data['optimal_control_nk2'])
-            min_horizon = data['optimal_control_nk2'].shape[1].value
-        else:
-            traj = data['trajectory']
-            min_horizon = data['planning_horizon']
-            applied_control = self.planner.control_pipeline.applied_control
-
-        horizon = min(min_horizon, self.params.control_horizon)
-        traj, data = self._clip_along_time_axis(traj, data, horizon)
         # TODO(Varun, Somil): We are not fetching the correct velocity values. Velocity values should be obtained
         # from the 2nd last step.
-        next_config = SystemConfig.init_config_from_trajectory_time_index(traj, t=-1)
-        return traj, next_config, data, applied_control
+        next_config = SystemConfig.init_config_from_trajectory_time_index(trajectory_segment, t=-1)
+        return trajectory_segment, next_config, trajectory_data
 
-    def apply_control_open_loop(self, start_config, control_nk2,
-                                T, sim_mode='ideal'):
-       
-        p = self.params.planner_params.control_pipeline_params.system_dynamics_params
+    def _process_planner_data(self, start_config, planner_data):
+        """
+        Process the planners current plan. This could mean applying
+        open loop control or LQR feedback control on an ideal or
+        realistic system.
+        """
+        T = self.params.control_horizon - 1
 
-        applied_control = []
-        x0_n1d, _ = self.system_dynamics.parse_trajectory(start_config)
-        actions = []
-        states = [x0_n1d*1.]
-        x_next_n1d = x0_n1d*1.
-        for t in range(T):
-            u_n1f = control_nk2[:, t:t+1] 
-           
-            if t == 0:
-                linear_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 0:1])-start_config.speed_nk1(),
-                                           p.linear_acc_max)
-                angular_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :,
-                                                          1:2])-start_config.angular_speed_nk1(),
-                                            p.angular_acc_max)
-
-                v_next_n11 = start_config.speed_nk1() + linear_acc_n11 * tf.sign(u_n1f[:, :, 0:1])
-                w_next_n11 = start_config.angular_speed_nk1() + angular_acc_n11 * tf.sign(u_n1f[:, :, 1:2])
-
+        # The 'plan' is open loop control
+        if 'trajectory' not in planner_data.keys():
+            trajectory = self.apply_control_open_loop(start_config,
+                                                      planner_data['optimal_control_nk2'],
+                                                      T=T,
+                                                      sim_mode=self.system_dynamics.simulation_params.simulation_mode)
+        # The 'plan' is LQR feedback control
+        else:
+            # If we are using ideal system dynamics the precomputed trajectory
+            # is already dynamically feasible.
+            if self.system_dynamics.simulation_params.simulation_mode == 'ideal':
+                trajectory = planner_data['trajectory']
+            elif self.system_dynamics.simulation_params.simulation_mode == 'realistic':
+                trajectory = self.apply_control_closed_loop(start_config,
+                                                            planner_data['trajectory'],
+                                                            planner_data['K_nkfd'],
+                                                            planner_data['k_nkf1'],
+                                                            T=T,
+                                                            sim_mode='realistic')
             else:
-                linear_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 0:1] - applied_control[-1][0]),
-                                           p.linear_acc_max)
-                angular_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 1:2] - applied_control[-1][1]),
-                                            p.angular_acc_max)
+                assert(False)
 
-                v_next_n11 =  applied_control[-1][0] + linear_acc_n11 * tf.sign(u_n1f[:, :, 0:1] -
-                                                                         applied_control[-1][0])
-                w_next_n11 =  applied_control[-1][1] + angular_acc_n11 * tf.sign(u_n1f[:, :, 1:2] - applied_control[-1][1])
-
-            u_n1f = tf.concat([v_next_n11, w_next_n11], axis=2)
-            x_next_n1d = self.system_dynamics.simulate(x_next_n1d, u_n1f, mode=sim_mode)
-            try:
-                applied_control.append(self.system_dynamics.hardware.state_dx*1.)
-            except:
-                applied_control.append(u_n1f[0, 0].numpy())
-            actions.append(u_n1f)
-            states.append(x_next_n1d)
-        u_nkf = tf.concat(actions, axis=1)
-        x_nkd = tf.concat(states, axis=1)
-        trajectory = self.system_dynamics.assemble_trajectory(x_nkd,
-                                                              u_nkf,
-                                                              pad_mode='repeat')
-        try:
-            applied_control.append(self.system_dynamics.hardware.state_dx*1.)
-        except:
-            applied_control.append(u_n1f[0, 0].numpy())
-        return trajectory, applied_control
-
-    def _simulate_control(self, start_config, control_nk2):
-        """ Returns a trajectory resulting from simulating
-        control_nk2 from start_config using self.system_dynamics."""
-        x_n1d, _ = self.system_dynamics.parse_trajectory(start_config)
-        T = self.params.control_horizon
-        trajectory, applied_control = self.apply_control_open_loop(start_config, control_nk2, T,
-                                                                  sim_mode=self.system_dynamics.simulation_params.simulation_mode)
-        #trajectory = self.system_dynamics.simulate_T(x_n1d, control_nk2,
-        #                                             T, pad_mode='repeat',
-        #                                             mode=self.system_dynamics.simulation_params.simulation_mode)
-        return trajectory, applied_control
+        trajectory, planner_data = self._clip_along_time_axis(trajectory, planner_data, T)
+        return trajectory, planner_data
 
     def get_observation(self, config=None, pos_n3=None, **kwargs):
         """
@@ -191,26 +129,7 @@ class Simulator(object):
         """
         raise NotImplementedError
 
-    def _clip_along_time_axis(self, traj, data, horizon, mode='new'):
-        """ Clip a trajectory and the associated planner data
-        along the time axis to length horizon."""
-
-        self.planner.clip_data_along_time_axis(data, horizon)
-
-        # Avoid duplicating new trajectory objects
-        # as this is unnecesarily slow
-        if 'trajectory' in data:
-            traj = data['trajectory']
-        else:
-            if mode == 'new':
-                traj = Trajectory.new_traj_clip_along_time_axis(traj, horizon)
-            elif mode == 'update':
-                traj.clip_along_time_axis(horizon)
-            else:
-                assert(False)
-
-        return traj, data
-
+    
     def get_simulator_data_numpy_repr(self):
         """
         Convert the vehicle trajectory, vehicle data,
@@ -250,41 +169,6 @@ class Simulator(object):
             episode_data = None
 
         return end_episode, episode_data
-
-    def _compute_time_idx_for_termination_condition(self, vehicle_trajectory, condition):
-        """ For a given trajectory termination condition (i.e. timeout, collision, etc.)
-        computes the earliest time index at which this condition is met. Returns
-        episode_horizon+1 otherwise."""
-        if condition == 'Timeout':
-            time_idx = tf.constant(self.params.episode_horizon)
-        elif condition == 'Collision':
-            time_idx = self._compute_time_idx_for_collision(vehicle_trajectory)
-        elif condition == 'Success':
-            time_idx = self._compute_time_idx_for_success(vehicle_trajectory)
-        else:
-            raise NotImplementedError
-
-        return time_idx
-
-    def _compute_time_idx_for_collision(self, vehicle_trajectory):
-        time_idx = tf.constant(self.params.episode_horizon+1)
-        pos_1k2 = vehicle_trajectory.position_nk2()
-        obstacle_dists_1k = self.obstacle_map.dist_to_nearest_obs(pos_1k2)
-        collisions = tf.where(tf.less(obstacle_dists_1k, 0.0))
-        collision_idxs = collisions[:, 1]
-        if tf.size(collision_idxs).numpy() != 0:
-            time_idx = collision_idxs[0]
-        return time_idx
-
-    def _compute_time_idx_for_success(self, vehicle_trajectory):
-        time_idx = tf.constant(self.params.episode_horizon+1)
-        dist_to_goal_1k = self._dist_to_goal(vehicle_trajectory)
-        successes = tf.where(tf.less(dist_to_goal_1k,
-                                     self.params.goal_cutoff_dist))
-        success_idxs = successes[:, 1]
-        if tf.size(success_idxs).numpy() != 0:
-            time_idx = success_idxs[0]
-        return time_idx
 
     def reset(self, seed=-1):
         """Reset the simulator. Optionally takes a seed to reset

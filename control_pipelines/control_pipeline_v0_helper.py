@@ -65,9 +65,10 @@ class ControlPipelineV0Helper():
 
         # To save memory, when discard_precomputed_lqr_trajectories is true
         # the lqr_trajectories variables can be discarded
-        # as it will be recomputed using the saved LQR controllers
+        dt = data['lqr_trajectories']['dt']
+        n = data['lqr_trajectories']['n']
         if discard_precomputed_lqr_trajectories:
-            lqr_trajectories = None
+            lqr_trajectories = Trajectory(dt=dt, n=n, k=0)
         else:
             lqr_trajectories = Trajectory.init_from_numpy_repr(track_trajectory_acceleration=track_trajectory_acceleration,
                                                                **data['lqr_trajectories'])
@@ -76,8 +77,9 @@ class ControlPipelineV0Helper():
         # trajectories (spline trajectories) can be discarded
         # when not needed (i.e. in simulation when the saved lqr_trajectory
         # is the exact result of applying the saved LQR controllers
+        n = data['spline_trajectories']['n']
         if discard_lqr_controller_data:
-            spline_trajectories = None
+            spline_trajectories = Trajectory(dt=dt, n=n, k=0)
             K_nkfd = tf.zeros((2, 1, 1, 1), dtype=np.float32)
             k_nkf1 = tf.zeros((2, 1, 1, 1), dtype=np.float32)
         else:

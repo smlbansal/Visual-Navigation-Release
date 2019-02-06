@@ -44,9 +44,9 @@ def create_params():
     # to save memory
     p.discard_LQR_controller_data = True
 
-    # When running on a real system (i.e. Turtlebot), set this to true
-    # to apply precomputed LQR controllers on the real physical system
-    p.real_robot = False
+    # Set this to True to ignore precomputed
+    # LQR trajectories
+    p.discard_precomputed_lqr_trajectories = False
 
     # Set this to true if you want trajectory objects to track
     # linear and angular acceleration. If not set to false to save memory

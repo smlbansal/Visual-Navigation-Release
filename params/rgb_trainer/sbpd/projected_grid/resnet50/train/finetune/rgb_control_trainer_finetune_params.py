@@ -85,7 +85,7 @@ def create_params():
     # Input processing parameters
     p.data_processing.input_processing_params = DotMap(
         p=0.1,  # Probability of distortion
-        version='v1'  # Version of the distortion function
+        version='v3'  # Version of the distortion function
     )
 
     # Change the data_dir

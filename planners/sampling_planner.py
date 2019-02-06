@@ -36,10 +36,10 @@ class SamplingPlanner(Planner):
         min_idx = tf.argmin(obj_vals)
         min_cost = obj_vals[min_idx]
 
-        waypts, horizons_s, trajectories, controllers = data
+        waypts, horizons_s, trajectories_lqr, trajectories_spline, controllers = data
 
         self.opt_waypt.assign_from_config_batch_idx(waypts, min_idx)
-        self.opt_traj.assign_from_trajectory_batch_idx(trajectories, min_idx)
+        self.opt_traj.assign_from_trajectory_batch_idx(trajectories_lqr, min_idx)
 
         # Convert horizon in seconds to horizon in # of steps
         min_horizon = int(tf.ceil(horizons_s[min_idx, 0] / self.params.dt).numpy())
@@ -58,6 +58,7 @@ class SamplingPlanner(Planner):
         data = {'system_config': SystemConfig.copy(start_config),
                 'waypoint_config': SystemConfig.copy(self.opt_waypt),
                 'trajectory': Trajectory.copy(self.opt_traj),
+                'spline_trajectory': Trajectory.copy(trajectories_spline),
                 'planning_horizon': min_horizon,
                 'K_nkfd': K_nkfd,
                 'k_nkf1': k_nkf1,

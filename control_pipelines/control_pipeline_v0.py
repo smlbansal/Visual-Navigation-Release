@@ -8,7 +8,6 @@ from optCtrl.lqr import LQRSolver
 from trajectory.trajectory import Trajectory, SystemConfig
 from control_pipelines.base import ControlPipelineBase
 from control_pipelines.control_pipeline_v0_helper import ControlPipelineV0Helper
-from utils.angle_utils import angle_normalize
 
 
 class ControlPipelineV0(ControlPipelineBase):
@@ -18,10 +17,6 @@ class ControlPipelineV0(ControlPipelineBase):
     pipeline = None
 
     def __init__(self, params):
-        # If using a real robot then LQR data should not be discarded. Else
-        # does not matter
-        assert (params.real_robot and not params.discard_LQR_controller_data) or (not params.real_robot)
-
         self.waypoint_grid = params.waypoint_params.grid(params.waypoint_params)
         self.start_velocities = np.linspace(
             0.0, params.binning_parameters.max_speed, params.binning_parameters.num_bins)
@@ -42,10 +37,6 @@ class ControlPipelineV0(ControlPipelineBase):
             assert(utils.check_dotmap_equality(cls.pipeline.params, params))
         return cls.pipeline
 
-    # TODO: Varun T. Clean up this code so that it stays memory efficient
-    # (i.e. assign all precomputed variables when goal_config is None, but
-    # only assign one when goal_config is not None). Move the real robot
-    # code up to the planner level
     def plan(self, start_config, goal_config=None):
         """Computes which velocity bin start_config belongs to
         and returns the corresponding waypoints, horizons, lqr_trajectories,
@@ -57,179 +48,75 @@ class ControlPipelineV0(ControlPipelineBase):
         idx = tf.squeeze(self._compute_bin_idx_for_start_velocities(
             start_config.speed_nk1()[:, :, 0])).numpy()
 
-        # Convert waypoints, trajectories, and LQR feedback matrices
-        # for this velocity bin into world coordinates
+        # Convert waypoints for this velocity bin into world coordinates
         self.waypt_configs_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.waypt_configs[idx],
                                                                                   self.waypt_configs_world[idx], mode='assign')
-       
-        # When using the real robot the precomputed lqr_trajectories
-        # are not used
-        if not self.params.real_robot:
-            self.trajectories_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.lqr_trajectories[idx],
-                                                                                     self.trajectories_world[idx], mode='assign')
-        # Converting K to world coordinates is slow
-        # so only set this to true when LQR data is needed
-        if self.params.convert_K_to_world_coordinates:
-            self.Ks_world_nkfd[idx] = self.system_dynamics.convert_K_to_world_coordinates(start_config,
-                                                                                          self.K_nkfd[idx],
-                                                                                          self.Ks_world_nkfd[idx],
-                                                                                          mode='assign')
+        # Setup world coordinate tensors if needed
+        self._ensure_world_coordinate_tensors_exist(goal_config)
 
-        # If goal_config is None (i.e. expert), return
-        # all the precomputed trajectories. Otherwise
-        # find the closest waypoint to goal_config and
-        # return information only for this waypoint
         if goal_config is None:
-            waypt_configs = self.waypt_configs_world[idx]
-            horizons = self.horizons[idx]
-            trajectories = self.trajectories_world[idx]
-            controllers = {'K_nkfd': self.Ks_world_nkfd[idx], 'k_nkf1': self.k_nkf1[idx]}
+            waypt_configs, horizons, trajectories_lqr, trajectories_spline, controllers = self._plan_without_goal_config(idx, start_config)
         else:
-            waypt_configs, horizons, trajectories, controllers = self._plan_with_goal_config(idx, start_config, goal_config)
+            waypt_configs, horizons, trajectories_lqr, trajectories_spline, controllers = self._plan_with_goal_config(idx, start_config, goal_config)
             
-        trajectories.update_valid_mask_nk()
-        return waypt_configs, horizons, trajectories, controllers
+        trajectories_lqr.update_valid_mask_nk()
+        return waypt_configs, horizons, trajectories_lqr, trajectories_spline, controllers
+
+    def _plan_without_goal_config(self, idx, start_config):
+        """
+        Return all the waypoints, corresponding spline horizons, LQR trajectories
+        and controllers corresponding to the velocity_bin idx.
+        """
+        self.trajectories_world[idx] = self.system_dynamics.to_world_coordinates(start_config, self.lqr_trajectories[idx],
+                                                                                     self.trajectories_world[idx], mode='assign')
+
+        controllers = {'K_nkfd': self.K_nkfd[idx],
+                       'k_nkf1': self.k_nkf1[idx]}
+        if self.params.convert_K_to_world_coordinates:
+            controllers['K_nkfd'] = self.system_dynamics.convert_K_to_world_coordinates(start_config,
+                                                                                        self.K_nkfd[idx],
+                                                                                        self.Ks_world_nkfd[idx],
+                                                                                        mode='assign')
+
+        waypt_configs = self.waypt_configs_world[idx]
+        horizons = self.horizons[idx]
+        trajectories_lqr = self.trajectories_world[idx]
+        trajectories_spline = self.spline_trajectories_world[idx]
+        return waypt_configs, horizons, trajectories_lqr, trajectories_spline, controllers
 
     def _plan_with_goal_config(self, idx, start_config, goal_config):
         """
         Find the closest waypoint to goal_config and return the associated
-        waypoint, splien horizon, trajectory, and lqr controllers.
+        waypoint, spline horizon, trajectory, and lqr controllers.
         """
         waypt_idx = self.helper.compute_closest_waypt_idx(goal_config,
                                                           self.waypt_configs_world[idx])
         waypt_configs = self.waypt_configs_world[idx][waypt_idx]
         horizons = self.horizons[idx][waypt_idx:waypt_idx+1]
-       
-        controllers = {'K_nkfd': self.Ks_world_nkfd[idx][waypt_idx:waypt_idx+1],
-                       'k_nkf1': self.k_nkf1[idx][waypt_idx:waypt_idx+1]}
-        
-        if self.params.real_robot:
-            lqr_ref_trajectory = self.spline_trajectories[idx][waypt_idx]
-            trajectories = self._apply_lqr_controllers_to_real_robot(start_config, controllers, lqr_ref_trajectory)
-        else:
-            trajectories = self.trajectories_world[idx][waypt_idx]
-            self.applied_control = []
-            
+     
+        self.system_dynamics.to_world_coordinates(start_config,
+                                                  self.lqr_trajectories[idx][waypt_idx],
+                                                  self.trajectories_world[0], mode='assign')
+
         # If LQR controller data is being ignored
         # just return the first element
         if self.params.discard_LQR_controller_data:
             waypt_idx = 0
-            controllers = {'K_nkfd': self.Ks_world_nkfd[idx][waypt_idx:waypt_idx+1],
-                           'k_nkf1': self.k_nkf1[idx][waypt_idx:waypt_idx+1]}
-
-        
-        return waypt_configs, horizons, trajectories, controllers
-
-    def _apply_lqr_controllers_to_real_robot(self, start_config, controllers, lqr_ref_trajectory):
-        # Convert K to world coordinates if it has not been already
-        if not self.params.convert_K_to_world_coordinates:
-            self.K_real_robot_world_nkfd = self.system_dynamics.convert_K_to_world_coordinates(start_config,
-                                                                                               controllers['K_nkfd'],
-                                                                                               self.K_real_robot_world_nkfd,
-                                                                                               mode='assign')
         else:
-            self.K_real_robot_world_nkfd = controllers['K_nkfd']
+            self.system_dynamics.to_world_coordinates(start_config, self.spline_trajectories[idx][waypt_idx],
+                                                      self.spline_trajectories_world[0], mode='assign')
 
-        # Convert the LQR reference trajectory to the world frame
-        self.lqr_ref_trajectory_real_robot_world_nkfd = self.system_dynamics.to_world_coordinates(start_config, lqr_ref_trajectory,
-                                                                                                  self.lqr_ref_trajectory_real_robot_world_nkfd,
-                                                                                                  mode='assign')
-        
-        
-        robot_trajectory, applied_control = self.apply_control_with_acc_limits(start_config,
-                                                              self.lqr_ref_trajectory_real_robot_world_nkfd,
-                                                              controllers['k_nkf1'],
-                                                              controllers['K_nkfd'],
-                                                              self.params.control_horizon-1,
-                                                              sim_mode='realistic')
-        #robot_trajectory = self.lqr_solver.apply_control(start_config,
-        #                                                 self.lqr_ref_trajectory_real_robot_world_nkfd,
-        #                                                 controllers['k_nkf1'],
-        #                                                 controllers['K_nkfd'],
-        #                                                 sim_mode='realistic')
-        self.applied_control = applied_control
-        return robot_trajectory 
+        controllers = {'K_nkfd': self.K_nkfd[idx][waypt_idx:waypt_idx+1],
+                       'k_nkf1': self.k_nkf1[idx][waypt_idx:waypt_idx+1]}
 
-    def apply_control_with_acc_limits(self, start_config, trajectory,
-                                      k_array_nTf1, K_array_nTfd, T,
-                                      sim_mode='ideal'):
-        """
-        apply the derived control to the error system to derive a new
-        trajectory. Here k_array_nTf1 and K_aaray_nTfd are
-        tensors of dimension (n, self.T-1, f, 1) and (n, self.T-1, f, d) respectively.
-        """
-        #print('Start[{.3f}, {:.3f}, {:.3f}]\n')
-        #print('\n')
-        
-        p = self.params.system_dynamics_params
-        applied_control = []
-        with tf.name_scope('apply_control'):
-            x0_n1d, _ = self.system_dynamics.parse_trajectory(start_config)
-            assert(len(x0_n1d.shape) == 3)  # [n,1,x_dim]
-            angle_dims = self.system_dynamics._angle_dims
-            actions = []
-            states = [x0_n1d*1.]
-            x_ref_nkd, u_ref_nkf = self.system_dynamics.parse_trajectory(trajectory)
-            x_next_n1d = x0_n1d*1.
-            for t in range(T):
-                x_ref_n1d, u_ref_n1f = x_ref_nkd[:, t:t+1], u_ref_nkf[:, t:t+1]
-                error_t_n1d = x_next_n1d - x_ref_n1d
-            
-                # TODO: Currently calling numpy() here as tfe.DEVICE_PLACEMENT_SILENT
-                # is not working to place non-gpu ops (i.e. mod) on the cpu
-                # turning tensors into numpy arrays is a hack around this.
-                error_t_n1d = tf.concat([error_t_n1d[:, :, :angle_dims],
-                                         angle_normalize(error_t_n1d[:, :,
-                                                                     angle_dims:angle_dims+1].numpy()),
-                                         error_t_n1d[:, :, angle_dims+1:]],
-                                        axis=2)
-                fdback_nf1 = tf.matmul(K_array_nTfd[:, t],
-                                       tf.transpose(error_t_n1d, perm=[0, 2, 1]))
-                u_n1f = u_ref_n1f + tf.transpose(k_array_nTf1[:, t] + fdback_nf1,
-                                                 perm=[0, 2, 1])
-               
-                if t == 0:
-                    linear_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 0:1])-start_config.speed_nk1(),
-                                               p.linear_acc_max)
-                    angular_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :,
-                                                              1:2])-start_config.angular_speed_nk1(),
-                                                p.angular_acc_max)
+        if self.params.convert_K_to_world_coordinates:
+            controllers['K_nkfd'] = self.system_dynamics.convert_K_to_world_coordinates(start_config,
+                                                                                        controllers['K_nkfd'],
+                                                                                        self.Ks_world_nkfd[0],
+                                                                                        mode='assign')
 
-                    v_next_n11 = start_config.speed_nk1() + linear_acc_n11 * tf.sign(u_n1f[:, :, 0:1])
-                    w_next_n11 = start_config.angular_speed_nk1() + angular_acc_n11 * tf.sign(u_n1f[:, :, 1:2])
 
-                else:
-                    linear_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 0:1] - applied_control[-1][0]),
-                                               p.linear_acc_max)
-                    angular_acc_n11 = tf.minimum(tf.abs(u_n1f[:, :, 1:2] - applied_control[-1][1]),
-                                                p.angular_acc_max)
-
-                    v_next_n11 =  applied_control[-1][0] + linear_acc_n11 * tf.sign(u_n1f[:, :, 0:1] -
-                                                                             applied_control[-1][0])
-                    w_next_n11 =  applied_control[-1][1] + angular_acc_n11 * tf.sign(u_n1f[:, :, 1:2] - applied_control[-1][1])
-                #print('Linear Acc: {:.3f} Angular Acc: {:.3f}'.format(linear_acc_n11[0, 0, 0].numpy(),
-                #                                                      angular_acc_n11[0, 0,
-                #                                                                      0].numpy()))
-
-                u_n1f = tf.concat([v_next_n11, w_next_n11], axis=2)
-                x_next_n1d = self.system_dynamics.simulate(x_next_n1d, u_n1f, mode=sim_mode)
-                try:
-                    applied_control.append(self.system_dynamics.hardware.state_dx*1.)
-                except:
-                    applied_control.append(u_n1f[0, 0].numpy())
-                actions.append(u_n1f)
-                states.append(x_next_n1d)
-            u_nkf = tf.concat(actions, axis=1)
-            x_nkd = tf.concat(states, axis=1)
-            trajectory = self.system_dynamics.assemble_trajectory(x_nkd,
-                                                                  u_nkf,
-                                                                  pad_mode='repeat')
-            try:
-                applied_control.append(self.system_dynamics.hardware.state_dx*1.)
-            except:
-                applied_control.append(u_n1f[0, 0].numpy())
-            return trajectory, applied_control
-
+        return waypt_configs, horizons, self.trajectories_world[0], self.spline_trajectories_world[0], controllers
 
     def generate_control_pipeline(self, params=None):
         p = self.params
@@ -341,7 +228,7 @@ class ControlPipelineV0(ControlPipelineBase):
                 assert(filename == expected_filename)
                 data_bin = self.helper.load_and_process_data(filename,
                                                              discard_lqr_controller_data=self.params.discard_LQR_controller_data,
-                                                             discard_precomputed_lqr_trajectories=self.params.real_robot,
+                                                             discard_precomputed_lqr_trajectories=self.params.discard_precomputed_lqr_trajectories,
                                                              track_trajectory_acceleration=self.params.track_trajectory_acceleration)
                 self.helper.append_data_bin_to_pipeline_data(pipeline_data, data_bin)
             self._set_instance_variables(pipeline_data)
@@ -358,45 +245,11 @@ class ControlPipelineV0(ControlPipelineBase):
         self.K_nkfd = data['K_nkfd']
         self.k_nkf1 = data['k_nkf1']
      
-        # Initialize variable tensors for waypoints and trajectories in world coordinates
+        # Initialize variable tensor for waypoints in world coordinates
         dt = self.params.system_dynamics_params.dt
         self.waypt_configs_world = [SystemConfig(
             dt=dt, n=config.n, k=1, variable=True,
             track_trajectory_acceleration=self.params.track_trajectory_acceleration) for config in data['start_configs']]
-        
-        # Adjust instance variables if running on real robot
-        if self.params.real_robot:
-            # Dont need precomputed LQR trajectories when running on the real robot
-            self.trajectories_world = self.lqr_trajectories
-            
-            # Placeholder for lqr controllers and reference trajectory in the world frame
-            self.K_real_robot_world_nkfd = tfe.Variable(tf.zeros_like(data['K_nkfd'][0][0:1]))
-            self.lqr_ref_trajectory_real_robot_world_nkfd = Trajectory(dt=dt, n=1,
-                                                                       k=self.params.planning_horizon,
-                                                                       variable=True,
-                                                                       track_trajectory_acceleration=self.params.track_trajectory_acceleration)
-
-            # Create an LQR Solver object to use when applying LQR controllers on the robot
-            # Cost function is not needed as LQR controllers have already been computed
-            if not hasattr(self, 'lqr_solver'):
-                
-                # Set the horizon for LQR to the control horizon - 1
-                self.lqr_solver = LQRSolver(T=self.params.control_horizon - 1,
-                                            dynamics=self.system_dynamics,
-                                            cost=None)
-
-        else:
-            self.trajectories_world = [Trajectory(
-                dt=dt, n=config.n, k=self.params.planning_horizon, variable=True,
-                track_trajectory_acceleration=self.params.track_trajectory_acceleration)
-               for config in data['start_configs']]
-
-        # If LQR feedback matrices are needed in world
-        # coordinates setup a variable to store them
-        if self.params.convert_K_to_world_coordinates:
-            self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(K)) for K in data['K_nkfd']]
-        else:
-            self.Ks_world_nkfd = self.K_nkfd
 
         self.instance_variables_loaded = True
 
@@ -406,6 +259,57 @@ class ControlPipelineV0(ControlPipelineBase):
                 print('Velocity: {:.3f}, {:.3f}% of goals kept({:d}).'.format(v0,
                                                                               100.*start_config.n/N,
                                                                               start_config.n))
+
+    def _ensure_world_coordinate_tensors_exist(self, goal_config=None):
+        """
+        Creates tensors to hold lqr and spline trajectories
+        as well as lqr feedback matrices in world coordinates.
+        """
+        
+        def _need_to_instantiate_tensors():
+            """
+            Check whether placeholders for lqr and spline trajectories
+            in the world coordiante frame have been instantiated. If they
+            haven't been, or they are the wrong dimension then re-instantiate
+            them.
+            """
+
+            if not (hasattr(self, 'trajectories_world') and hasattr(self,
+                                                                    'spline_trajectories_world')):
+                return True
+
+            if goal_config is None:
+                return not (len(self.trajectories_world) == len(self.start_configs))
+
+            return not (len(self.trajectories_world) == 1)
+
+        dt = self.params.system_dynamics_params.dt
+        if _need_to_instantiate_tensors():
+            if goal_config is None:
+                self.trajectories_world = [Trajectory(dt=dt, n=config.n,
+                                                      k=self.params.planning_horizon,
+                                                      variable=True,
+                                                      track_trajectory_acceleration=self.params.track_trajectory_acceleration)
+                                           for config in self.start_configs]
+
+                # There usually is not enough memory to instantiate a placeholder for
+                # both the lqr and spline trajectories in the world frame
+                self.spline_trajectories_world = self.spline_trajectories
+
+                if self.params.convert_K_to_world_coordinates:
+                    self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(K)) for K in self.K_nkfd]
+
+            else:
+                self.trajectories_world = [Trajectory(dt=dt, n=goal_config.n,
+                                                      k=self.params.planning_horizon,
+                                                      variable=True,
+                                                      track_trajectory_acceleration=self.params.track_trajectory_acceleration)]
+                self.spline_trajectories_world = [Trajectory(dt=dt, n=goal_config.n,
+                                                  k=self.params.planning_horizon,
+                                                  variable=True,
+                                                  track_trajectory_acceleration=self.params.track_trajectory_acceleration)]
+                if self.params.convert_K_to_world_coordinates:
+                    self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(self.K_nkfd[0][0:1]))]
 
     def _rebin_data_by_initial_velocity(self, data):
         """Take incorrecly binned data and rebins

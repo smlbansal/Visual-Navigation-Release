@@ -24,7 +24,8 @@ class Planner(object):
         raise NotImplementedError
 
     def optimize(self, start_config):
-        """ Optimize the objective over a trajectory
+        """
+        Optimize the objective over a trajectory
         starting from start_config ending at speed vf. 
         Returns the opt_waypt, opt_trajectory, opt_cost
         """
@@ -33,9 +34,9 @@ class Planner(object):
     def eval_objective(self, start_config, goal_config=None):
         """ Evaluate the objective function on a trajectory
         generated through the control pipeline from start_config (world frame)."""
-        waypts, horizons, trajectories_world, controllers = self.control_pipeline.plan(start_config, goal_config)
-        obj_val = self.obj_fn.evaluate_function(trajectories_world)
-        return obj_val, [waypts, horizons, trajectories_world, controllers]
+        waypts, horizons, trajectories_lqr, trajectories_spline, controllers = self.control_pipeline.plan(start_config, goal_config)
+        obj_val = self.obj_fn.evaluate_function(trajectories_lqr)
+        return obj_val, [waypts, horizons, trajectories_lqr, trajectories_spline, controllers]
 
     def _init_control_pipeline(self):
         """If the control pipeline has exists already (i.e. precomputed),
@@ -59,6 +60,7 @@ class Planner(object):
         data = {'system_config': [],
                 'waypoint_config': [],
                 'trajectory': [],
+                'spline_trajectory': [],
                 'planning_horizon': [],
                 'K_nkfd': [],
                 'k_nkf1': [],
@@ -72,8 +74,12 @@ class Planner(object):
         if mode == 'new':
             data['trajectory'] = Trajectory.new_traj_clip_along_time_axis(
                 data['trajectory'], horizon)
+            data['spline_trajectory'] = Trajectory.new_traj_clip_along_time_axis(
+                data['spline_trajectory'], horizon)
+
         elif mode == 'update':
             data['trajectory'] = data['trajectory'].clip_along_time_axis(horizon)
+            data['spline_trajectory'] = data['spline_trajectory'].clip_along_time_axis(horizon)
         else:
             assert(False)
 
@@ -97,6 +103,7 @@ class Planner(object):
             data_last['system_config'] = data['system_config'][last_data_idx]
             data_last['waypoint_config'] = data['waypoint_config'][last_data_idx]
             data_last['trajectory'] = data['trajectory'][last_data_idx]
+            data_last['spline_trajectory'] = data['spline_trajectory'][last_data_idx]
             data_last['planning_horizon_n1'] = [data['planning_horizon'][last_data_idx]] 
             data_last['K_nkfd'] = data['K_nkfd'][last_data_idx]
             data_last['k_nkf1'] = data['k_nkf1'][last_data_idx]
@@ -105,6 +112,7 @@ class Planner(object):
         data['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[valid_mask])
         data['waypoint_config'] = SystemConfig.concat_across_batch_dim(np.array(data['waypoint_config'])[valid_mask])
         data['trajectory'] = Trajectory.concat_across_batch_dim(np.array(data['trajectory'])[valid_mask])
+        data['spline_trajectory'] = Trajectory.concat_across_batch_dim(np.array(data['spline_trajectory'])[valid_mask])
         data['planning_horizon_n1'] = np.array(data['planning_horizon'])[valid_mask][:, None]
         data['K_nkfd'] = tf.boolean_mask(tf.concat(data['K_nkfd'], axis=0), valid_mask)
         data['k_nkf1'] = tf.boolean_mask(tf.concat(data['k_nkf1'], axis=0), valid_mask)
@@ -124,6 +132,7 @@ class Planner(object):
         data_numpy['system_config'] = data['system_config'].to_numpy_repr()
         data_numpy['waypoint_config'] = data['waypoint_config'].to_numpy_repr()
         data_numpy['trajectory'] = data['trajectory'].to_numpy_repr()
+        data_numpy['spline_trajectory'] = data['spline_trajectory'].to_numpy_repr()
         data_numpy['planning_horizon_n1'] = data['planning_horizon_n1']
         data_numpy['K_nkfd'] = data['K_nkfd'].numpy()
         data_numpy['k_nkf1'] = data['k_nkf1'].numpy()
