@@ -68,20 +68,13 @@ class Planner(object):
         return data
 
     @staticmethod
-    def clip_data_along_time_axis(data, horizon, mode='new'):
+    def clip_data_along_time_axis(data, horizon):
         """Clips a data dictionary produced by this planner
         to length horizon."""
-        if mode == 'new':
-            data['trajectory'] = Trajectory.new_traj_clip_along_time_axis(
-                data['trajectory'], horizon)
-            data['spline_trajectory'] = Trajectory.new_traj_clip_along_time_axis(
-                data['spline_trajectory'], horizon)
-
-        elif mode == 'update':
-            data['trajectory'] = data['trajectory'].clip_along_time_axis(horizon)
-            data['spline_trajectory'] = data['spline_trajectory'].clip_along_time_axis(horizon)
-        else:
-            assert(False)
+        data['trajectory'] = Trajectory.new_traj_clip_along_time_axis(
+            data['trajectory'], horizon)
+        data['spline_trajectory'] = Trajectory.new_traj_clip_along_time_axis(
+            data['spline_trajectory'], horizon)
 
         data['K_nkfd'] = data['K_nkfd'][:, :horizon]
         data['k_nkf1'] = data['k_nkf1'][:, :horizon]

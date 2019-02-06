@@ -340,20 +340,31 @@ class Trajectory(object):
                    variable=False, direct_init=True)
 
     @classmethod
-    def new_traj_clip_along_time_axis(cls, trajectory, horizon):
-        """ Utility function for clipping a trajectory along
+    def new_traj_clip_along_time_axis(cls, trajectory, horizon,
+                                      repeat_second_to_last_speed=False):
+        """
+        Utility function for clipping a trajectory along
         the time axis. Useful for clipping a trajectory within
         a specified horizon. Creates a new object as dimensions
-        are being changed and assign will not work."""
+        are being changed and assign will not work.
+        """
         if trajectory.k <= horizon:
             return trajectory
 
+        speed_nk1 = trajectory.speed_nk1()[:, :horizon]
+        angular_speed_nk1 = trajectory.angular_speed_nk1()[:, :horizon]
+
+        if repeat_second_to_last_speed:
+            speed_nk1 = tf.concat([speed_nk1[:, :-1], speed_nk1[:, -2:-1]], axis=1)
+            angular_speed_nk1 = tf.concat([angular_speed_nk1[:, :-1],
+                                           angular_speed_nk1[:, -2:-1]], axis=1)
+
         return cls(dt=trajectory.dt, n=trajectory.n, k=horizon,
                    position_nk2=trajectory.position_nk2()[:, :horizon],
-                   speed_nk1=trajectory.speed_nk1()[:, :horizon],
+                   speed_nk1=speed_nk1,
                    acceleration_nk1=trajectory.acceleration_nk1()[:, :horizon],
                    heading_nk1=trajectory.heading_nk1()[:, :horizon],
-                   angular_speed_nk1=trajectory.angular_speed_nk1()[:, :horizon],
+                   angular_speed_nk1=angular_speed_nk1,
                    angular_acceleration_nk1=trajectory.angular_acceleration_nk1()[:, :horizon])
 
     def __getitem__(self, index):

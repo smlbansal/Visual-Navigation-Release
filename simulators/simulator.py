@@ -76,17 +76,13 @@ class Simulator(SimulatorHelper):
 
         planner_data = self.planner.optimize(config)
         trajectory_segment, trajectory_data = self._process_planner_data(config, planner_data)
-
-        # TODO(Varun, Somil): We are not fetching the correct velocity values. Velocity values should be obtained
-        # from the 2nd last step.
         next_config = SystemConfig.init_config_from_trajectory_time_index(trajectory_segment, t=-1)
         return trajectory_segment, next_config, trajectory_data
 
     def _process_planner_data(self, start_config, planner_data):
         """
         Process the planners current plan. This could mean applying
-        open loop control or LQR feedback control on an ideal or
-        realistic system.
+        open loop control or LQR feedback control on a system.
         """
         T = self.params.control_horizon - 1
 
