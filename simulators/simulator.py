@@ -359,7 +359,16 @@ class Simulator(SimulatorHelper):
         raise NotImplementedError
 
     def _init_system_dynamics(self):
-        return self.planner.control_pipeline.system_dynamics
+        """
+        If there is a control pipeline (i.e. model based method)
+        return its system_dynamics. Else create a new system_dynamics
+        instance.
+        """
+        try:
+            return self.planner.control_pipeline.system_dynamics
+        except AttributeError:
+            p = self.params.planner_params.control_pipeline_params.system_dynamics_params
+            return p.system(dt=p.dt, params=p)
 
     def _init_obj_fn(self):
         """

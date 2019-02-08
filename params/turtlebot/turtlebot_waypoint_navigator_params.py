@@ -35,8 +35,10 @@ def create_turtlebot_params():
     simulator_params.obstacle_map_params.hardware_params = hardware_params
 
     # Ensure the control pipeline runs the LQR controllers on the robot
+    simulator_params.planner_params.control_pipeline_params.discard_precomputed_lqr_trajectories = False
     simulator_params.planner_params.control_pipeline_params.discard_LQR_controller_data = False
-    simulator_params.planner_params.control_pipeline_params.real_robot = True
+    simulator_params.planner_params.control_pipeline_params.convert_K_to_world_coordinates = True
+
 
     # CHANGE THE GOAL HERE!!!!
     # Update the goal position
@@ -44,12 +46,6 @@ def create_turtlebot_params():
 
     simulator_params.episode_horizon_s = 200.0
     simulator_params.control_horizon_s = 1.5
-
-    # CHANGE THIS IF YOU TRAIN/TEST On Different Cameras!!!!
-    simulator_params.planner_params.convert_waypoint_from_nn_to_robot = False
-
-    # Using Realtime control pipeline
-    #simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV0
 
     # Log videos that the robot sees
     simulator_params.record_video = True
@@ -60,7 +56,7 @@ def create_turtlebot_params():
     p.model = create_model_params()
 
     ### DONT NORMALIZE THE GOAL DISTANCE
-    p.model.max_goal_l2_dist = 10.0
+    p.model.max_goal_l2_dist = 1000.0
 
     # Finetune the resnet weights
     p.model.arch.finetune_resnet_weights = True

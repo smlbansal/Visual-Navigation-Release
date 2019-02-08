@@ -30,7 +30,7 @@ class SimulatorHelper(object):
 
             states.append(x_next_n1d)
 
-        commanded_actions_nkf = tf.concat([u_n1f[:, :T], u_n1f[:, T:T+1]], axis=1)
+        commanded_actions_nkf = tf.concat([control_nk2[:, :T], u_n1f], axis=1)
         u_nkf = tf.concat(actions, axis=1)
         x_nkd = tf.concat(states, axis=1)
         trajectory = self.system_dynamics.assemble_trajectory(x_nkd,

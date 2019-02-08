@@ -7,10 +7,12 @@ def create_rgb_trainer_params():
 
     from params.waypoint_grid.sbpd_image_space_grid import create_params as create_waypoint_params
     from params.model.resnet50_arch_v1_params import create_params as create_model_params
+    from params.system_dynamics.turtlebot_dubins_v2_params import create_params as create_system_dynamics_params
 
     # Load the dependencies
     simulator_params = create_simulator_params()
 
+    simulator_params.planner_params.control_pipeline_params.system_dynamics_params = create_system_dynamics_params()
     # Ensure the waypoint grid is uniform
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
 
@@ -31,7 +33,7 @@ def create_rgb_trainer_params():
     simulator_params.episode_horizon_s = 80.0
     # # simulator_params.control_horizon_s = 0.5
     
-    simulator_params.goal_config.max_fmm_dist = 10.0
+    #simulator_params.goal_config.max_fmm_dist = 10.0
     
     # Save trajectory data
     simulator_params.save_trajectory_data = True
@@ -106,7 +108,7 @@ def create_params():
 
     # Test the network only on goals where the expert succeeded
     p.test.expert_success_goals = DotMap(use=True,
-                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
+                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid')
 
     # # Test the network only on goals where the expert succeeded
     # p.test.expert_success_goals = DotMap(use=True,
