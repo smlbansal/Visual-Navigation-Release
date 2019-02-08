@@ -7,12 +7,10 @@ def create_rgb_trainer_params():
 
     from params.waypoint_grid.sbpd_image_space_grid import create_params as create_waypoint_params
     from params.model.resnet50_arch_v1_params import create_params as create_model_params
-    from params.system_dynamics.turtlebot_dubins_v2_params import create_params as create_system_dynamics_params
 
     # Load the dependencies
     simulator_params = create_simulator_params()
 
-    simulator_params.planner_params.control_pipeline_params.system_dynamics_params = create_system_dynamics_params()
     # Ensure the waypoint grid is uniform
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
 
@@ -22,7 +20,12 @@ def create_rgb_trainer_params():
     simulator_params.obstacle_map_params.renderer_params.camera_params.width = 1024
     simulator_params.obstacle_map_params.renderer_params.camera_params.height = 1024
     simulator_params.obstacle_map_params.renderer_params.camera_params.im_resize = 0.21875
-    
+   
+    # Change the camera parameters to turtlebot parameters
+    simulator_params.obstacle_map_params.renderer_params.camera_params.fov_horizontal = 60.
+    simulator_params.obstacle_map_params.renderer_params.camera_params.fov_vertical = 49.5
+    simulator_params.obstacle_map_params.renderer_params.robot_params.camera_elevation_degree = -29.
+
     # Ensure the renderer is using area3
     simulator_params.obstacle_map_params.renderer_params.building_name = 'area6'
 
@@ -73,9 +76,9 @@ def create_params():
     p.trainer.restore_from_ckpt = False
     
     # Checkpoint directory
-    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
-    #p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/' \
-    #                      'include_last_step/only_successful_episodes/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/turtlebot_camera_params/session_2019-02-07_17-14-50/checkpoints/ckpt-20' 
+    
+    #'/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
 
     # Change the number of tests and callback frequency
     p.trainer.callback_frequency = 500
@@ -87,7 +90,7 @@ def create_params():
     # Input processing parameters
     p.data_processing.input_processing_params = DotMap(
         p=0.1,  # Probability of distortion
-        version='v3'  # Version of the distortion function
+        version='v1'  # Version of the distortion function
     )
 
     # Change the data_dir
@@ -108,7 +111,7 @@ def create_params():
 
     # Test the network only on goals where the expert succeeded
     p.test.expert_success_goals = DotMap(use=True,
-                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid')
+                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
 
     # # Test the network only on goals where the expert succeeded
     # p.test.expert_success_goals = DotMap(use=True,
