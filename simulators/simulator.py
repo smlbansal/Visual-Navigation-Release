@@ -16,9 +16,9 @@ class Simulator(SimulatorHelper):
         self.params = params.simulator.parse_params(params)
         self.rng = np.random.RandomState(params.seed)
         self.obstacle_map = self._init_obstacle_map(self.rng)
-        self.system_dynamics = self._init_system_dynamics()
         self.obj_fn = self._init_obj_fn()
         self.planner = self._init_planner()
+        self.system_dynamics = self._init_system_dynamics()
 
     @staticmethod
     def parse_params(p):
@@ -30,23 +30,16 @@ class Simulator(SimulatorHelper):
         p.obstacle_map_params.obstacle_map.parse_params(p.obstacle_map_params)
 
         dt = p.planner_params.control_pipeline_params.system_dynamics_params.dt
-    
+
         p.episode_horizon = int(np.ceil(p.episode_horizon_s / dt))
         p.control_horizon = int(np.ceil(p.control_horizon_s / dt))
         p.dt = dt
-    
+ 
         return p
 
-    # TODO: Varun. Make the planner interface at a trajectory level
-    # vehicle_data should store trajectory segments
-    # vehicle trajectory should be created from trajectory segments (to avoid duplication)
-    # Create a function create_vehicle_trajectory_from_segments
-    # which takes vehicle_data and start_config
-    # appending all the segments (but skipping the first element) to start config
-    
-    # TODO: Dont clip the vehicle trajectory object, but store the time index of when
+    # TODO: Varun. Dont clip the vehicle trajectory object,
+    # but store the time index of when
     # the episode ends. Use this when plotting stuff
-    # TODO: Does clipping the vehicle_data on success ever mess up data collection?
     def simulate(self):
         """ A function that simulates an entire episode. The agent starts at self.start_config, repeatedly
         calling _iterate to generate subtrajectories. Generates a vehicle_trajectory for the episode, calculates its
@@ -55,18 +48,26 @@ class Simulator(SimulatorHelper):
         vehicle_trajectory = self.vehicle_trajectory
         vehicle_data = self.planner.empty_data_dict()
         end_episode = False
+        commanded_actions_nkf = []
         while not end_episode:
-            trajectory_segment, next_config, data = self._iterate(config)
+            trajectory_segment, next_config, data, commanded_actions_1kf = self._iterate(config)
 
             # Append to Vehicle Data
             for key in vehicle_data.keys():
                 vehicle_data[key].append(data[key])
 
             vehicle_trajectory.append_along_time_axis(trajectory_segment)
+            commanded_actions_nkf.append(commanded_actions_1kf)
             config = next_config
             end_episode, episode_data = self._enforce_episode_termination_conditions(vehicle_trajectory,
-                                                                                     vehicle_data)
-        self.vehicle_trajectory, self.vehicle_data, self.vehicle_data_last_step, self.episode_type, self.valid_episode = episode_data
+                                                                                     vehicle_data,
+                                                                                     commanded_actions_nkf)
+        self.vehicle_trajectory = episode_data['vehicle_trajectory']
+        self.vehicle_data = episode_data['vehicle_data']
+        self.vehicle_data_last_step = episode_data['vehicle_data_last_step']
+        self.episode_type = episode_data['episode_type']
+        self.valid_episode = episode_data['valid_episode']
+        self.commanded_actions_1kf = episode_data['commanded_actions_1kf']
         self.obj_val = self._compute_objective_value(self.vehicle_trajectory)
 
     def _iterate(self, config):
@@ -75,41 +76,43 @@ class Simulator(SimulatorHelper):
         the subtrajectory, and relevant planner data"""
 
         planner_data = self.planner.optimize(config)
-        trajectory_segment, trajectory_data = self._process_planner_data(config, planner_data)
+        trajectory_segment, trajectory_data, commanded_actions_nkf = self._process_planner_data(config, planner_data)
         next_config = SystemConfig.init_config_from_trajectory_time_index(trajectory_segment, t=-1)
-        return trajectory_segment, next_config, trajectory_data
+        return trajectory_segment, next_config, trajectory_data, commanded_actions_nkf
 
     def _process_planner_data(self, start_config, planner_data):
         """
         Process the planners current plan. This could mean applying
         open loop control or LQR feedback control on a system.
         """
-        T = self.params.control_horizon - 1
 
         # The 'plan' is open loop control
         if 'trajectory' not in planner_data.keys():
-            trajectory = self.apply_control_open_loop(start_config,
-                                                      planner_data['optimal_control_nk2'],
-                                                      T=T,
-                                                      sim_mode=self.system_dynamics.simulation_params.simulation_mode)
+            trajectory, commanded_actions_nkf = self.apply_control_open_loop(start_config,
+                                                                             planner_data['optimal_control_nk2'],
+                                                                             T=self.params.control_horizon-1,
+                                                                             sim_mode=self.system_dynamics.simulation_params.simulation_mode)
         # The 'plan' is LQR feedback control
         else:
-            # If we are using ideal system dynamics the precomputed trajectory
-            # is already dynamically feasible.
+            # If we are using ideal system dynamics the planned trajectory
+            # is already dynamically feasible. Clip it to the control horizon
             if self.system_dynamics.simulation_params.simulation_mode == 'ideal':
-                trajectory = planner_data['trajectory']
+                trajectory = Trajectory.new_traj_clip_along_time_axis(planner_data['trajectory'],
+                                                                      self.params.control_horizon,
+                                                                      repeat_second_to_last_speed=True)
+                _, commanded_actions_nkf = self.system_dynamics.parse_trajectory(trajectory)
             elif self.system_dynamics.simulation_params.simulation_mode == 'realistic':
-                trajectory = self.apply_control_closed_loop(start_config,
-                                                            planner_data['trajectory'],
-                                                            planner_data['K_nkfd'],
-                                                            planner_data['k_nkf1'],
-                                                            T=T,
-                                                            sim_mode='realistic')
+                trajectory, commanded_actions_nkf = self.apply_control_closed_loop(start_config,
+                                                                                   planner_data['trajectory'],
+                                                                                   planner_data['k_nkf1'],
+                                                                                   planner_data['K_nkfd'],
+                                                                                   T=self.params.control_horizon-1,
+                                                                                   sim_mode='realistic')
             else:
                 assert(False)
 
-        trajectory, planner_data = self._clip_along_time_axis(trajectory, planner_data, T)
-        return trajectory, planner_data
+        self.planner.clip_data_along_time_axis(planner_data, self.params.control_horizon)
+        return trajectory, planner_data, commanded_actions_nkf
 
     def get_observation(self, config=None, pos_n3=None, **kwargs):
         """
@@ -125,7 +128,6 @@ class Simulator(SimulatorHelper):
         """
         raise NotImplementedError
 
-    
     def get_simulator_data_numpy_repr(self):
         """
         Convert the vehicle trajectory, vehicle data,
@@ -135,10 +137,11 @@ class Simulator(SimulatorHelper):
         vehicle_trajectory = self.vehicle_trajectory.to_numpy_repr()
         vehicle_data = self.planner.convert_planner_data_to_numpy_repr(self.vehicle_data)
         vehicle_data_last_step = self.planner.convert_planner_data_to_numpy_repr(self.vehicle_data_last_step)
-        return vehicle_trajectory, vehicle_data, vehicle_data_last_step
+        vehicle_commanded_actions_1kf = self.commanded_actions_1kf.numpy()
+        return vehicle_trajectory, vehicle_data, vehicle_data_last_step, vehicle_commanded_actions_1kf
 
-
-    def _enforce_episode_termination_conditions(self, vehicle_trajectory, data):
+    def _enforce_episode_termination_conditions(self, vehicle_trajectory, planner_data,
+                                                commanded_actions_nkf):
         p = self.params
         time_idxs = []
         for condition in p.episode_termination_reasons:
@@ -148,21 +151,33 @@ class Simulator(SimulatorHelper):
             idx = np.argmin(time_idxs)
         except ValueError:
             idx = np.argmin([time_idx.numpy() for time_idx in time_idxs])
-        
-        if time_idxs[idx] <= vehicle_trajectory.k:
+
+        try:
+            termination_time = time_idxs[idx].numpy()
+        except ValueError:
+            termination_time = time_idxs[idx]
+
+        if termination_time != np.inf:
             end_episode = True
-            vehicle_trajectory.clip_along_time_axis(time_idxs[idx].numpy())
-            data, data_last_step = self.planner.mask_and_concat_data_along_batch_dim(data, k=vehicle_trajectory.k)
+            vehicle_trajectory.clip_along_time_axis(termination_time)
+            planner_data, planner_data_last_step = self.planner.mask_and_concat_data_along_batch_dim(planner_data,
+                                                                                                     k=termination_time)
+            commanded_actions_1kf = tf.concat(commanded_actions_nkf, axis=1)[:, :termination_time]
             
             # If all of the data was masked then
             # the episode simulated is not valid
             valid_episode = True
-            if data['system_config'] is None:
+            if planner_data['system_config'] is None:
                 valid_episode = False
-            episode_data = (vehicle_trajectory, data, data_last_step, idx, valid_episode)
+            episode_data = {'vehicle_trajectory': vehicle_trajectory,
+                            'vehicle_data': planner_data,
+                            'vehicle_data_last_step': planner_data_last_step,
+                            'episode_type': idx,
+                            'valid_episode': valid_episode,
+                            'commanded_actions_1kf': commanded_actions_1kf}
         else:
             end_episode = False
-            episode_data = None
+            episode_data = {}
 
         return end_episode, episode_data
 
@@ -172,9 +187,9 @@ class Simulator(SimulatorHelper):
         if seed != -1:
             self.rng.seed(seed)
 
-        # Note: Obstacle map must be reset independently of the fmm map. Sampling start and goal may depend
-        # on the updated state of the obstacle map. Updating the fmm map depends
-        # on the newly sampled goal.
+        # Note: Obstacle map must be reset independently of the fmm map.
+        # Sampling start and goal may depend on the updated state of the
+        # obstacle map. Updating the fmm map depends on the newly sampled goal.
         reset_start = True
         while reset_start:
             self._reset_obstacle_map(self.rng)
@@ -244,11 +259,9 @@ class Simulator(SimulatorHelper):
                                          speed_nk1=speed_111,
                                          angular_speed_nk1=ang_speed_111)
 
-        # When Using a Realistic Simulator (physics simulator)
         # The system dynamics may need the current starting position for
-        # coordinate transforms in realistic simulation
-        if self.system_dynamics.simulation_params.simulation_mode == 'realistic':
-            self.system_dynamics.reset_start_state(self.start_config)
+        # coordinate transforms (i.e. realistic simulation)
+        self.system_dynamics.reset_start_state(self.start_config)
 
     def _reset_goal_configuration(self, rng):
         p = self.params.reset_params.goal_config
@@ -273,9 +286,8 @@ class Simulator(SimulatorHelper):
             # nearest obstacle, and not within the goal margin of the start position.
             # Additionaly the goal position must satisfy:
             # fmm_dist(start, goal) - l2_dist(start, goal) > fmm_l2_gap (goal should not be
-            #                                                            reachable in a straight line)
             # fmm_dist(start, goal) < max_dist (goal should not be too far away)
-            
+
             # Construct an fmm map where the 0 level set is the start position
             start_fmm_map = self._init_fmm_map(goal_pos_n2=self.start_config.position_nk2()[:, 0]) 
             # enforce fmm_dist(start, goal) < max_fmm_dist
@@ -308,7 +320,7 @@ class Simulator(SimulatorHelper):
                 # there are no goal points within the max_fmm_dist of start
                 # return True so the start is reset
                 return True
-            
+
             goal_112 = self.obstacle_map.sample_point_112(rng, free_xy_map_m2=free_xy)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle goal position.')
@@ -328,9 +340,10 @@ class Simulator(SimulatorHelper):
         return obj_val
 
     def _update_obj_fn(self):
-        """ Update the objective function to use a new
-        obstacle_map and fmm map """
-        p = self.params
+        """
+        Update the objective function to use a new
+        obstacle_map and fmm map
+        """
         for objective in self.obj_fn.objectives:
             if isinstance(objective, ObstacleAvoidance):
                 objective.obstacle_map = self.obstacle_map
@@ -346,8 +359,7 @@ class Simulator(SimulatorHelper):
         raise NotImplementedError
 
     def _init_system_dynamics(self):
-        p = self.params.planner_params.control_pipeline_params.system_dynamics_params
-        return p.system(dt=p.dt, params=p)
+        return self.planner.control_pipeline.system_dynamics
 
     def _init_obj_fn(self):
         """
@@ -356,7 +368,7 @@ class Simulator(SimulatorHelper):
         until a goal configuration is specified.
         """
         p = self.params
-        
+
         obj_fn = ObjectiveFunction(p.objective_fn_params)
         if not p.avoid_obstacle_objective.empty():
             obj_fn.add_objective(ObstacleAvoidance(
@@ -378,7 +390,7 @@ class Simulator(SimulatorHelper):
 
         if goal_pos_n2 is None:
             goal_pos_n2 = self.goal_config.position_nk2()[0]
-        
+
         return FmmMap.create_fmm_map_based_on_goal_position(
             goal_positions_n2=goal_pos_n2,
             map_size_2=np.array(p.obstacle_map_params.map_size_2),
@@ -493,7 +505,6 @@ class Simulator(SimulatorHelper):
             self._render_trajectory(axs, freq)
             axs.set_title('{:s}{:s}'.format(prepend_title, axs.get_title()))
 
-
     def _render_obstacle_map(self, ax):
         raise NotImplementedError
 
@@ -542,20 +553,18 @@ class Simulator(SimulatorHelper):
 
     def _render_velocities(self, ax0, ax1):
         speed_k = self.vehicle_trajectory.speed_nk1()[0, :, 0].numpy()
-        angular_speed_k = self.vehicle_trajectory.angular_speed_nk1()[
-            0, :, 0].numpy()
+        angular_speed_k = self.vehicle_trajectory.angular_speed_nk1()[0, :, 0].numpy()
 
-        time = np.r_[:self.vehicle_trajectory.k]*self.vehicle_trajectory.dt 
-        
-        if self.params.planner_params.control_pipeline_params.real_robot:
-            applied_control_k2 = np.concatenate(self.applied_control, axis=0)[:self.vehicle_trajectory.k]
-            ax0.plot(time, speed_k, 'r--', label='Commanded')
-            ax0.plot(time, applied_control_k2[:, 0], 'b--', label='Applied')
+        time = np.r_[:self.vehicle_trajectory.k]*self.vehicle_trajectory.dt
+
+        if self.system_dynamics.simulation_params.simulation_mode == 'realistic':
+            ax0.plot(time, speed_k, 'r--', label='Applied')
+            ax0.plot(time, self.commanded_actions_1kf[0, :,  0], 'b--', label='Commanded')
             ax0.set_title('Linear Velocity')
             ax0.legend()
 
-            ax1.plot(time, angular_speed_k, 'r--', label='Commanded')
-            ax1.plot(time, applied_control_k2[:, 1], 'b--', label='Applied')
+            ax1.plot(time, angular_speed_k, 'r--', label='Applied')
+            ax1.plot(time, self.commanded_actions_1kf[0, :,  1], 'b--', label='Commanded')
             ax1.set_title('Angular Velocity')
             ax1.legend()
         else:

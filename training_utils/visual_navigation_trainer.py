@@ -1,5 +1,4 @@
 from training_utils.trainer_frontend_helper import TrainerFrontendHelper
-from trajectory.trajectory import Trajectory
 from utils import utils
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -240,33 +239,6 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             kwargs = {}
         return kwargs
 
-    def plot_measured_states_for_debugging(self, data, axs):
-        """
-        Plot the trajectory the simulator thinks it saw
-        versus what the robot sensors actually measured.
-        Useful for debugging real robots over ROS.
-        """
-        import numpy as np
-        measured_states = 1.*np.array(data['simulator'].system_dynamics.hardware.measured_states)*1.
-        measured_states_dx = 1.*np.array(data['simulator'].system_dynamics.hardware.measured_states_dx)*1.
-
-        ax = axs[0]
-        xs = measured_states[:, 0]
-        ys = measured_states[:, 1]
-        thetas = measured_states[:, 2]
-        ax.plot(xs, ys, 'b-')
-        freq = 100
-        ax.quiver(xs[::freq], ys[::freq],
-                  np.cos(thetas[::freq]), np.sin(thetas[::freq]))
-
-        time = np.r_[:len(measured_states_dx)]/100.
-        
-        ax = axs[1]
-        ax.plot(time, measured_states_dx[:, 0], 'b--')
-
-        ax = axs[2]
-        ax.plot(time, measured_states_dx[:, 1], 'b--')
-
     def simulate(self, simulator_datas, log_metrics=True,
                  plot_controls=False, plot_images=False,
                  return_episode_type=False, goal_valid_mask=None):
@@ -349,9 +321,6 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         simulator.render(axs, freq=render_angle_freq, render_velocities=plot_controls,
                          prepend_title=prepend_title)
         
-        # TODO: this is for debugging ROS/ turtlebot environment
-        #self.plot_measured_states_for_debugging(data, axs) 
-
         if plot_images:
             self._plot_episode_images(i, data)
         
@@ -371,25 +340,25 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             utils.mkdir_if_missing(trajectory_data_dir)
 
             data = {}
-            vehicle_trajectory, vehicle_data, vehicle_data_last_step = simulator.get_simulator_data_numpy_repr()
+            vehicle_trajectory, vehicle_data, vehicle_data_last_step, vehicle_commanded_actions_1kf = simulator.get_simulator_data_numpy_repr()
             data['vehicle_trajectory'] = vehicle_trajectory
             data['vehicle_data'] = vehicle_data
             data['vehicle_data_last_step'] = vehicle_data_last_step
+            data['commanded_actions_1kf'] = vehicle_commanded_actions_1kf
 
             data['episode_number'] = i
             data['episode_type_int'] = simulator.episode_type
             data['episode_type_string'] = simulator.params.episode_termination_reasons[simulator.episode_type]
             data['valid_episode'] = simulator.valid_episode
-            
+
             # Current Occupancy Grid- Useful for plotting these trajectories later
             data['occupancy_grid'] = simulator.obstacle_map.occupancy_grid_map
             data['map_bounds_extent'] = np.array(simulator.obstacle_map.map_bounds).flatten(order='F')
-            
+
             trajectory_file = os.path.join(trajectory_data_dir, 'traj_{:d}.pkl'.format(i))
             with open(trajectory_file, 'wb') as f:
                 pickle.dump(data, f)
-            
-           
+
             # Add Trajectory Metadata
             metadata_file = os.path.join(trajectory_data_dir, 'metadata.pkl')
             if os.path.exists(metadata_file):
@@ -406,10 +375,10 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
                 metadata['episode_type_int'] = [data['episode_type_int']]
                 metadata['episode_type_string'] = [data['episode_type_string']]
                 metadata['valid_episode'] = [data['valid_episode']]
-            
+
             with open(metadata_file, 'wb') as f:
                 pickle.dump(metadata, f)
-    
+
     def _plot_episode_images(self, i, data):
         """
         Plot the images the robot saw during a particular episode.

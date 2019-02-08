@@ -29,10 +29,10 @@ class TurtlebotSimulator(Simulator):
     def stop_recording_video(self, video_number, video_filename):
         """ Stop recording video on the turtlebot."""
         self.system_dynamics.hardware.stop_saving_images()
-       
+
         tmp_dir = './tmp/turtlebot_videos/{:d}'.format(video_number)
-        
-        # Convert Images from the episode into A Video in the session dir
+
+        # Convert Images from the episode into a video in the session dir
         video_command = 'ffmpeg -i {:s}/img_%d.png -pix_fmt yuv420p {:s}'.format(tmp_dir, video_filename)
         os.system(video_command)
 

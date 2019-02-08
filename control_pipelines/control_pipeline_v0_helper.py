@@ -51,10 +51,6 @@ class ControlPipelineV0Helper():
     # garbage collect tensors properly so when saving memory (below)
     # we must explicitly never construct the tensors, else the memory will be
     # used anyway.
-    # i.e.
-    # x = tf.zeros((100, 10, 10), dtype=tf.float32)
-    # x = None
-    # this does not release the memory used by the zeros tensor!!!
     def load_and_process_data(self, filename, discard_lqr_controller_data=False,
                               discard_precomputed_lqr_trajectories=False,
                               track_trajectory_acceleration=False):

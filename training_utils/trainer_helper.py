@@ -82,7 +82,7 @@ class TrainerHelper(object):
             os.makedirs(self.ckpt_dir)
             self.checkpoint = tfe.Checkpoint(optimizer=self.optimizer, model=model.arch)
            
-            # TODO: This allows the user to specify how many checkpoints should be saved.
+            # Note: This allows the user to specify how many checkpoints should be saved.
             # Tensorflow does not expose the parameter in tfe.Checkpoint for max_to_keep,
             # however under the hood it uses a Saver object so we can hack around this.
             from tensorflow.python.training.saver import Saver

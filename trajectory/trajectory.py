@@ -21,9 +21,6 @@ class Trajectory(object):
             assert(n == position_nk2.shape[0])
             assert(k == position_nk2.shape[1])
 
-        # TODO: (Varun) At some point you may want 
-        # dt_n1 if dt differs acros the batch dimension
-
         # Discretization step
         self.dt = dt
 

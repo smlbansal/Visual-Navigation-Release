@@ -52,14 +52,15 @@ class TurtlebotHardware():
         elif params.image_type == 'depth':
             self.imager = rospy.Subscriber('/camera/depth/image_raw', Image, self.imager_callback)
         else:
-            assert(False)
+            test = 5 
+            #assert(False)
 
         # Initialize Actuators
         self.cmd_vel = rospy.Publisher('cmd_vel_mux/input/navi', Twist, queue_size=10)
 
         # Initialize rospy
         rospy.sleep(1)
-        self.r = rospy.Rate(int(1./params.dt))  # Set the actuator frequency in Hz
+        self.r = rospy.Rate(int(1./.05))#params.dt))  # Set the actuator frequency in Hz
         self.reset_odom()
 
     @staticmethod
@@ -93,7 +94,8 @@ class TurtlebotHardware():
             elif self.params.image_type == 'depth':
                 self.raw_image = self.bridge.imgmsg_to_cv2(data, '16UC1')
             else:
-                assert(False)
+                pass
+                #assert(False)
         except CvBridgeError as e:
             print(e)
 
@@ -124,7 +126,8 @@ class TurtlebotHardware():
         elif self.params.image_type == 'depth':
             raise NotImplementedError
         else:
-            assert(False)
+            return np.zeros((self.params.image_size[1], self.params.image_size[0]), np.float32)
+            #assert(False)
         return image
 
     def start_saving_images(self, img_dir):
