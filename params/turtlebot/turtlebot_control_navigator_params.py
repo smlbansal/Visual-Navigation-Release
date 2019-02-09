@@ -34,26 +34,17 @@ def create_turtlebot_params():
     simulator_params.system_dynamics_params = system_dynamics_params
     simulator_params.obstacle_map_params.hardware_params = hardware_params
 
-    # Ensure the control pipeline runs the LQR controllers on the robot
-    simulator_params.planner_params.control_pipeline_params.discard_LQR_controller_data = False
-    simulator_params.planner_params.control_pipeline_params.real_robot = True
-
     # CHANGE THE GOAL HERE!!!!
     # Update the goal position
-    simulator_params.reset_params.goal_config.position.goal_pos=[3.0, 0.0]
+    simulator_params.reset_params.goal_config.position.goal_pos=[5.0, 0.0]
 
-    simulator_params.episode_horizon_s = 20.0
+    simulator_params.episode_horizon_s = 80.0
 
-    simulator_params.control_horizon_s = .3
-
-    # CHANGE THIS IF YOU TRAIN/TEST On Different Cameras!!!!
-    simulator_params.planner_params.convert_waypoint_from_nn_to_robot = False
-
-    # Using Realtime control pipeline
-    #simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV0
+    # CHANGE TEH CONTROL HORIZON HERE!!!
+    simulator_params.control_horizon_s = .5
 
     # Log videos that the robot sees
-    simulator_params.record_video = False
+    simulator_params.record_video = True
 
     p = create_trainer_params(simulator_params=simulator_params)
 
@@ -61,7 +52,7 @@ def create_turtlebot_params():
     p.model = create_model_params()
     
     ### DONT NORMALIZE THE GOAL DISTANCE
-    p.model.max_goal_l2_dist = 10e3
+    p.model.max_goal_l2_dist = 1000
 
     # Finetune the resnet weights
     p.model.arch.finetune_resnet_weights = True
@@ -95,16 +86,15 @@ def create_params():
     # Input Processing Parameters
     p.data_processing.input_processing_params = DotMap(
         p=.1, # Probability of Distortion
-        version='v1' # Version of the distortion function
+        version='v3' # Version of the distortion function
     )
 
     # Change the checkpoint
     #### CHANGE THE NETWORK WEIGHTS HERE
     if hostname == 'gigagreen':
-        p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
+        p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/logs/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/data_distortion_v3/session_2019-02-07_17-14-50/checkpoints/ckpt-20' 
     elif hostname == 'dawkins':
         import pdb; pdb.set_trace()
-        p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/uniform_grid/nn_waypoint/resnet_50_v1/data_distortion_v1/session_2019-01-19_21-36-19/checkpoints/ckpt-18'
     else:
         raise NotImplementedError
     return p

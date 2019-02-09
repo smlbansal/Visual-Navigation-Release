@@ -23,7 +23,7 @@ def create_turtlebot_params():
                              image_type='rgb',
                              dt=simulator_params.planner_params.control_pipeline_params.system_dynamics_params.dt)
 
-    # Ensure the waypoint grid is uniform
+    # Ensure the waypoint grid is SBPD
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
 
     # Ensure the system dynamics used is turtlebot_v2
@@ -42,7 +42,7 @@ def create_turtlebot_params():
 
     # CHANGE THE GOAL HERE!!!!
     # Update the goal position
-    simulator_params.reset_params.goal_config.position.goal_pos=[-20.0, -4.0]
+    simulator_params.reset_params.goal_config.position.goal_pos=[5.0, 0.0]
 
     simulator_params.episode_horizon_s = 200.0
     simulator_params.control_horizon_s = 1.5
@@ -90,7 +90,7 @@ def create_params():
     # Input Processing Parameters
     p.data_processing.input_processing_params = DotMap(
         p=.1, # Probability of Distortion
-        version='v1' # Version of the distortion function
+        version='v3' # Version of the distortion function
     )
 
     # Change the checkpoint

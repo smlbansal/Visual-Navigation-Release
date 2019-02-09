@@ -111,7 +111,7 @@ class TurtlebotSimulator(Simulator):
         if self.system_dynamics.hardware.hit_obstacle:
             time_idx = tf.constant(vehicle_trajectory.k)
         else:
-            time_idx = tf.constant(self.params.episode_horizon+1)
+            time_idx = tf.constant(np.inf)
         return time_idx
 
     def _render_obstacle_map(self, ax):
