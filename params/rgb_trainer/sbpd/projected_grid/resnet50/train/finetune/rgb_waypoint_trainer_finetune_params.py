@@ -7,18 +7,12 @@ def create_rgb_trainer_params():
 
     from params.waypoint_grid.sbpd_image_space_grid import create_params as create_waypoint_params
     from params.model.resnet50_arch_v1_params import create_params as create_model_params
-    #from params.system_dynamics.turtlebot_dubins_v2_params import create_params as create_system_dynamics_params
 
     # Load the dependencies
     simulator_params = create_simulator_params()
 
-    #simulator_params.planner_params.control_pipeline_params.system_dynamics_params = create_system_dynamics_params()
-
     # Ensure the waypoint grid is projected SBPD Grid
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
-
-    from control_pipelines.control_pipeline_v0 import ControlPipelineV0
-    simulator_params.planner_params.control_pipeline_params.pipeline = ControlPipelineV0
 
     # Ensure the renderer modality is rgb
     simulator_params.obstacle_map_params.renderer_params.camera_params.modalities = ['rgb']
@@ -34,12 +28,10 @@ def create_rgb_trainer_params():
     # simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.fov = np.deg2rad(30.)
     # simulator_params.planner_params.control_pipeline_params.waypoint_params.projected_grid_params.tilt = np.deg2rad(36.)
     #
-    # # Hack to convert from the simulation camera parameters to turtlebot parameters
-    # simulator_params.planner_params.convert_waypoint_from_nn_to_robot = True
 
-    simulator_params.planner_params.control_pipeline_params.discard_precomputed_lqr_trajectories = False
-    simulator_params.planner_params.control_pipeline_params.discard_LQR_controller_data = False
-    simulator_params.planner_params.control_pipeline_params.convert_K_to_world_coordinates = True
+    #simulator_params.planner_params.control_pipeline_params.discard_precomputed_lqr_trajectories = False
+    #simulator_params.planner_params.control_pipeline_params.discard_LQR_controller_data = False
+    #simulator_params.planner_params.control_pipeline_params.convert_K_to_world_coordinates = True
     
     # # Make goals harder
     # simulator_params.reset_params.goal_config.position.max_fmm_dist = 10.0
