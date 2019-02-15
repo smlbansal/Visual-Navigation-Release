@@ -34,6 +34,7 @@ class TrainerFrontendHelper(object):
                             help='the path to the job directory to save the output of the session')
         parser.add_argument("-p", "--params", required=True, help='the path to the parameter file')
         parser.add_argument("-d", "--device", type=int, default=1, help='the device to run the training/test on')
+
         
         args = parser.parse_args()
         
@@ -190,7 +191,7 @@ class TrainerFrontendHelper(object):
         if args.command == 'test':
             trainer_dir = self.p.trainer.ckpt_path.split('checkpoints')[0]
             checkpoint_number = int(self.p.trainer.ckpt_path.split('checkpoints')[1].split('-')[1])
-            job_dir = os.path.join(trainer_dir, 'test', 'checkpoint_{:d}'.format(checkpoint_number))
+            job_dir = os.path.join(trainer_dir, 'test', 'checkpoint_{:d}'.format(checkpoint_number), args.job_dir)
         else:
             job_dir = args.job_dir
 

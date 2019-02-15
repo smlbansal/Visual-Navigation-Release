@@ -36,15 +36,18 @@ def create_turtlebot_params():
 
     # CHANGE THE GOAL HERE!!!!
     # Update the goal position
-    simulator_params.reset_params.goal_config.position.goal_pos=[5.0, 0.0]
+    simulator_params.reset_params.goal_config.position.goal_pos=[12.0, 3.0]
 
     simulator_params.episode_horizon_s = 80.0
 
     # CHANGE TEH CONTROL HORIZON HERE!!!
-    simulator_params.control_horizon_s = .5
+    simulator_params.control_horizon_s = 1.5
 
     # Log videos that the robot sees
     simulator_params.record_video = True
+
+    # Log the robot trajectory to a pickle file
+    simulator_params.save_trajectory_data = True
 
     p = create_trainer_params(simulator_params=simulator_params)
 

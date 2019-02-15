@@ -36,8 +36,8 @@ pip install --upgrade tensorflow (make sure to install v1.10.1)
     - roslaunch turtlebot_bringup minimal.launch
     - roslaunch turtlebot_bringup 3dsensor.launch
 1. Launch a preatrained waypoint-based navigator on the real robot (uses the resnet50 architecture) 
-- PYTHONPATH='/opt/ros/kinetic/lib/python2.7/dist-packages:.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test --job-dir ./logs/tmp --params params/turtlebot/turtlebot_waypoint_navigator_params.py -d 0
+- PYTHONPATH='/opt/ros/kinetic/lib/python2.7/dist-packages:.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test --job-dir experiment_description_here --params params/turtlebot/turtlebot_waypoint_navigator_params.py -d 0
 
 2. Launch a preatrained end_to_end-based navigator on the real robot (uses the resnet50 architecture) 
-- PYTHONPATH='/opt/ros/kinetic/lib/python2.7/dist-packages:.' python executables/rgb/resnet50/rgb_control_trainer.py test --job-dir ./logs/tmp --params params/turtlebot/turtlebot_control_navigator_params.py -d 0
+- PYTHONPATH='/opt/ros/kinetic/lib/python2.7/dist-packages:.' python executables/rgb/resnet50/rgb_control_trainer.py test --job-dir experiment_description_here --params params/turtlebot/turtlebot_control_navigator_params.py -d 0
 ```

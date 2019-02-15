@@ -352,8 +352,9 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             data['valid_episode'] = simulator.valid_episode
 
             # Current Occupancy Grid- Useful for plotting these trajectories later
-            data['occupancy_grid'] = simulator.obstacle_map.occupancy_grid_map
-            data['map_bounds_extent'] = np.array(simulator.obstacle_map.map_bounds).flatten(order='F')
+            if hasattr(simulator.obstacle_map, 'occupancy_grid_map'):
+                data['occupancy_grid'] = simulator.obstacle_map.occupancy_grid_map
+                data['map_bounds_extent'] = np.array(simulator.obstacle_map.map_bounds).flatten(order='F')
 
             trajectory_file = os.path.join(trajectory_data_dir, 'traj_{:d}.pkl'.format(i))
             with open(trajectory_file, 'wb') as f:
