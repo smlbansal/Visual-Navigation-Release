@@ -32,10 +32,11 @@ class VisualNavigationModelBase(BaseModel):
         Return the goal position (x, y) in egocentric
         coordinates.
         """
-        l2_dist_to_goal_n = tf.norm(raw_data['goal_position_ego_n2'], axis=1)
-        scale_factor_n = 1./l2_dist_to_goal_n * tf.minimum(l2_dist_to_goal_n,
-                                                           self.p.model.max_goal_l2_dist)
-        return raw_data['goal_position_ego_n2'] * scale_factor_n
+        return raw_data['goal_position_ego_n2']
+        #l2_dist_to_goal_n = tf.norm(raw_data['goal_position_ego_n2'], axis=1)
+        #scale_factor_n = 1./l2_dist_to_goal_n * tf.minimum(l2_dist_to_goal_n,
+        #                                                   self.p.model.max_goal_l2_dist)
+        #return raw_data['goal_position_ego_n2'] * scale_factor_n
     
     def _vehicle_controls(self, raw_data):
         """
