@@ -11,7 +11,7 @@ def create_rgb_trainer_params():
     # Load the dependencies
     simulator_params = create_simulator_params()
 
-    # Ensure the waypoint grid is uniform
+    # Ensure the waypoint grid is projected SBPD Grid
     simulator_params.planner_params.control_pipeline_params.waypoint_params = create_waypoint_params()
 
     # Ensure the renderer modality is rgb
@@ -46,9 +46,6 @@ def create_rgb_trainer_params():
     # Create the model params
     p.model = create_model_params()
 
-    # Finetune the resnet weights
-    p.model.arch.finetune_resnet_weights = True
-
     # # Smoothing cost
     # p.loss.smoothing_coeff = 1e-2
 
@@ -76,7 +73,7 @@ def create_params():
     p.trainer.restore_from_ckpt = False
     
     # Checkpoint directory
-    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/turtlebot_camera_params/session_2019-02-07_17-14-50/checkpoints/ckpt-20' 
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/data_distortion_v3/session_2019-02-07_17-14-50/checkpoints/ckpt-20' 
     
     #'/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
 
@@ -110,12 +107,12 @@ def create_params():
     p.test.number_tests = 200
 
     # Test the network only on goals where the expert succeeded
-    p.test.expert_success_goals = DotMap(use=True,
-                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
+    #p.test.expert_success_goals = DotMap(use=True,
+    #                                     dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
 
     # # Test the network only on goals where the expert succeeded
-    # p.test.expert_success_goals = DotMap(use=True,
-    #                                      dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid_harder_goals_v1')
+    p.test.expert_success_goals = DotMap(use=True,
+                                          dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid')
 
     # Let's not look at the expert
     p.test.simulate_expert = False
