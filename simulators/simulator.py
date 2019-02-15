@@ -103,7 +103,7 @@ class Simulator(SimulatorHelper):
                 _, commanded_actions_nkf = self.system_dynamics.parse_trajectory(trajectory)
             elif self.system_dynamics.simulation_params.simulation_mode == 'realistic':
                 trajectory, commanded_actions_nkf = self.apply_control_closed_loop(start_config,
-                                                                                   planner_data['trajectory'],
+                                                                                   planner_data['spline_trajectory'],
                                                                                    planner_data['k_nkf1'],
                                                                                    planner_data['K_nkfd'],
                                                                                    T=self.params.control_horizon-1,
