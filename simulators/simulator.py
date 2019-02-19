@@ -76,6 +76,7 @@ class Simulator(SimulatorHelper):
         the subtrajectory, and relevant planner data"""
 
         planner_data = self.planner.optimize(config)
+        import pdb; pdb.set_trace()
         trajectory_segment, trajectory_data, commanded_actions_nkf = self._process_planner_data(config, planner_data)
         next_config = SystemConfig.init_config_from_trajectory_time_index(trajectory_segment, t=-1)
         return trajectory_segment, next_config, trajectory_data, commanded_actions_nkf
