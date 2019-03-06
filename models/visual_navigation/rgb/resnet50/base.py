@@ -17,12 +17,18 @@ class Resnet50ModelBase(VisualNavigationModelBase):
                                                              num_outputs=self.p.model.num_outputs,
                                                              params=self.p.model.arch)
 
+        # Store a reference to the batch norm mean/variances in the
+        # network. See predict_nn_output for more information
+        self.bn_parameters = list(filter(lambda variable: 'moving_mean' in variable.name or
+                                         'moving_variance' in variable.name, self.arch.variables))
+
+
     def get_trainable_vars(self):
         """
         Get a list of the trainable variables of the model.
         """
         variables = self.arch.variables
-        
+
         # Remove the ResNet50 weights if necessary
         if not self.p.model.arch.finetune_resnet_weights:
             variables = list(filter(lambda x: 'resnet50' not in x.name, variables))
@@ -44,6 +50,7 @@ class Resnet50ModelBase(VisualNavigationModelBase):
             else:
                 # Use precomputed batch norm statistics from imagenet training
                 tf.assign(self.is_batchnorm_training, False)
+            preds = self.arch.predict_on_batch(data)
         else:
             # Do not use dropouts
             tf.keras.backend.set_learning_phase(0)
@@ -51,4 +58,12 @@ class Resnet50ModelBase(VisualNavigationModelBase):
             # Use precomputed batch norm statistics from imagenet training
             tf.assign(self.is_batchnorm_training, False)
 
-        return self.arch.predict_on_batch(data)
+            # Note (Varun T.). Tensorflow backend sometimes updates
+            # Batch Norm Mean/ Variance values with NAN at test time.
+            # To avoid this issue we save the pre-prediction batch norm parameters
+            # values and then reassign them post prediction.
+            old_bn_parameter_values = [1.*parameter for parameter in self.bn_parameters]
+            preds = self.arch.predict_on_batch(data)
+            [tf.assign(parameter, old_parameter_value) for parameter, old_parameter_value in
+             zip(self.bn_parameters, old_bn_parameter_values)]
+        return preds

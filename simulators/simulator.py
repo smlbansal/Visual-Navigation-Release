@@ -75,7 +75,6 @@ class Simulator(SimulatorHelper):
         subtrajectory, the resulting robot config after the robot executes
         the subtrajectory, and relevant planner data"""
 
-        import ipdb; ipdb.set_trace()
         planner_data = self.planner.optimize(config)
         trajectory_segment, trajectory_data, commanded_actions_nkf = self._process_planner_data(config, planner_data)
         next_config = SystemConfig.init_config_from_trajectory_time_index(trajectory_segment, t=-1)
