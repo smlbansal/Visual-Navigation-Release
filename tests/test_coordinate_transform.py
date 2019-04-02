@@ -11,6 +11,28 @@ from dotmap import DotMap
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from optCtrl.lqr import LQRSolver
 
+def create_params():
+    p = DotMap()
+    p.seed = 1
+    p.n = 1
+    p.k = 100
+    p.dt = .05
+
+    p.quad_coeffs = [1.0, 1.0, 1.0, 1e-10, 1e-10]
+    p.linear_coeffs = [0.0, 0.0, 0.0, 0.0, 0.0]
+
+    p.system_dynamics_params = DotMap(system=DubinsV1,
+                                      dt=.05,
+                                      v_bounds=[0.0, .6],
+                                      w_bounds=[-1.1, 1.1])
+    p.system_dynamics_params.simulation_params = DotMap(simulation_mode='ideal',
+                                                        noise_params = DotMap(is_noisy=False,
+                                                           noise_type='uniform',
+                                                           noise_lb=[-0.02, -0.02, 0.],
+                                                           noise_ub=[0.02, 0.02, 0.],
+                                                           noise_mean=[0., 0., 0.],
+                                                           noise_std=[0.02, 0.02, 0.]))
+    return p
 
 def test_rotate():
     pos_2 = np.array([1.0, 0], dtype=np.float32)
@@ -28,7 +50,8 @@ def test_rotate():
 def test_coordinate_transform():
     n, k = 1, 30
     dt = .1
-    dubins_car = DubinsV1(dt=dt)
+    p = create_params()
+    dubins_car = DubinsV1(dt=dt, params=p.simulation_params)
     ref_config = dubins_car.init_egocentric_robot_config(dt=dt, n=n)
 
     pos_nk2 = np.ones((n, k, 2), dtype=np.float32) * np.random.rand()
@@ -101,29 +124,11 @@ def visualize_coordinate_transform():
     plt.savefig('./tmp/coordinate_transform.png', bbox_inches='tight')
 
 
-def create_params():
-    p = DotMap()
-    p.seed = 1
-    p.n = 1
-    p.k = 100
-    p.dt = .05
-
-    p.quad_coeffs = [1.0, 1.0, 1.0, 1e-10, 1e-10]
-    p.linear_coeffs = [0.0, 0.0, 0.0, 0.0, 0.0]
-
-    p.system_dynamics_params = DotMap(system=DubinsV1,
-                                      dt=.05,
-                                      v_bounds=[0.0, .6],
-                                      w_bounds=[-1.1, 1.1])
-    return p
-
-
 def test_lqr_feedback_coordinate_transform():
 
     p = create_params()
     n, k = p.n, p.k
-
-    dubins = p.system_dynamics_params.system(p.dt)
+    dubins = p.system_dynamics_params.system(p.dt, params=p.simulation_params)
 
     # # Robot starts from (0, 0, 0)
     # # and does a small spiral
@@ -142,8 +147,8 @@ def test_lqr_feedback_coordinate_transform():
                                  heading_nk1=start_pos_n13[:, :, 2:3])
     lqr_res = lqr_solver.lqr(start_config0, traj_ref_egocentric, verbose=False)
     traj_lqr_egocentric = lqr_res['trajectory_opt']
-    K_array_egocentric = lqr_res['K_array_opt']
-    k_array = lqr_res['k_array_opt']
+    K_array_egocentric = lqr_res['K_opt_nkfd']
+    k_array = lqr_res['k_opt_nkf1']
 
     # The origin of the egocentric frame in world coordinates
     start_pos_n13 = tf.constant(np.array([[[1.0, 1.0, np.pi / 2.]]], dtype=np.float32))
