@@ -3,7 +3,8 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-session_dir = '/home/vtolani/Documents/Projects/visual_mpc/tmp/waypoint_analysis/session_2019-04-02_16-14-20/rgb_resnet50_nn_waypoint_simulator'
+#session_dir = '/home/vtolani/Documents/Projects/visual_mpc/tmp/waypoint_analysis/session_2019-04-02_16-14-20/rgb_resnet50_nn_waypoint_simulator'
+session_dir = '/home/vtolani/Documents/Projects/visual_mpc/tmp/waypoint_analysis/500_goals/session_2019-04-05_14-26-07/rgb_resnet50_nn_waypoint_simulator'
 
 def analyze_waypoints(trajectory_data):
     waypt_in_obs_indicator_n = waypoints_in_obs(trajectory_data['vehicle_data']['waypoint_config'],
@@ -86,8 +87,10 @@ def analyze_waypoints_in_obstacle(session_dir, plot=True):
     successful_episode_numbers = np.array(metadata['episode_number'])[np.array(metadata['episode_type_string']) == 'Success']
     in_obs_successful = {key: in_obs[key] for key in successful_episode_numbers}
     total_waypt_successful = {key: total_waypt[key] for key in successful_episode_numbers}
-    
+
     percent_in_obs_successful = np.sum(list(in_obs_successful.values()))/np.sum(list(total_waypt_successful.values()))
+    print('Total # Episodes: {:d}, Total # Successful Episodes:{:d}'.format(len(metadata['episode_number']),
+                                                                            len(successful_episode_numbers)))
     print('Total Waypoints for, All Goals: {:d}, Successful Goals: {:d}'.format(np.sum(list(total_waypt.values())),
                                                                                 np.sum(list(total_waypt_successful.values()))))
     print('Percent Waypoints in Obstacle for All Goals: {:.3f}%'.format(percent_in_obs_total*100.))
@@ -95,7 +98,7 @@ def analyze_waypoints_in_obstacle(session_dir, plot=True):
 
     # Draw the Bar Chart
     num_pts_in_obs = list(set(list(in_obs.values())))
-    goals_for_num_pts_in_obs = {key:[] for key in num_pts_in_obs}
+    goals_for_num_pts_in_obs = {key: [] for key in num_pts_in_obs}
     [goals_for_num_pts_in_obs[in_obs[key]].append(key) for key in in_obs.keys()]
 
     percent_success_per_waypt_in_obs = {}
