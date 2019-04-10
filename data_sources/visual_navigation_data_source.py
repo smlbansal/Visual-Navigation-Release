@@ -6,6 +6,7 @@ import tensorflow as tf
 from data_sources.image_data_source import ImageDataSource
 from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 from systems.dubins_car import DubinsCar
+from utils import utils
 
 
 class VisualNavigationDataSource(ImageDataSource):
@@ -49,28 +50,31 @@ class VisualNavigationDataSource(ImageDataSource):
     
     # TODO: Varun- look into efficiency at some point to see if data collection can be sped up
     def generate_data(self):
-        
+
         # Note (Somil): Since we moved from a string to a list convention for data directories, we are adding
         # additional code here to make sure it is backwards compatible. Moreover, only a single data creation directory
         # can be provided to create the data at the moment.
         if isinstance(self.p.data_creation.data_dir, list):
             assert len(self.p.data_creation.data_dir) == 1
             self.p.data_creation.data_dir = self.p.data_creation.data_dir[0]
-        
+
         # Create the data directory if required
         if not os.path.exists(self.p.data_creation.data_dir):
             os.makedirs(self.p.data_creation.data_dir)
 
+        # Save a copy of the parameter file in the data_directory
+        utils.log_dict_as_json(self.p, os.path.join(self.p.data_creation.data_dir, 'params.json'))
+
         # Initialize the simulator
         simulator = self.p.simulator_params.simulator(self.p.simulator_params)
-        
+
         # Generate the data
         counter = 1
         num_points = 0
         while num_points < self.p.data_creation.data_points:
             # Reset the data dictionary
             data = self.reset_data_dictionary(self.p)
-          
+
             self.episode_counter = 0
             while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
                 # Reset the simulator
