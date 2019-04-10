@@ -163,11 +163,11 @@ class Simulator(SimulatorHelper):
             planner_data, planner_data_last_step = self.planner.mask_and_concat_data_along_batch_dim(planner_data,
                                                                                                      k=termination_time)
             commanded_actions_1kf = tf.concat(commanded_actions_nkf, axis=1)[:, :termination_time]
-            
-            # If all of the data was masked then
+
+            # If all of the data or last_step_data was masked then
             # the episode simulated is not valid
             valid_episode = True
-            if planner_data['system_config'] is None:
+            if planner_data['system_config'] is None or not planner_data_last_step:
                 valid_episode = False
             episode_data = {'vehicle_trajectory': vehicle_trajectory,
                             'vehicle_data': planner_data,

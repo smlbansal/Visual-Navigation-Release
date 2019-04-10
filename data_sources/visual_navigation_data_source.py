@@ -75,7 +75,7 @@ class VisualNavigationDataSource(ImageDataSource):
             while self._num_data_points(data) < self.p.data_creation.data_points_per_file:
                 # Reset the simulator
                 simulator.reset()
-                
+               
                 # Run the planner for one step
                 simulator.simulate()
 
@@ -254,9 +254,6 @@ class VisualNavigationDataSource(ImageDataSource):
         Append data from the last trajectory segment
         to the data dictionary.
         """
-        import pdb; pdb.set_trace()
-        #TODO: Make sure all dimensions are correct here!!!
-
         data_last_step = simulator.vehicle_data_last_step
         n = data_last_step['system_config'].n
 
@@ -273,12 +270,12 @@ class VisualNavigationDataSource(ImageDataSource):
         waypoint_ego_n13 = DubinsCar.convert_position_and_heading_to_ego_coordinates(start_nk3,
                                                                                      last_step_waypoint_n13)
 
-        data['last_step_goal_position_n2'].append(last_step_goal_n13)
+        data['last_step_goal_position_n2'].append(last_step_goal_n13[:, 0, :2])
         
-        data['last_step_goal_position_ego_n2'].append(goal_ego_n13)
+        data['last_step_goal_position_ego_n2'].append(goal_ego_n13[:, 0, :2])
         
-        data['last_step_optimal_waypoint_n3'].append(last_step_waypoint_n13)
-        data['last_step_optimal_waypoint_ego_n3'].append(waypoint_ego_n13)
+        data['last_step_optimal_waypoint_n3'].append(last_step_waypoint_n13[:, 0, :])
+        data['last_step_optimal_waypoint_ego_n3'].append(waypoint_ego_n13[:, 0, :])
 
         data['last_step_optimal_control_nk2'].append(simulator.vehicle_data_last_step['trajectory'].speed_and_angular_speed_nk2().numpy())
         return data
