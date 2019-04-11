@@ -222,6 +222,11 @@ class Simulator(SimulatorHelper):
             while dist_to_obs <= obs_margin:
                 start_112 = self.obstacle_map.sample_point_112(rng)
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(start_112))
+        elif p.position.reset_type == 'custom':
+            x, y = p.position.start_pos
+            start_112 = np.array([[[x, y]]], dtype=np.float32)
+            dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(start_112))
+            assert(dist_to_obs.numpy() > 0.0)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle starting position.')
 
@@ -230,6 +235,9 @@ class Simulator(SimulatorHelper):
             heading_111 = np.zeros((1, 1, 1))
         elif p.heading.reset_type == 'random':
             heading_111 = rng.uniform(p.heading.bounds[0], p.heading.bounds[1], (1, 1, 1))
+        elif p.position.reset_type == 'custom':
+            theta = p.heading.start_heading
+            heading_111 = np.array([[[theta]]], dtype=np.float32)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle starting heading.')
 
@@ -280,6 +288,11 @@ class Simulator(SimulatorHelper):
                 goal_112 = self.obstacle_map.sample_point_112(rng)
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
                 dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
+        elif p.position.reset_type == 'custom':
+            x, y = p.position.goal_pos
+            goal_112 = np.array([[[x, y]]], dtype=np.float32)
+            dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
+            assert(dist_to_obs.numpy() > 0.0)
         elif p.position.reset_type == 'random_v1':
             assert self.obstacle_map.name == 'SBPDMap'
             # Select a random position on the map that is at least obs_margin away from the

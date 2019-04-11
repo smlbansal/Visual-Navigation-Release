@@ -139,13 +139,20 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
         with tf.device(self.p.device):
             simulator_datas = []
 
-            simulate_kwargs = self._ensure_expert_success_data_exists_if_needed()
+            # If setting custom goals for the agent force the number of tests to be 1
+            if self.p.test.simulator_params.reset_params.start_config.position.reset_type == 'custom':
+                assert(self.p.test.simulator_params.reset_params.goal_config.position.reset_type == 'custom')
+                simulate_kwargs = {}
+                number_tests = 1
+            else:
+                simulate_kwargs = self._ensure_expert_success_data_exists_if_needed()
+                number_tests = self.p.test.number_tests
 
             # Optionally initialize the Expert Simulator to be tested
             if self.p.test.simulate_expert:
                 expert_simulator_params = self.p.simulator_params
                 expert_simulator_data = self._init_simulator_data(expert_simulator_params,
-                                                                  self.p.test.number_tests,
+                                                                  number_tests,
                                                                   self.p.test.seed,
                                                                   name='Expert_Simulator',
                                                                   dirname='expert_simulator',
@@ -155,7 +162,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             # Initialize the NN Simulator to be tested
             nn_simulator_params = self._nn_simulator_params()
             nn_simulator_data = self._init_simulator_data(nn_simulator_params,
-                                                          self.p.test.number_tests,
+                                                          number_tests,
                                                           self.p.test.seed,
                                                           name=self.simulator_name,
                                                           dirname=self.simulator_name.lower(),
