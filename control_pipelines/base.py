@@ -4,10 +4,8 @@ import numpy as np
 
 
 class ControlPipelineBase(object):
-    """A parent class representing an abstract control pipeline.
-    It defines the basic functions that a control pipeline should expose.
-
-    A control pipeline is used for planning trajectories between start and goal configs.
+    """A parent class representing an abstract control pipeline. It defines the basic functions that a control pipeline
+    should expose. A control pipeline is used for planning trajectories between start and waypoint/goal configs.
     """
 
     def __init__(self, params):
@@ -23,17 +21,14 @@ class ControlPipelineBase(object):
         """
         # Parse the dependencies
         p.waypoint_params.grid.parse_params(p.waypoint_params)
-
         p.planning_horizon_s = p.spline_params.max_final_time
-        p.planning_horizon = int(
-            np.ceil(p.planning_horizon_s / p.system_dynamics_params.dt))
+        p.planning_horizon = int(np.ceil(p.planning_horizon_s / p.system_dynamics_params.dt))
         return p
 
     @classmethod
     def get_pipeline(cls, params):
-        """Used to instantiate a control pipeline.
-        Can be overidden to ensure that only one
-        pipeline is ever created (see pipeline v0)."""
+        """Used to instantiate a control pipeline. Can be overidden to ensure that only one pipeline is ever
+        created (see pipeline v0)."""
         return cls(params)
 
     def generate_control_pipeline(self, params=None):

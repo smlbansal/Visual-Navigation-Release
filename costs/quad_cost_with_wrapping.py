@@ -32,10 +32,8 @@ class QuadraticRegulatorRef(DiscreteCost):
         self.isNonquadratic = False
 
     def update_shape(self):
-        """Update the shape of quadratic/linear penalites of the
-        cost function based on the shape of self.trajectory_ref.
-        Allows a cost function object to be reused with a trajectory
-        object as it changes shape."""
+        """Update the shape of quadratic/linear penalites of the cost function based on the shape of
+        self.trajectory_ref. Allows a cost function object to be reused with a trajectory object as it changes shape."""
         p = self.params
 
         x_dim, u_dim = self._x_dim, self._u_dim
@@ -43,10 +41,8 @@ class QuadraticRegulatorRef(DiscreteCost):
         C_gg = tf.diag(p.quad_coeffs, name='lqr_coeffs_quad')
         c_g = tf.constant(p.linear_coeffs, name='lqr_coeffs_linear', dtype=tf.float32)
         # Check dimensions
-        assert ((tf.reduce_all(tf.equal(C_gg[:x_dim, x_dim:],
-                                        tf.transpose(C_gg[x_dim:, :x_dim]))).numpy()))
-        assert ((x_dim + u_dim) == C_gg.shape[0].value
-                == C_gg.shape[1].value == c_g.shape[0].value)
+        assert ((tf.reduce_all(tf.equal(C_gg[:x_dim, x_dim:], tf.transpose(C_gg[x_dim:, :x_dim]))).numpy()))
+        assert ((x_dim + u_dim) == C_gg.shape[0].value == C_gg.shape[1].value == c_g.shape[0].value)
 
         trajectory_ref = self.trajectory_ref
         n, k, g = trajectory_ref.n, trajectory_ref.k, C_gg.shape[0]
@@ -69,17 +65,15 @@ class QuadraticRegulatorRef(DiscreteCost):
             H_nkgg = self._C_nkgg
             J_nkg = self._c_nkg
             z_nkg = self.construct_z(trajectory)
-            Hz_nkg = tf.squeeze(tf.matmul(H_nkgg, z_nkg[:, :, :, None]),
-                                axis=-1)
+            Hz_nkg = tf.squeeze(tf.matmul(H_nkgg, z_nkg[:, :, :, None]), axis=-1)
             return H_nkgg[:, :, :self._x_dim, :self._x_dim], \
                    H_nkgg[:, :, :self._x_dim, self._x_dim:], \
                    H_nkgg[:, :, self._x_dim:, self._x_dim:], \
                    J_nkg[:, :, :self._x_dim] + Hz_nkg[:, :, :self._x_dim], \
                    J_nkg[:, :, self._x_dim:] + Hz_nkg[:, :, self._x_dim:]
 
-    # TODO: Currently calling numpy() here as tfe.DEVICE_PLACEMENT_SILENT
-    # is not working to place non-gpu ops (i.e. mod) on the cpu
-    # turning tensors into numpy arrays is a hack around this.
+    # TODO: Currently calling numpy() here as tfe.DEVICE_PLACEMENT_SILENT is not working in the eager mode to place
+    # non-gpu ops (i.e. mod) on the cpu turning tensors into numpy arrays is a hack around this.
     def construct_z(self, trajectory):
         """ Input: A trajectory with x_dim =d and u_dim=f
             Output: z_nkg - a tensor of size n,k,g where g=d+f
@@ -90,8 +84,6 @@ class QuadraticRegulatorRef(DiscreteCost):
             delx_nkd = x_nkd - x_ref_nkd
             delu_nkf = u_nkf - u_ref_nkf
             z_nkg = tf.concat([delx_nkd[:, :, :self.angle_dims],
-                               angle_normalize(delx_nkd[:, :,
-                                                        self.angle_dims:self.angle_dims+1].numpy()),
-                               delx_nkd[:, :, self.angle_dims+1:],
-                               delu_nkf], axis=2)
+                               angle_normalize(delx_nkd[:, :, self.angle_dims:self.angle_dims+1].numpy()),
+                               delx_nkd[:, :, self.angle_dims+1:], delu_nkf], axis=2)
             return z_nkg

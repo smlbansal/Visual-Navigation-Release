@@ -6,16 +6,13 @@ from utils.angle_utils import angle_normalize
 
 
 class ControlPipelineV0Helper():
-    """A collection of useful helper functions
-    for ControlPipelineV0."""
+    """A collection of useful helper functions for ControlPipelineV0."""
 
-    # TODO: Currently calling numpy() here as tfe.DEVICE_PLACEMENT_SILENT
-    # is not working to place non-gpu ops (i.e. mod) on the cpu
-    # turning tensors into numpy arrays is a hack around this.
+    # TODO: Currently calling numpy() here as tfe.DEVICE_PLACEMENT_SILENT is not working in the eager mode to place
+    # non-gpu ops (i.e. mod) on the cpu turning tensors into numpy arrays is a hack around this.
     def compute_closest_waypt_idx(self, desired_waypt_config, waypt_configs):
-        """" Given desired_waypoint_config and a list of precomputed waypoints
-        in waypt_configs returns the index of the closest (in wrapped l2 distance)
-        precomputed waypoint."""
+        """" Given desired_waypoint_config and a list of precomputed waypoints in waypt_configs returns the index of
+        the closest (in wrapped l2 distance) precomputed waypoint."""
         # TODO: Potentially add linear and angular velocity here
         diff_pos_nk2 = desired_waypt_config.position_nk2() - waypt_configs.position_nk2()
         diff_heading_nk1 = angle_normalize(desired_waypt_config.heading_nk1().numpy() -
@@ -25,8 +22,7 @@ class ControlPipelineV0Helper():
         return idx.numpy()[0]
 
     def prepare_data_for_saving(self, data, idx):
-        """Construct a dictionary for saving to a pickle file
-        by indexing into each element of data."""
+        """Construct a dictionary for saving to a pickle file by indexing into each element of data."""
         data_to_save = {'start_configs': data['start_configs'][idx].to_numpy_repr(),
                         'waypt_configs': data['waypt_configs'][idx].to_numpy_repr(),
                         'start_speeds': data['start_speeds'][idx].numpy(),
@@ -38,29 +34,25 @@ class ControlPipelineV0Helper():
         return data_to_save
 
     def extract_data_bin(self, pipeline_data, idx):
-        """Assumes pipeline data is a dictionary where keys maps to lists (i.e. multiple
-        bins) of tensors, trajectories, or system config objects. Returns a new
-        dictionary corresponding to one particular bin in pipeline_data."""
+        """Assumes pipeline data is a dictionary where keys maps to lists (i.e. multiple bins) of tensors, trajectories,
+         or system config objects. Returns a new dictionary corresponding to one particular bin in pipeline_data."""
         data_bin = {}
         for key in pipeline_data.keys():
             data_bin[key] = pipeline_data[key][idx]
         return data_bin
 
 
-    # TODO: Varun T. tensorflow eager mode does not currently
-    # garbage collect tensors properly so when saving memory (below)
-    # we must explicitly never construct the tensors, else the memory will be
-    # used anyway.
+    # TODO: Varun T. tensorflow eager mode does not currently garbage collect tensors properly so when saving memory
+    # (below) we must explicitly never construct the tensors, else the memory will be used anyway.
     def load_and_process_data(self, filename, discard_lqr_controller_data=False,
                               discard_precomputed_lqr_trajectories=False,
                               track_trajectory_acceleration=False):
-        """Load control pipeline data from a pickle file
-        and process it so that it can be used by the pipeline."""
+        """Load control pipeline data from a pickle file and process it so that it can be used by the pipeline."""
         with open(filename, 'rb') as f:
             data = pickle.load(f)
 
-        # To save memory, when discard_precomputed_lqr_trajectories is true
-        # the lqr_trajectories variables can be discarded
+        # To save memory, when discard_precomputed_lqr_trajectories is true the lqr_trajectories variables can be
+        # discarded.
         dt = data['lqr_trajectories']['dt']
         n = data['lqr_trajectories']['n']
         if discard_precomputed_lqr_trajectories:
@@ -69,10 +61,9 @@ class ControlPipelineV0Helper():
             lqr_trajectories = Trajectory.init_from_numpy_repr(track_trajectory_acceleration=track_trajectory_acceleration,
                                                                **data['lqr_trajectories'])
 
-        # To save memory the LQR controllers and reference
-        # trajectories (spline trajectories) can be discarded
-        # when not needed (i.e. in simulation when the saved lqr_trajectory
-        # is the exact result of applying the saved LQR controllers
+        # To save memory the LQR controllers and reference trajectories (spline trajectories) can be discarded when not
+        # needed (i.e. in simulation when the saved lqr_trajectory is the exact result of applying the saved LQR
+        # controllers.
         n = data['spline_trajectories']['n']
         if discard_lqr_controller_data:
             spline_trajectories = Trajectory(dt=dt, n=n, k=0)
@@ -103,8 +94,7 @@ class ControlPipelineV0Helper():
         return data_processed
 
     def gather_across_batch_dim(self, data, idxs):
-        """ For each key in data gather idxs across the batch dimension
-        creating a new data dictionary."""
+        """ For each key in data gather idxs across the batch dimension creating a new data dictionary."""
         data_bin = {}
         data_bin['waypt_configs'] = SystemConfig.gather_across_batch_dim_and_create(data['waypt_configs'], idxs)
         data_bin['start_configs'] = SystemConfig.gather_across_batch_dim_and_create(data['start_configs'], idxs)
@@ -117,11 +107,9 @@ class ControlPipelineV0Helper():
         return data_bin
 
     def concat_data_across_binning_dim(self, data):
-        """Concatenate across the binning dimension. It is asummed
-        that data is a dictionary where each key maps to a list
-        of tensors, Trajectory, or System Config objects.
-        The concatenated results are stored in
-        lists of length 1 for each key (i.e. only one bin)."""
+        """Concatenate across the binning dimension. It is asummed that data is a dictionary where each key maps to a
+        list of tensors, Trajectory, or System Config objects. The concatenated results are stored in lists of length 1
+        for each key (i.e. only one bin)."""
         data['start_speeds'] = [tf.concat(data['start_speeds'], axis=0)]
         data['start_configs'] = [SystemConfig.concat_across_batch_dim(data['start_configs'])]
         data['waypt_configs'] = [SystemConfig.concat_across_batch_dim(data['waypt_configs'])]
@@ -133,17 +121,15 @@ class ControlPipelineV0Helper():
         return data
 
     def append_data_bin_to_pipeline_data(self, pipeline_data, data_bin):
-        """Assumes pipeline_data and data_bin have the same keys. Also assumes that
-        each key in pipeline_data maps to a list (i.e. mulitple bins) while each key in data_bin
-        maps to a single element (i.e. single bin). For each key appends the singular element in
-        data_bin to the list in pipeline_data"""
+        """Assumes pipeline_data and data_bin have the same keys. Also assumes that each key in pipeline_data maps to
+        a list (i.e. mulitple bins) while each key in data_bin maps to a single element (i.e. single bin). For each key
+        appends the singular element in data_bin to the list in pipeline_data"""
         assert(set(pipeline_data.keys()) == set(data_bin.keys()))
         for key in pipeline_data.keys():
             pipeline_data[key].append(data_bin[key])
 
     def empty_data_dictionary(self):
-        """ Constructs an empty data dictionary to be filled by
-        the control pipeline."""
+        """ Constructs an empty data dictionary to be filled by the control pipeline."""
         data = {'start_configs': [], 'waypt_configs': [],
                 'start_speeds': [], 'spline_trajectories': [],
                 'horizons': [], 'lqr_trajectories': [],

@@ -11,12 +11,10 @@ from dotmap import DotMap
 def tf_session_config():
     config = tf.ConfigProto()
 
-    # Allows for memory growth so the process only uses
-    # the amount of memory it needs
+    # Allows for memory growth so the process only uses the amount of memory it needs
     config.gpu_options.allow_growth = True
 
-    # Allows for tensors to be copied onto cpu when no
-    # cuda gpu kernel is available
+    # Allows for tensors to be copied onto cpu when no cuda gpu kernel is available
     device_policy = tf.contrib.eager.DEVICE_PLACEMENT_SILENT
 
     tf_config = {'config': config,
@@ -77,8 +75,7 @@ def delete_if_exists(dirname):
 
 
 def check_dotmap_equality(d1, d2):
-    """Check equality on nested dotmap objects that all keys
-    and values match."""
+    """Check equality on nested dotmap objects that all keys and values match."""
     assert(len(set(d1.keys()).difference(set(d2.keys()))) == 0)
     equality = [True] * len(d1.keys())
     for i, key in enumerate(d1.keys()):
@@ -92,6 +89,7 @@ def check_dotmap_equality(d1, d2):
 def configure_plotting():
     import matplotlib.pyplot as plt
     plt.style.use('ggplot')
+
 
 def subplot2(plt, Y_X, sz_y_sz_x=(10, 10), space_y_x=(0.1, 0.1), T=False):
     Y, X = Y_X

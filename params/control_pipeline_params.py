@@ -34,6 +34,7 @@ def create_params():
 
     # Velocity binning parameters
     p.binning_parameters = DotMap(num_bins=61,
+                                  min_speed=p.system_dynamics_params.v_bounds[0],
                                   max_speed=p.system_dynamics_params.v_bounds[1])
 
     # Converting K to world coordinates is slow
