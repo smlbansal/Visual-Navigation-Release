@@ -246,6 +246,9 @@ class Simulator(SimulatorHelper):
             speed_111 = np.zeros((1, 1, 1))
         elif p.speed.reset_type == 'random':
             speed_111 = rng.uniform(p.speed.bounds[0], p.speed.bounds[1], (1, 1, 1))
+        elif p.speed.reset_type == 'custom':
+            speed = p.speed.start_speed
+            speed_111 = np.array([[[speed]]], dtype=np.float32)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle starting speed.')
 
@@ -257,6 +260,9 @@ class Simulator(SimulatorHelper):
         elif p.ang_speed.reset_type == 'gaussian':
             ang_speed_111 = rng.normal(p.ang_speed.gaussian_params[0],
                                        p.ang_speed.gaussian_params[1], (1, 1, 1))
+        elif p.ang_speed.reset_type == 'custom':
+            ang_speed = p.ang_speed.start_ang_speed
+            ang_speed_111 = np.array([[[ang_speed]]], dtype=np.float32)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle starting angular speed.')
 
