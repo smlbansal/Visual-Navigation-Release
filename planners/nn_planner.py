@@ -1,8 +1,6 @@
-import tensorflow as tf
 import numpy as np
 from planners.planner import Planner
 from trajectory.trajectory import SystemConfig
-from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 
 
 class NNPlanner(Planner):
@@ -29,8 +27,10 @@ class NNPlanner(Planner):
         data = {}
 
         # Convert Goal to Egocentric Coordinates
-        self.params.system_dynamics.to_egocentric_coordinates(start_config, simulator.goal_config, self.goal_ego_config)
-        
+        self.params.system_dynamics.to_egocentric_coordinates(start_config,
+                                                              simulator.goal_config,
+                                                              self.goal_ego_config)
+
         # Image Data
         if hasattr(self.params.model, 'occupancy_grid_positions_ego_1mk12'):
             kwargs = {'occupancy_grid_positions_ego_1mk12':
