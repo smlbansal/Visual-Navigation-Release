@@ -4,7 +4,7 @@ from waypoint_grids.uniform_sampling_grid import UniformSamplingGrid
 
 
 class ProjectedImageSpaceGrid(UniformSamplingGrid):
-    """A class representing a uniform grid in the image plane and then project it down to the world space
+    """A class representing a uniform grid in the image plane projected down to the world space
     coordinates using the camera parameters."""
 
     def __init__(self, params):
