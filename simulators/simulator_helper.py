@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from trajectory.trajectory import Trajectory
 from utils.angle_utils import angle_normalize
 
 
@@ -13,7 +12,7 @@ class SimulatorHelper(object):
         fashion to the system starting from start_config.
         """
         x0_n1d, _ = self.system_dynamics.parse_trajectory(start_config)
-        actions = []
+        applied_actions = []
         states = [x0_n1d*1.]
         x_next_n1d = x0_n1d*1.
         for t in range(T):
@@ -22,16 +21,20 @@ class SimulatorHelper(object):
 
             # Append the applied action to the action list
             if sim_mode == 'ideal':
-                actions.append(u_n1f)
+                applied_actions.append(u_n1f)
             elif sim_mode == 'realistic':
-                actions.append(np.array(self.system_dynamics.hardware.state_dx*1.)[None, None])
+                # TODO: This line is intended for a real hardware setup.
+                # If running this code on a real robot the user will need to
+                # implement hardware.state_dx such that it reflects the current
+                # sensor reading of the robot's applied actions
+                applied_actions.append(np.array(self.system_dynamics.hardware.state_dx*1.)[None, None])
             else:
                 assert(False)
 
             states.append(x_next_n1d)
 
         commanded_actions_nkf = tf.concat([control_nk2[:, :T], u_n1f], axis=1)
-        u_nkf = tf.concat(actions, axis=1)
+        u_nkf = tf.concat(applied_actions, axis=1)
         x_nkd = tf.concat(states, axis=1)
         trajectory = self.system_dynamics.assemble_trajectory(x_nkd,
                                                               u_nkf,
@@ -46,12 +49,12 @@ class SimulatorHelper(object):
         Here k_array_nTf1 and K_array_nTfd are tensors of dimension
         (n, self.T-1, f, 1) and (n, self.T-1, f, d) respectively.
         """
-        commanded_actions_nkf = []
         with tf.name_scope('apply_control'):
             x0_n1d, _ = self.system_dynamics.parse_trajectory(start_config)
             assert(len(x0_n1d.shape) == 3)  # [n,1,x_dim]
             angle_dims = self.system_dynamics._angle_dims
-            actions = []
+            commanded_actions_nkf = []
+            applied_actions = []
             states = [x0_n1d*1.]
             x_ref_nkd, u_ref_nkf = self.system_dynamics.parse_trajectory(trajectory_ref)
             x_next_n1d = x0_n1d*1.
@@ -76,9 +79,13 @@ class SimulatorHelper(object):
                 commanded_actions_nkf.append(u_n1f)
                 # Append the applied action to the action list
                 if sim_mode == 'ideal':
-                    actions.append(u_n1f)
+                    applied_actions.append(u_n1f)
                 elif sim_mode == 'realistic':
-                    actions.append(np.array(self.system_dynamics.hardware.state_dx*1.)[None, None])
+                    # TODO: This line is intended for a real hardware setup.
+                    # If running this code on a real robot the user will need to
+                    # implement hardware.state_dx such that it reflects the current
+                    # sensor reading of the robot's applied actions
+                    applied_actions.append(np.array(self.system_dynamics.hardware.state_dx*1.)[None, None])
                 else:
                     assert(False)
 
@@ -86,7 +93,7 @@ class SimulatorHelper(object):
 
             commanded_actions_nkf.append(u_n1f)
             commanded_actions_nkf = tf.concat(commanded_actions_nkf, axis=1)
-            u_nkf = tf.concat(actions, axis=1)
+            u_nkf = tf.concat(applied_actions, axis=1)
             x_nkd = tf.concat(states, axis=1)
             trajectory = self.system_dynamics.assemble_trajectory(x_nkd,
                                                                   u_nkf,
