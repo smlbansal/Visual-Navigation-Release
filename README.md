@@ -1,5 +1,15 @@
-Visual MPC
+WayPtNav
 ==========
+Welcome to WayPtNav, a codebase for simulation of robot navigational scenarios in indoor-office environments! We are a team of researchers from UC Berkeley and Facebook AI Research.
+
+In this codebase we explore ["Combining Optimal Control and Learning for Visual Navigation in Novel Environments"](https://vtolani95.github.io/WayPtNav/). We provide code to run our pretrained model based method as well as a comparable end-to-end method on geometric, point-navigation tasks in the [Stanford Building Parser Dataset](http://buildingparser.stanford.edu/dataset.html).
+
+Additionally, we provide all code needed to generate more training data, train your own agent, and deploy it in a variety of different simulations rendered from scans of Stanford Buildings.
+
+More information on the model-based and end-to-end methods we use is available [here](https://vtolani95.github.io/WayPtNav/).
+
+
+## Setup
 ### Setup A Virtual Environment
 ```
 conda create -n venv-mpc python=3.6
@@ -17,27 +27,63 @@ pip install --upgrade tensorflow (make sure to install v1.10.1)
 3. Install mp-env as a package ("pip install -e ." from the root directory)
 ```
 
-
-### Run a simulation-trained policy on the Turtlebot
-
-#### Setup the Turtlebot
+### Download the necessary data
+##### 1. Download the Precomputed Control Pipeline Data
 ```
-0. Create a new anaconda environment with python 2.7 (rospy is only built for py27). Follow the instructions above for 'Setup a Virtual Environment'
-1. Install ros-kinetic
-2. Install the turtlebot drivers for ros-kinetic
-    - sudo apt-get install ros-kinetic-turtlebot ros-kinetic-turtlebot-apps ros-kinetic-turtlebot-interactions ros-kinetic-turtlebot-simulator ros-kinetic-kobuki-ftdi ros-kinetic-ar-track-alvar-msgs
-4. Install rospkg, defusedxml, numpy with pip
-3. Install camera drivers if needed (i.e. for Orbecc Astra)
+TODO: Put Something Here
+```
+##### 2. Download the meshes/traversables for the Stanford Building Parser Dataset
+```
+TODO: Put Something Here
+```
+##### 3. Download the model checkpoints for the model-based and end-to-end methods
+```
+TODO: Put Something Here
+```
+##### 4 (Optional). Download the training data used in training the model-based and end-to-end methods.
+```
+TODO: Put Something Here
 ```
 
-#### Run a Policy on the Turtlebot
-```
-0. Launch the turtlebot base and camera drivers with
-    - roslaunch turtlebot_bringup minimal.launch
-    - roslaunch turtlebot_bringup 3dsensor.launch
-1. Launch a preatrained waypoint-based navigator on the real robot (uses the resnet50 architecture) 
-- PYTHONPATH='/opt/ros/kinetic/lib/python2.7/dist-packages:.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test --job-dir experiment_description_here --params params/turtlebot/turtlebot_waypoint_navigator_params.py -d 0
 
-2. Launch a preatrained end_to_end-based navigator on the real robot (uses the resnet50 architecture) 
-- PYTHONPATH='/opt/ros/kinetic/lib/python2.7/dist-packages:.' python executables/rgb/resnet50/rgb_control_trainer.py test --job-dir experiment_description_here --params params/turtlebot/turtlebot_control_navigator_params.py -d 0
+
+## Testing Pretrained Algorithms
+
+Along with the codebase, we provide implementations of our model-based method as well as a state-of-the-art end-to-end method trained for the task of geometric point navigation in indoor office settings. To test both of these methods on a held out set of navigational goals in a novel office building not seen at training time run the following commands.
+
+### Test Our Model-Based Method
+```
+TODO: Put Something Here
+```
+### Test A Comparable End-to-End Method
+```
+TODO: Put Something Here
+```
+## Training Your Own Networks
+We also provide the training data we used to train both the model-based and end-to-end methods. You can experiment with training your own models on this training data using the following commands:
+### Train Our Model-Based Method
+```
+TODO: Put Something Here
+```
+### Train A Comparable End-to-End Method
+```
+TODO: Put Something Here
+```
+
+## Generating More Training Data
+In addition to testing and training on our data we also offer functionality to generate your own training data using our optimal control based expert planner. You can then train and test a network on your own dataset. To generate more data run the following command:
+```
+TODO: Put Something Here
+```
+## Citing This Work
+If you use the WayPtNav simulator or algorithms in your research please cite:
+```
+@misc{bansal2019combining,
+    title={Combining Optimal Control and Learning for Visual Navigation in Novel Environments},
+    author={Somil Bansal and Varun Tolani and Saurabh Gupta and Jitendra Malik and Claire Tomlin},
+    year={2019},
+    eprint={1903.02531},
+    archivePrefix={arXiv},
+    primaryClass={cs.RO}
+}
 ```
