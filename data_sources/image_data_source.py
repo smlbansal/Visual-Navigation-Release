@@ -14,7 +14,7 @@ class ImageDataSource(DataSource):
     new directory. Since the entire dataset will not fit in memory an image_data_source stores the
     training and validation sets as dictionaries with references to pickle files (placeholders). Upon calling
     generate_training_batch (or validation_batch) the references to pickle files are converted into
-    actual training data (by loading the actual pickle file).trace()
+    actual training data (by loading the actual pickle file)
     """
     def __init__(self, params):
         self.p = params
