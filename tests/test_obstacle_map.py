@@ -1,100 +1,82 @@
 import numpy as np
 import tensorflow as tf
 tf.enable_eager_execution()
+from dotmap import DotMap
 import matplotlib.pyplot as plt
 from trajectory.trajectory import Trajectory
-from obstacles.circular_obstacle_map import CircularObstacleMap
+from obstacles.sbpd_map import SBPDMap
 
 
-def test_random_circular_obstacle_map(visualize=False):
+def create_renderer_params():
+    from params.renderer_params import get_traversible_dir
+    p = DotMap()
+    p.dataset_name = 'sbpd'
+    p.building_name = 'area3'
+    p.flip = False
+
+    p.camera_params = DotMap(modalities=['occupancy_grid'],  # occupancy_grid, rgb, or depth
+                             width=64,
+                             height=64)
+
+    # The robot is modeled as a solid cylinder
+    # of height, 'height', with radius, 'radius',
+    # base at height 'base' above the ground
+    # The robot has a camera at height
+    # 'sensor_height' pointing at 
+    # camera_elevation_degree degrees vertically
+    # from the horizontal plane.
+    p.robot_params = DotMap(radius=18,
+                            base=10,
+                            height=100,
+                            sensor_height=80,
+                            camera_elevation_degree=-45,  # camera tilt
+                            delta_theta=1.0)
+
+    # Traversible dir
+    p.traversible_dir = get_traversible_dir()
+
+    return p
+
+
+def create_params():
+    p = DotMap()
+    p.obstacle_map_params = DotMap(obstacle_map=SBPDMap,
+                                   map_origin_2=[0., 0.],
+                                   sampling_thres=2,
+                                   plotting_grid_steps=100)
+    p.obstacle_map_params.renderer_params = create_renderer_params()
+
+    return p
+
+
+def test_sbpd_map(visualize=False):
     np.random.seed(seed=1)
-    dt = .1
-    n, k = 100, 20
 
-    # Obstacle map
-    map_bounds = [(-2., -2.), (2., 2.)]  # [(min_x, min_y), (max_x, max_y)]
-    min_n, max_n = 2, 4
-    min_r, max_r = .25, .5
-    rng = np.random.RandomState(0)
-    grid = CircularObstacleMap.init_random_map(map_bounds, rng,
-                                               min_n, max_n, min_r, max_r)
+    # Define a set of positions and evaluate objective
+    pos_nk2 = tf.constant([[[8., 16.], [8., 12.5], [18., 16.5]]], dtype=tf.float32)
+    trajectory = Trajectory(dt=0.1, n=1, k=3, position_nk2=pos_nk2)
 
-    # Trajectory
-    pos_nk2 = tf.zeros((n, k, 2), dtype=tf.float32)
-    trajectory = Trajectory(dt=dt, n=n, k=k, position_nk2=pos_nk2)
+    p = create_params()
 
-    # Expected_distances
-    expected_distances_m = (tf.norm(grid.obstacle_centers_m2, axis=1) -
-                            grid.obstacle_radii_m1[:, 0])
-    expected_min_distance = min(expected_distances_m.numpy())
+    # Create an SBPD Map
+    obstacle_map = SBPDMap(p.obstacle_map_params)
 
-    # Computed distances
-    obs_dists_nk = grid.dist_to_nearest_obs(trajectory.position_nk2())
+    obs_dists_nk = obstacle_map.dist_to_nearest_obs(trajectory.position_nk2())
 
-    assert(np.allclose(obs_dists_nk, np.ones((n, k))*expected_min_distance,
-                       atol=1e-4))
+    assert(np.allclose(obs_dists_nk, [0.59727454, 1.3223624, 0.47055122]))
 
     if visualize:
-        xs = np.linspace(map_bounds[0][0], map_bounds[1][0], 100,
-                         dtype=np.float32)
-        ys = np.linspace(map_bounds[0][1], map_bounds[1][1], 100,
-                         dtype=np.float32)
-        XS, YS = tf.meshgrid(xs, ys[::-1])
-
-        occupancy_grid_nn = grid.create_occupancy_grid(XS, YS)
+        occupancy_grid_nn = obstacle_map.create_occupancy_grid()
 
         fig = plt.figure()
         ax = fig.add_subplot(121)
-        grid.render(ax)
+        obstacle_map.render(ax)
 
         ax = fig.add_subplot(122)
         ax.imshow(occupancy_grid_nn, cmap='gray', origin='lower')
         ax.set_axis_off()
         plt.show()
-    else:
-        print('rerun test_random_circular_obstacle_map with visualize=True to\
-              visualize the obstacle_map')
-
-
-def test_circular_obstacle_map(visualize=False):
-    np.random.seed(seed=1)
-    n, k = 100, 20
-    dt = .1
-    map_bounds = [(-2, -2), (2, 2)]  # [(min_x, min_y), (max_x, max_y)]
-
-    pos_nk2 = tf.zeros((n, k, 2), dtype=tf.float32)
-    trajectory = Trajectory(dt=dt, n=n, k=k, position_nk2=pos_nk2)
-
-    cs = np.array([[-.75, .5], [0, .5], [.75, .5], [-.35, 1.], [.35, 1.]])
-    rs = np.array([[.1], [.1], [.1], [.1], [.1]])
-    grid = CircularObstacleMap(map_bounds, cs, rs)
-    obs_dists_nk = grid.dist_to_nearest_obs(trajectory.position_nk2())
-
-    assert(np.allclose(obs_dists_nk, np.ones((n, k))*.4))
-
-    if visualize:
-        xs = np.linspace(map_bounds[0][0], map_bounds[1][0], 100,
-                         dtype=np.float32)
-        ys = np.linspace(map_bounds[0][1], map_bounds[1][1], 100,
-                         dtype=np.float32)
-        XS, YS = tf.meshgrid(xs, ys[::-1])
-
-        occupancy_grid_nn = grid.create_occupancy_grid(XS, YS)
-
-        fig = plt.figure()
-        ax = fig.add_subplot(121)
-        grid.render(ax)
-
-        ax = fig.add_subplot(122)
-        ax.imshow(occupancy_grid_nn, cmap='gray', origin='lower')
-        ax.set_axis_off()
-        plt.show()
-    else:
-        print('rerun test_circular_obstacle_map with visualize=True to\
-              visualize the obstacle_map')
-
 
 
 if __name__ == '__main__':
-    test_random_circular_obstacle_map(visualize=False)
-    test_circular_obstacle_map(visualize=False)
+    test_sbpd_map(visualize=False)

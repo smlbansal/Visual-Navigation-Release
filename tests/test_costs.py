@@ -19,6 +19,18 @@ def create_params():
     p.linear_coeffs = np.array([0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
     return p
 
+def create_system_dynamics_params():
+    p = DotMap()
+
+    p.simulation_params = DotMap(simulation_mode='ideal',
+                                 noise_params = DotMap(is_noisy=False,
+                                                       noise_type='uniform',
+                                                       noise_lb=[-0.02, -0.02, 0.],
+                                                       noise_ub=[0.02, 0.02, 0.],
+                                                       noise_mean=[0., 0., 0.],
+                                                       noise_std=[0.02, 0.02, 0.]))
+    return p
+
 
 def test_quad_cost_with_wrapping():
     p = create_params()
@@ -27,7 +39,7 @@ def test_quad_cost_with_wrapping():
     a, b = p.a, p.b
     goal_x, goal_y = 10., 10.
 
-    dubins = DubinsV1(p.dt)
+    dubins = DubinsV1(p.dt, create_system_dynamics_params())
 
     goal = np.array([goal_x, goal_y, 0.], dtype=np.float32)
     x_ref_nk3 = tf.constant(np.tile(goal, (n, k, 1)))

@@ -8,6 +8,22 @@ from systems.dubins_v3 import DubinsV3
 from dotmap import DotMap
 
 
+def create_system_dynamics_params():
+    p = DotMap()
+
+    p.v_bounds = [0.0, .6]
+    p.w_bounds = [-1.1, 1.1]
+
+    p.simulation_params = DotMap(simulation_mode='ideal',
+                                 noise_params = DotMap(is_noisy=False,
+                                                       noise_type='uniform',
+                                                       noise_lb=[-0.02, -0.02, 0.],
+                                                       noise_ub=[0.02, 0.02, 0.],
+                                                       noise_mean=[0., 0., 0.],
+                                                       noise_std=[0.02, 0.02, 0.]))
+    return p
+
+
 def test_dubins_v1(visualize=False):
     np.random.seed(seed=1)
     dt = .1
@@ -15,7 +31,7 @@ def test_dubins_v1(visualize=False):
     x_dim, u_dim = 3, 2
 
     # Test that All Dimensions Work
-    db = DubinsV1(dt)
+    db = DubinsV1(dt, create_system_dynamics_params())
 
     state_nk3 = tf.constant(np.zeros((n, k, x_dim), dtype=np.float32))
     ctrl_nk2 = tf.constant(np.random.randn(n, k, u_dim), dtype=np.float32)
@@ -95,10 +111,9 @@ def test_dubins_v2(visualize=False):
     n, k = 17, 12
     ctrl = 1
 
-    p = DotMap(v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1])
     
     # Test that computation is occurring correctly
-    db = DubinsV2(dt, p)
+    db = DubinsV2(dt, create_system_dynamics_params())
     state_n13 = tf.constant(np.zeros((n, 1, x_dim)), dtype=tf.float32)
     ctrl_nk2 = tf.constant(np.ones((n, k, u_dim))*ctrl, dtype=tf.float32)
     trajectory = db.simulate_T(state_n13, ctrl_nk2, T=k)
@@ -160,9 +175,8 @@ def test_dubins_v3():
     n, k = 17, 12
     ctrl = 1
 
-    p = DotMap(v_bounds=[0.0, .6], w_bounds=[-1.1, 1.1])
     # Test that computation is occurring correctly
-    db = DubinsV3(dt, p)
+    db = DubinsV3(dt, create_system_dynamics_params())
     state_n15 = tf.constant(np.zeros((n, 1, x_dim)), dtype=tf.float32)
     ctrl_nk2 = tf.constant(np.ones((n, k, u_dim))*ctrl, dtype=tf.float32)
     trajectory = db.simulate_T(state_n15, ctrl_nk2, T=k)

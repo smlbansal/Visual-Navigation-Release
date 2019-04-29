@@ -18,6 +18,18 @@ def create_params():
 
     p.quad_coeffs = [1.0, 1.0, 1.0, 1e-10, 1e-10]
     p.linear_coeffs = [0.0, 0.0, 0.0, 0.0, 0.0]
+
+    p.system_dynamics_params = DotMap(system=DubinsV1,
+                                      dt=.1,
+                                      v_bounds=[0.0, .6],
+                                      w_bounds=[-1.1, 1.1])
+    p.system_dynamics_params.simulation_params = DotMap(simulation_mode='ideal',
+                                                        noise_params = DotMap(is_noisy=False,
+                                                           noise_type='uniform',
+                                                           noise_lb=[-0.02, -0.02, 0.],
+                                                           noise_ub=[0.02, 0.02, 0.],
+                                                           noise_mean=[0., 0., 0.],
+                                                           noise_std=[0.02, 0.02, 0.]))
     return p
 
 
@@ -27,7 +39,7 @@ def test_lqr0(visualize=False):
     n, k = p.n, p.k
     dt = p.dt
 
-    db = DubinsV1(dt)
+    db = DubinsV1(dt, params=p.system_dynamics_params.simulation_params)
     x_dim, u_dim = db._x_dim, db._u_dim
 
     goal_x, goal_y = 4.0, 0.0
@@ -73,7 +85,7 @@ def test_lqr1(visualize=False):
     n, k = p.n, 50
     dt = p.dt
 
-    db = DubinsV1(dt)
+    db = DubinsV1(dt, params=p.system_dynamics_params.simulation_params)
     x_dim, u_dim = db._x_dim, db._u_dim
 
     x_n13 = tf.constant(np.zeros((n, 1, x_dim)), dtype=tf.float32)
@@ -125,7 +137,7 @@ def test_lqr2(visualize=False):
     n, k = 2, 50
     dt = p.dt
 
-    db = DubinsV1(dt)
+    db = DubinsV1(dt, params=p.system_dynamics_params.simulation_params)
     x_dim, u_dim = db._x_dim, db._u_dim
 
     x_n13 = tf.constant(np.zeros((n, 1, x_dim)), dtype=tf.float32)

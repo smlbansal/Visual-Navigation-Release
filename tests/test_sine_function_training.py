@@ -46,10 +46,10 @@ def test_sine_function_training():
     
     # Train on the generated data
     trainer_frontend.train()
-    
+   
     # Assert the expected loss
-    assert np.allclose(tf.nn.l2_loss(trainer_frontend.model.get_trainable_vars()[0]).numpy(), 0.848455, atol=1e-3)
-    assert np.allclose(tf.nn.l2_loss(trainer_frontend.model.get_trainable_vars()[2]).numpy(), 7.455147, atol=1e-3)
+    assert np.allclose(tf.nn.l2_loss(trainer_frontend.model.get_trainable_vars()[0]).numpy(), 0.8519235, atol=1e-3)
+    assert np.allclose(tf.nn.l2_loss(trainer_frontend.model.get_trainable_vars()[2]).numpy(), 7.462835, atol=1e-3)
     
     # Delete the temporary directory
     shutil.rmtree(dirpath)
