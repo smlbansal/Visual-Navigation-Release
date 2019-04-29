@@ -15,3 +15,9 @@ scikit-fmm
 dotmap
 ipdb
 imgaug
+PyOpenGL
+pyopengl-accelerate
+pyassimp
+ipython
+scikit-image
+yattag
