@@ -16,16 +16,14 @@ conda create -n venv-mpc python=3.6
 source activate venv-mpc
 pip install -U pip
 pip install -r requirements.txt
-pip install --upgrade tensorflow (make sure to install v1.10.1)
 ```
 
+#### Install Tensorflow (v 1.10.1)
+For an ubuntu machine with GPU support run the following:
+```
+pip install https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.10.1-cp36-cp36m-linux_x86_64.whl
+```
 
-### Setup the Stanford Building Parser Dataset Renderer
-```
-1. Clone the repository https://github.com/vtolani95/mp-env
-2. Checkout branch visual_mpc and follow the setup instructions
-3. Install mp-env as a package ("pip install -e ." from the root directory)
-```
 
 ### Download the necessary data
 ##### 1. Download the Precomputed Control Pipeline Data
@@ -34,8 +32,20 @@ TODO: Put Something Here
 ```
 ##### 2. Download the meshes/traversables for the Stanford Building Parser Dataset
 ```
-TODO: Put Something Here
+1. TODO: Put Something Here
 ```
+##### 2a. Update the directory for the building traversables and meshes
+```
+In ./params/renderer_params.py replace "get_traversible_dir" and "get_sbpd_data_dir" with the location of your SBPD data.
+
+def get_traversible_dir():
+    return '/home/ext_drive/somilb/data/stanford_building_parser_dataset/traversibles'
+
+
+def get_sbpd_data_dir():
+    return '/home/ext_drive/somilb/data/stanford_building_parser_dataset/'
+```
+    
 ##### 3. Download the model checkpoints for the model-based and end-to-end methods
 ```
 TODO: Put Something Here
