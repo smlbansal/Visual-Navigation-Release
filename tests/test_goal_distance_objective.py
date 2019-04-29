@@ -10,7 +10,7 @@ from dotmap import DotMap
 
 
 def create_renderer_params():
-    from params.renderer_params import get_traversible_dir
+    from params.renderer_params import get_traversible_dir, get_sbpd_data_dir
     p = DotMap()
     p.dataset_name = 'sbpd'
     p.building_name = 'area3'
@@ -36,6 +36,9 @@ def create_renderer_params():
 
     # Traversible dir
     p.traversible_dir = get_traversible_dir()
+
+    # SBPD Data Directory
+    p.sbpd_data_dir = get_sbpd_data_dir()
 
     return p
 

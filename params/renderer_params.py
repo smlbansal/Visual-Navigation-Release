@@ -32,9 +32,17 @@ def create_params():
                             delta_theta=1.0)
     
     # Traversible dir
-    p.traversible_dir = get_traversible_dir() 
+    p.traversible_dir = get_traversible_dir()
+
+    # SBPD Data Directory
+    p.sbpd_data_dir = get_sbpd_data_dir()
 
     return p
 
+
 def get_traversible_dir():
     return '/home/ext_drive/somilb/data/stanford_building_parser_dataset/traversibles'
+
+
+def get_sbpd_data_dir():
+    return '/home/ext_drive/somilb/data/stanford_building_parser_dataset/'

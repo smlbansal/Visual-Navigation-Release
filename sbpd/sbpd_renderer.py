@@ -18,7 +18,7 @@ class SBPDRenderer():
     def __init__(self, params):
         self.p = params
 
-        d = sbpd.get_dataset(self.p.dataset_name, 'all')
+        d = sbpd.get_dataset(self.p.dataset_name, 'all', data_dir=self.p.sbpd_data_dir)
         self.building = d.load_data(self.p.building_name, self.p.robot_params, self.p.flip)
 
         assert(len(self.p.camera_params.modalities) == 1)

@@ -16,7 +16,6 @@
 r"""Wrapper for selecting the navigation environment that we want to train and
 test on.
 """
-import numpy as np
 import os, glob, logging
 import sys
 # Py27 vs Py3 imports
@@ -29,13 +28,10 @@ else:
     from mp_env import utils
     from mp_env import mp_env
 
-def get_dataset(dataset_name, imset):
+def get_dataset(dataset_name, imset, data_dir):
   if dataset_name == 'sbpd':
     dataset = StanfordBuildingParserDataset(imset,
-                                            data_dir='/home/ext_drive/somilb/data/stanford_building_parser_dataset/')
-  if dataset_name == 'mp_3d':
-    dataset = StanfordBuildingParserDataset(imset,
-                                            data_dir='/home/ext_drive/somilb/data/matterport_3d_test')
+                                            data_dir=data_dir)
   else:
     logging.fatal('Not one of sbpd')
   return dataset

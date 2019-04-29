@@ -10,7 +10,7 @@ from dotmap import DotMap
 
 
 def create_renderer_params():
-    from params.renderer_params import get_traversible_dir
+    from params.renderer_params import get_traversible_dir, get_sbpd_data_dir
     p = DotMap()
     p.dataset_name = 'sbpd'
     p.building_name = 'area3'
@@ -24,7 +24,7 @@ def create_renderer_params():
     # of height, 'height', with radius, 'radius',
     # base at height 'base' above the ground
     # The robot has a camera at height
-    # 'sensor_height' pointing at 
+    # 'sensor_height' pointing at
     # camera_elevation_degree degrees vertically
     # from the horizontal plane.
     p.robot_params = DotMap(radius=18,
@@ -37,6 +37,8 @@ def create_renderer_params():
     # Traversible dir
     p.traversible_dir = get_traversible_dir()
 
+    # SBPD Data Directory
+    p.sbpd_data_dir = get_sbpd_data_dir()
     return p
 
 
