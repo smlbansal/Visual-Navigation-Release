@@ -163,11 +163,11 @@ class Simulator(SimulatorHelper):
             planner_data, planner_data_last_step = self.planner.mask_and_concat_data_along_batch_dim(planner_data,
                                                                                                      k=termination_time)
             commanded_actions_1kf = tf.concat(commanded_actions_nkf, axis=1)[:, :termination_time]
-            
-            # If all of the data was masked then
+
+            # If all of the data or last_step_data was masked then
             # the episode simulated is not valid
             valid_episode = True
-            if planner_data['system_config'] is None:
+            if planner_data['system_config'] is None or not planner_data_last_step:
                 valid_episode = False
             episode_data = {'vehicle_trajectory': vehicle_trajectory,
                             'vehicle_data': planner_data,
@@ -222,6 +222,11 @@ class Simulator(SimulatorHelper):
             while dist_to_obs <= obs_margin:
                 start_112 = self.obstacle_map.sample_point_112(rng)
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(start_112))
+        elif p.position.reset_type == 'custom':
+            x, y = p.position.start_pos
+            start_112 = np.array([[[x, y]]], dtype=np.float32)
+            dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(start_112))
+            assert(dist_to_obs.numpy() > 0.0)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle starting position.')
 
@@ -230,6 +235,9 @@ class Simulator(SimulatorHelper):
             heading_111 = np.zeros((1, 1, 1))
         elif p.heading.reset_type == 'random':
             heading_111 = rng.uniform(p.heading.bounds[0], p.heading.bounds[1], (1, 1, 1))
+        elif p.position.reset_type == 'custom':
+            theta = p.heading.start_heading
+            heading_111 = np.array([[[theta]]], dtype=np.float32)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle starting heading.')
 
@@ -238,6 +246,9 @@ class Simulator(SimulatorHelper):
             speed_111 = np.zeros((1, 1, 1))
         elif p.speed.reset_type == 'random':
             speed_111 = rng.uniform(p.speed.bounds[0], p.speed.bounds[1], (1, 1, 1))
+        elif p.speed.reset_type == 'custom':
+            speed = p.speed.start_speed
+            speed_111 = np.array([[[speed]]], dtype=np.float32)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle starting speed.')
 
@@ -249,6 +260,9 @@ class Simulator(SimulatorHelper):
         elif p.ang_speed.reset_type == 'gaussian':
             ang_speed_111 = rng.normal(p.ang_speed.gaussian_params[0],
                                        p.ang_speed.gaussian_params[1], (1, 1, 1))
+        elif p.ang_speed.reset_type == 'custom':
+            ang_speed = p.ang_speed.start_ang_speed
+            ang_speed_111 = np.array([[[ang_speed]]], dtype=np.float32)
         else:
             raise NotImplementedError('Unknown reset type for the vehicle starting angular speed.')
 
@@ -280,6 +294,11 @@ class Simulator(SimulatorHelper):
                 goal_112 = self.obstacle_map.sample_point_112(rng)
                 dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
                 dist_to_goal = np.linalg.norm((start_112 - goal_112)[0], ord=goal_norm)
+        elif p.position.reset_type == 'custom':
+            x, y = p.position.goal_pos
+            goal_112 = np.array([[[x, y]]], dtype=np.float32)
+            dist_to_obs = tf.squeeze(self.obstacle_map.dist_to_nearest_obs(goal_112))
+            assert(dist_to_obs.numpy() > 0.0)
         elif p.position.reset_type == 'random_v1':
             assert self.obstacle_map.name == 'SBPDMap'
             # Select a random position on the map that is at least obs_margin away from the
