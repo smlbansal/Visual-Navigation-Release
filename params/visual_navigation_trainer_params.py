@@ -1,7 +1,7 @@
 import tensorflow as tf
 from dotmap import DotMap
 from copy import deepcopy
-from params.model.custom_arch_v0_params import create_params as create_model_params
+from params.model.resnet50_arch_v1_params import create_params as create_model_params
 
 
 def create_params(simulator_params):

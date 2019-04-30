@@ -59,7 +59,8 @@ def create_params():
     p.trainer.restore_from_ckpt = False
     
     # Checkpoint directory
-    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_control/resnet_50_v1/include_last_step/only_successful_episodes/data_distortion_v3/session_2019-02-07_17-14-50/checkpoints/ckpt-20' 
+    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/data/pretrained_weights/session_2019-01-27_23-34-22/checkpoints/ckpt-18' 
+    
     # Change the Data Processing parameters
     p.data_processing.input_processing_function = 'resnet50_keras_preprocessing_and_distortion'
 

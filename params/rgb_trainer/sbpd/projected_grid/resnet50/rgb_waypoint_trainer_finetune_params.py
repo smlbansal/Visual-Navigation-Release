@@ -68,9 +68,7 @@ def create_params():
     )
 
     # Checkpoint directory
-    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/sessions/sbpd/rgb/sbpd_projected_grid/nn_waypoint/resnet_50_v1/' \
-                          'include_last_step/only_successful_episodes/data_distortion_v3/session_2019-01-28_21-02-53/' \
-                          'checkpoints/ckpt-20'
+    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/data/pretrained_weights/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
 
     p.data_creation.data_dir = [
         '/home/ext_drive/somilb/data/training_data/sbpd/sbpd_projected_grid_include_last_step_successful_goals_only/area3/full_episode_random_v1_100k',

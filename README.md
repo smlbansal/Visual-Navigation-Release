@@ -62,12 +62,19 @@ TODO: Put Something Here
 Along with the codebase, we provide implementations of our model-based method as well as a state-of-the-art end-to-end method trained for the task of geometric point navigation in indoor office settings. To test both of these methods on a held out set of navigational goals in a novel office building not seen at training time run the following commands.
 
 ### Test Our Model-Based Method
+Results will be saved in the following directory:
+path/to/pretrained_weights/session_2019-01-27-23-32-01/test/checkpoint_9/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_waypoint_simulator
 ```
-TODO: Put Something Here
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test
+--job-dir reproduce_WayptNavResults --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py -d 0
 ```
 ### Test A Comparable End-to-End Method
+Results will be saved in the following directory:
+path/to/pretrained_weights/session_2019-01-27-23-34-22/test/checkpoint_18/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_control_simulator
 ```
-TODO: Put Something Here
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_control_trainer.py test
+--job-dir reproduce_WayptNavResults --params
+params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py -d 0
 ```
 ## Training Your Own Networks
 We also provide the training data we used to train both the model-based and end-to-end methods. You can experiment with training your own models on this training data using the following commands:
