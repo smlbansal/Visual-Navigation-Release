@@ -24,6 +24,13 @@ For an ubuntu machine with GPU support run the following:
 pip install https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.10.1-cp36-cp36m-linux_x86_64.whl
 ```
 
+#### Patch the OpenGL Installation
+In the terminal from the root directory of the project run the following commands.
+```
+1. cd mp_env
+2. bash patches/apply_patches_3.sh
+```
+If the script fails there are instructions in apply_patches_3.sh describing how to manually apply the patch.
 
 ### Download the necessary data
 ##### 1. Download the Precomputed Control Pipeline Data
@@ -82,26 +89,27 @@ We have provided a simple example to train a sine function for your understandin
 Along with the codebase, we provide implementations of our model-based method as well as a state-of-the-art end-to-end method trained for the task of geometric point navigation in indoor office settings. To test both of these methods on a held out set of navigational goals in a novel office building not seen at training time run the following commands.
 
 ### Test Our Model-Based Method
-Results will be saved in the following directory:
-
-```
-path/to/pretrained_weights/session_2019-01-27-23-32-01/test/checkpoint_9/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_waypoint_simulator
-```
 Example Command
 ```
 PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test
 --job-dir reproduce_WayptNavResults --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py -d 0
 ```
-### Test A Comparable End-to-End Method
 Results will be saved in the following directory:
+
 ```
-path/to/pretrained_weights/session_2019-01-27-23-34-22/test/checkpoint_18/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_control_simulator
+path/to/pretrained_weights/session_2019-01-27-23-32-01/test/checkpoint_9/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_waypoint_simulator
 ```
+
+### Test A Comparable End-to-End Method
 Example Command
 ```
 PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_control_trainer.py test
 --job-dir reproduce_WayptNavResults --params
 params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py -d 0
+```
+Results will be saved in the following directory:
+```
+path/to/pretrained_weights/session_2019-01-27-23-34-22/test/checkpoint_18/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_control_simulator
 ```
 ## Training Your Own Networks
 We also provide the training data we used to train both the model-based and end-to-end methods. You can experiment with training your own models on this training data using the following commands:
