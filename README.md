@@ -55,7 +55,27 @@ TODO: Put Something Here
 TODO: Put Something Here
 ```
 
+## Getting Started
 
+The WayptNav codebase is designed to allow you to:
+
+	1. Create training data using an expert policy
+	2. Train a network (for either model based or end-to-end navigation)  
+	3. Test a trained network
+
+Each of these 3 tasks can be run via an executable file. All of the relevant executable files are located in the ./executables subdirectory of the main project. To use an executable file the user must specify
+```
+1. mode (generate_data, train, or test)
+2. job_dir (where to save the all relevant data from this run of the executable)
+3. params (which parameter file to use)
+4. device (which device to run tensorflow on. -1 forces CPU, 0+ force the program to run on the corresponding GPU device)
+```
+We have provided a simple example to train a sine function for your understanding. To generate data, train and test the sine function example using GPU 0 run the following 3 commands:
+```
+1. PYTHONPATH='.' python executables/sine_function_trainer generate-data --job-dir JOB_DIRECTORY_NAME_HERE --params params/sine_params.py -d 0
+2. PYTHONPATH='.' python executables/sine_function_trainer train --job-dir JOB_DIRECTORY_NAME_HERE --params params/sine_params.py -d 0
+3. PYTHONPATH='.' python executables/sine_function_trainer test --job-dir JOB_DIRECTORY_NAME_HERE --params params/sine_params.py -d 0
+```
 
 ## Testing Pretrained Algorithms
 
@@ -63,14 +83,21 @@ Along with the codebase, we provide implementations of our model-based method as
 
 ### Test Our Model-Based Method
 Results will be saved in the following directory:
+
+```
 path/to/pretrained_weights/session_2019-01-27-23-32-01/test/checkpoint_9/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_waypoint_simulator
+```
+Example Command
 ```
 PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test
 --job-dir reproduce_WayptNavResults --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py -d 0
 ```
 ### Test A Comparable End-to-End Method
 Results will be saved in the following directory:
+```
 path/to/pretrained_weights/session_2019-01-27-23-34-22/test/checkpoint_18/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_control_simulator
+```
+Example Command
 ```
 PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_control_trainer.py test
 --job-dir reproduce_WayptNavResults --params
