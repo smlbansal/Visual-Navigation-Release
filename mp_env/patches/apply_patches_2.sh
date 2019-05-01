@@ -13,6 +13,22 @@
 # limitations under the License.
 # ==============================================================================
 
-echo $VIRTUAL_ENV
-patch $VIRTUAL_ENV/local/lib/python2.7/site-packages/OpenGL/GLES2/VERSION/GLES2_2_0.py patches/GLES2_2_0.py.patch
-# patch $VIRTUAL_ENV/local/lib/python2.7/site-packages/OpenGL/platform/ctypesloader.py patches/ctypesloader.py.patch
+
+# Extract the base directory of this anaconda environment
+conda_info_json="$(conda info --json | grep active_prefix)"
+IFS=',' read -r active_info other <<< "$conda_info_json"
+IFS=':' read -r other conda_dir <<< "$active_info"
+
+# remove unnecesary quotation marks
+conda_dir="${conda_dir//\"}"  
+
+# Add the file path to the OpenGL file to be patched
+file_to_patch="$conda_dir/lib/python2.7/site-packages/OpenGL/GLES2/VERSION/GLES2_2_0.py"
+patch $file_to_patch patches/GLES2_2_0.py.patch
+
+# If the above does not work the intended command is shown below.
+# The provided patch should be applied to GLES_2_2.0.py
+# for the python installation which the user intends to use
+# for this project
+
+# patch /home/user_name/anaconda3/envs/venv-mpc/lib/python2.7/site-packages/OpenGL/GLES2/VERSION/GLES2_2_0.py patches/GLES2_2_0.py.patch
