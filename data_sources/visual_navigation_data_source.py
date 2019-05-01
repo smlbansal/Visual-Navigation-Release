@@ -4,7 +4,6 @@ import numpy as np
 import tensorflow as tf
 
 from data_sources.image_data_source import ImageDataSource
-from simulators.circular_obstacle_map_simulator import CircularObstacleMapSimulator
 from systems.dubins_car import DubinsCar
 from utils import utils
 
@@ -116,11 +115,6 @@ class VisualNavigationDataSource(ImageDataSource):
         # Data dictionary to store the data
         data = {}
 
-        if params.simulator_params.simulator is CircularObstacleMapSimulator:
-            # Obstacle information
-            data['obs_centers_nm2'] = []
-            data['obs_radii_nm1'] = []
-        
         # Start configuration information
         data['vehicle_state_nk3'] = []
         data['vehicle_controls_nk2'] = []
@@ -210,16 +204,6 @@ class VisualNavigationDataSource(ImageDataSource):
         """
         # Batch Dimension
         n = simulator.vehicle_data['system_config'].n
-
-        if self.p.simulator_params.simulator is CircularObstacleMapSimulator:
-            # Obstacle data
-            obs_center_1m2 = simulator.obstacle_map.obstacle_centers_m2[tf.newaxis, :, :].numpy()
-            obs_radii_1m1 = simulator.obstacle_map.obstacle_radii_m1[tf.newaxis, :, :].numpy()
-
-            _, m, _ = obs_center_1m2.shape
-
-            data['obs_centers_nm2'].append(np.broadcast_to(obs_center_1m2, (n, m, 2)))
-            data['obs_radii_nm1'].append(np.broadcast_to(obs_radii_1m1, (n, m, 1)))
 
         # Vehicle data
         data['vehicle_state_nk3'].append(simulator.vehicle_data['trajectory'].position_and_heading_nk3().numpy())
