@@ -64,7 +64,7 @@ def create_params():
     # Input processing parameters
     p.data_processing.input_processing_params = DotMap(
         p=0.1,  # Probability of distortion
-        version='v3'
+        version='v1'
     )
 
     # Checkpoint directory

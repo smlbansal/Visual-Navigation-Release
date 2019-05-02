@@ -60,23 +60,33 @@ class NNControlPlanner(NNPlanner):
         """Keeps the elements in data which were produced
         before time index k. Concatenates each list in data
         along the batch dim after masking."""
-        
+
+        # Extract the Index of the Last Data Segment
         data_times = np.cumsum([u_nk2.shape[1].value for u_nk2 in data['optimal_control_nk2']])
         valid_mask = (data_times <= k)
-        data_last = {} 
+        data_last = {}
         last_data_idxs = np.where(np.logical_not(valid_mask))[0]
-        if len(last_data_idxs) > 0:
-            # Take the first last_data_idx
-            last_data_idx = last_data_idxs[0]
-            data_last['system_config'] = data['system_config'][last_data_idx]
-            data_last['optimal_control_nk2'] = data['optimal_control_nk2'][last_data_idx]
-            data_last['img_nmkd'] = data['img_nmkd'][last_data_idx]
 
+        # Take the first last_data_idx
+        if len(last_data_idxs) > 0:
+            last_data_idx = last_data_idxs[0]
+            last_data_valid = True
+        else:
+            # Take the last element as it is not valid anyway
+            last_data_idx = len(valid_mask) - 1
+            last_data_valid = False
+
+        # Get the last segment data
+        data_last['system_config'] = data['system_config'][last_data_idx]
+        data_last['optimal_control_nk2'] = data['optimal_control_nk2'][last_data_idx]
+        data_last['img_nmkd'] = data['img_nmkd'][last_data_idx]
+
+        # Get the main planner data
         data['system_config'] = SystemConfig.concat_across_batch_dim(np.array(data['system_config'])[valid_mask])
         data['optimal_control_nk2'] = tf.boolean_mask(tf.concat(data['optimal_control_nk2'],
                                                                 axis=0), valid_mask)
         data['img_nmkd'] = np.array(np.concatenate(data['img_nmkd'], axis=0))[valid_mask]
-        return data, data_last
+        return data, data_last, last_data_valid
 
     @staticmethod
     def convert_planner_data_to_numpy_repr(data):

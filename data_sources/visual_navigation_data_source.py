@@ -147,6 +147,7 @@ class VisualNavigationDataSource(ImageDataSource):
         data['last_step_optimal_waypoint_n3'] = []
         data['last_step_optimal_waypoint_ego_n3'] = []
         data['last_step_optimal_control_nk2'] = []
+        data['last_step_data_valid_n'] = []
 
         return data
 
@@ -196,6 +197,7 @@ class VisualNavigationDataSource(ImageDataSource):
         data['last_step_optimal_waypoint_ego_n3'].append(waypoint_ego_n13[:, 0, :])
 
         data['last_step_optimal_control_nk2'].append(simulator.vehicle_data_last_step['trajectory'].speed_and_angular_speed_nk2().numpy())
+        data['last_step_data_valid_n'].append([simulator.last_step_data_valid])
         return data
 
     def append_data_to_dictionary(self, data, simulator):
@@ -233,7 +235,7 @@ class VisualNavigationDataSource(ImageDataSource):
 
         # Optimal control data
         data['optimal_control_nk2'].append(simulator.vehicle_data['trajectory'].speed_and_angular_speed_nk2().numpy())
-       
+
         # Episode Type Information
         data['episode_type_string_n1'].append([simulator.params.episode_termination_reasons[simulator.episode_type]]*n)
         data['episode_number_n1'].append([self.episode_counter]*n)
@@ -241,7 +243,7 @@ class VisualNavigationDataSource(ImageDataSource):
         data = self._append_last_step_info_to_dictionary(data, simulator)
         return data
 
-    
+
     def prepare_and_save_the_data_dictionary(self, data, counter):
         """
         Stack the lists in the dictionary to make an array, and then save the dictionary.
