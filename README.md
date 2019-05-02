@@ -32,38 +32,58 @@ In the terminal from the root directory of the project run the following command
 ```
 If the script fails there are instructions in apply_patches_3.sh describing how to manually apply the patch.
 
-### Download the necessary data
-##### 1. Download the Precomputed Control Pipeline Data
+### Download the necessary data (~13 GB)
 ```
 TODO: Put Something Here
 ```
-##### 2. Download the meshes/traversables for the Stanford Building Parser Dataset
+#### (Optional). Download the training data used in training the model-based and end-to-end methods. (~82 GB)
 ```
-1. TODO: Put Something Here
+TODO: Put Something Here
 ```
-##### 2a. Update the directory for the building traversables and meshes
+### Configure WayptNav to look for your data installation.
+##### Configure the Control Pipeline Data Directory
+In ./params/control_pipeline_params.py change the following line
 ```
-In ./params/renderer_params.py replace "get_traversible_dir" and "get_sbpd_data_dir" with the location of your SBPD data.
-
-def get_traversible_dir():
-    return '/home/ext_drive/somilb/data/stanford_building_parser_dataset/traversibles'
-
-
+p.dir = 'PATH/TO/DATA/control_pipelines' 
+```
+##### Configure the Stanford Building Parser Dataset Data Directory
+In ./params/renderer_params.py change the following line
+```
 def get_sbpd_data_dir():
-    return '/home/ext_drive/somilb/data/stanford_building_parser_dataset/'
+	return 'PATH/TO/DATA/stanford_building_parser_dataset'
 ```
-    
-##### 3. Download the model checkpoints for the model-based and end-to-end methods
+##### Configure the Pretrained Weights Data Directory
+In ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py change the following line:
 ```
-TODO: Put Something Here
+p.trainer.ckpt_path = 'PATH/TO/DATA/pretrained_weights/WayPtNav/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
 ```
-##### 4 (Optional). Download the training data used in training the model-based and end-to-end methods.
+In ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py change the following line:
 ```
-TODO: Put Something Here
+p.trainer.ckpt_path = 'PATH/TO/DATA/pretrained_weights/E2E/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
+```
+##### Configure the Expert Success Goals Data Directory
+In ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py and ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py change the following line:
+```
+p.test.expert_success_goals = DotMap(use=True,
+							         dirname='PATH/TO/DATA/expert_success_goals/sbpd_projected_grid')
+```
+##### Configure the Training Data Directory (Optional)
+In ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py and ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py change the following line:
+```
+p.data_creation.data_dir = ['PATH/TO/DATA/sbpd_projected_grid_include_last_step_successful_goals_only/area3/full_episode_random_v1_100k',
+						    'PATH/TO/DATA/sbpd_projected_grid_include_last_step_successful_goals_only/area4/full_episode_random_v1_100k',
+   							'PATH/TO/DATA/sbpd_projected_grid_include_last_step_successful_goals_only/area5a/full_episode_random_v1_100k']
+```
+
+
+### Run the Tests
+To ensure you have successfully installed the WayptNav codebase run the following command. All tests should pass.
+```
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/run_all_tests.py
 ```
 
 ## Getting Started
-
+#### Overview
 The WayptNav codebase is designed to allow you to:
 
 	1. Create training data using an expert policy
@@ -77,14 +97,22 @@ Each of these 3 tasks can be run via an executable file. All of the relevant exe
 3. params (which parameter file to use)
 4. device (which device to run tensorflow on. -1 forces CPU, 0+ force the program to run on the corresponding GPU device)
 ```
+#### Generate Data, Train, and Test a Sine Function
 We have provided a simple example to train a sine function for your understanding. To generate data, train and test the sine function example using GPU 0 run the following 3 commands:
 ```
 1. PYTHONPATH='.' python executables/sine_function_trainer generate-data --job-dir JOB_DIRECTORY_NAME_HERE --params params/sine_params.py -d 0
 2. PYTHONPATH='.' python executables/sine_function_trainer train --job-dir JOB_DIRECTORY_NAME_HERE --params params/sine_params.py -d 0
-3. PYTHONPATH='.' python executables/sine_function_trainer test --job-dir JOB_DIRECTORY_NAME_HERE --params params/sine_params.py -d 0
+
+In ./params/sine_params.py change p.trainer.ckpt_path to point to a checkpoint from the previously run training session. For example:
+
+3a. p.trainer.ckpt_path = 'PATH/TO/PREVIOUSLY/RUN/SESSION/checkpoints/ckpt-10'
+
+3b. PYTHONPATH='.' python executables/sine_function_trainer test --job-dir JOB_DIRECTORY_NAME_HERE --params params/sine_params.py -d 0
 ```
 
-## Testing Pretrained Algorithms
+The output of testing the sine function will be saved in 'PATH/TO/PREVIOUSLY/RUN/SESSION/TEST/ckpt-10'.
+
+## Testing Pretrained Visual Navigation Algorithms
 
 Along with the codebase, we provide implementations of our model-based method as well as a state-of-the-art end-to-end method trained for the task of geometric point navigation in indoor office settings. To test both of these methods on a held out set of navigational goals in a novel office building not seen at training time run the following commands.
 
