@@ -41,7 +41,7 @@ def create_params():
 
 
 def get_traversible_dir():
-    return '/home/ext_drive/somilb/data/stanford_building_parser_dataset/traversibles'
+    return '{:s}/traversibles'.format(get_sbpd_data_dir())
 
 
 def get_sbpd_data_dir():
