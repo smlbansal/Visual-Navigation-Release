@@ -91,7 +91,7 @@ Along with the codebase, we provide implementations of our model-based method as
 ### Test Our Model-Based Method
 Example Command
 ```
-PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test --job-dir reproduce_WayptNavResults --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py - d 0
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test --job-dir reproduce_WayptNavResults --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py -d 0
 ```
 Results will be saved in the following directory:
 
@@ -112,11 +112,11 @@ path/to/pretrained_weights/session_2019-01-27-23-34-22/test/checkpoint_18/reprod
 We also provide the training data we used to train both the model-based and end-to-end methods. You can experiment with training your own models on this training data using the following commands:
 ### Train Our Model-Based Method
 ```
-TODO: Put Something Here
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py train --job-dir PATH/TO/LOG/DIR --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py -d 0
 ```
 ### Train A Comparable End-to-End Method
 ```
-TODO: Put Something Here
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_control_trainer.py train --job-dir PATH/TO/LOG/DIR --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py -d 0
 ```
 
 ## Generating More Training Data
