@@ -45,4 +45,4 @@ def get_traversible_dir():
 
 
 def get_sbpd_data_dir():
-    return '/home/ext_drive/somilb/data/stanford_building_parser_dataset/'
+    return '/home/ext_drive/somilb/data/stanford_building_parser_dataset'
