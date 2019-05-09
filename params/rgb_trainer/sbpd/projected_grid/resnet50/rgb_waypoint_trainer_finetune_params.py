@@ -68,7 +68,7 @@ def create_params():
     )
 
     # Checkpoint directory
-    p.trainer.ckpt_path = '/home/vtolani/Documents/Projects/visual_mpc/data/pretrained_weights/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
+    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/data_for_release/pretrained_weights/WayPtNav/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
 
     # Change the data_dir
     p.data_creation.data_dir = [
