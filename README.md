@@ -32,9 +32,9 @@ In the terminal from the root directory of the project run the following command
 ```
 If the script fails there are instructions in apply_patches_3.sh describing how to manually apply the patch.
 
-### Download the necessary data (~13 GB)
+### Download the necessary data from Google Drive (~13 GB).
 ```
-TODO: Put Something Here
+https://drive.google.com/drive/folders/1Fokqmz-wzs6xAmgsC3-ddi7QZjUqsvFR?usp=sharing
 ```
 #### (Optional). Download the training data used in training the model-based and end-to-end methods. (~82 GB)
 ```
