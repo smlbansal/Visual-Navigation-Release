@@ -36,9 +36,9 @@ If the script fails there are instructions in apply_patches_3.sh describing how 
 ```
 https://drive.google.com/drive/folders/1Fokqmz-wzs6xAmgsC3-ddi7QZjUqsvFR?usp=sharing
 ```
-#### (Optional). Download the training data used in training the model-based and end-to-end methods. (~82 GB)
+#### (Optional). Download the training data used in training the model-based and end-to-end methods from Google Drive. (~82 GB)
 ```
-TODO: Put Something Here
+https://drive.google.com/drive/folders/1BCrRIHQNyw0oAttOA-EhkaAAvl7hZbUP?usp=sharing
 ```
 ### Configure WayptNav to look for your data installation.
 ##### Configure the Control Pipeline Data Directory
