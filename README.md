@@ -13,8 +13,9 @@ More information on the model-based and end-to-end methods we use is available [
 ### Setup A Virtual Environment
 ```
 conda create -n venv-mpc python=3.6
-source activate venv-mpc
+conda activate venv-mpc
 pip install -U pip
+pip install numpy
 pip install -r requirements.txt
 ```
 
