@@ -10,6 +10,17 @@ More information on the model-based and end-to-end methods we use is available [
 
 
 ## Setup
+### Install Anaconda, gcc, g++
+```
+# Install Anaconda
+wget https://repo.anaconda.com/archive/Anaconda3-2019.07-Linux-x86_64.sh
+bash Anaconda3-2019.07-Linux-x86_64.sh
+
+# Install gcc and g++ if you don't already have them
+sudo apt-get install gcc
+sudo apt-get install g++
+```
+
 ### Setup A Virtual Environment
 ```
 conda create -n venv-mpc python=3.6
