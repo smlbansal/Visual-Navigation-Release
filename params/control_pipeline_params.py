@@ -6,6 +6,7 @@ from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from control_pipelines.control_pipeline_v0 import ControlPipelineV0
 from params.system_dynamics.dubins_v2_params import create_params as create_system_dynamics_params
 from params.waypoint_grid.sbpd_image_space_grid import create_params as create_waypoint_params
+from params.base_data_directory import base_data_dir
 
 
 def create_params():
@@ -18,7 +19,7 @@ def create_params():
     p.pipeline = ControlPipelineV0
 
     # The directory for saving the control pipeline files
-    p.dir = '/home/ext_drive/somilb/data/control_pipelines'
+    p.dir = os.path.join(base_data_dir(), 'control_pipelines') 
 
     # Spline parameters
     p.spline_params = DotMap(spline=Spline3rdOrder,

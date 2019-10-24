@@ -1,5 +1,6 @@
 from dotmap import DotMap
-
+import os
+from params.base_data_directory import base_data_dir
 
 def create_params():
     p = DotMap()
@@ -45,4 +46,4 @@ def get_traversible_dir():
 
 
 def get_sbpd_data_dir():
-    return '/home/ext_drive/somilb/data/stanford_building_parser_dataset'
+    return os.path.join(base_data_directory, '/stanford_building_parser_dataset')
