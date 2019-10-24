@@ -23,11 +23,7 @@ sudo apt-get install g++
 
 ### Setup A Virtual Environment
 ```
-conda create -n venv-mpc python=3.6
-conda activate venv-mpc
-pip install -U pip
-pip install numpy
-pip install -r requirements.txt
+conda env create -f environment.yml
 ```
 
 #### Install Tensorflow (v 1.10.1)
@@ -44,49 +40,21 @@ In the terminal from the root directory of the project run the following command
 ```
 If the script fails there are instructions in apply_patches_3.sh describing how to manually apply the patch.
 
-### Download the necessary data from Google Drive (~13 GB).
+#### Install Libassimp-dev
+In the terminal run:
+```
+sudo apt-get install libassimp-dev
+```
+
+### Download and unzip the necessary data from Google Drive (~13 GB).
 ```
 https://drive.google.com/drive/folders/1Fokqmz-wzs6xAmgsC3-ddi7QZjUqsvFR?usp=sharing
 ```
-#### (Optional). Download the training data used in training the model-based and end-to-end methods from Google Drive. (~82 GB)
-```
-https://drive.google.com/drive/folders/1BCrRIHQNyw0oAttOA-EhkaAAvl7hZbUP?usp=sharing
-```
 ### Configure WayptNav to look for your data installation.
-##### Configure the Control Pipeline Data Directory
-In ./params/control_pipeline_params.py change the following line
+In ./params/base_data_directory_params.py change the following line
 ```
-p.dir = 'PATH/TO/DATA/control_pipelines' 
+return 'PATH/TO/DATA'
 ```
-##### Configure the Stanford Building Parser Dataset Data Directory
-In ./params/renderer_params.py change the following line
-```
-def get_sbpd_data_dir():
-	return 'PATH/TO/DATA/stanford_building_parser_dataset'
-```
-##### Configure the Pretrained Weights Data Directory
-In ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py change the following line:
-```
-p.trainer.ckpt_path = 'PATH/TO/DATA/pretrained_weights/WayPtNav/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
-```
-In ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py change the following line:
-```
-p.trainer.ckpt_path = 'PATH/TO/DATA/pretrained_weights/E2E/session_2019-01-27_23-34-22/checkpoints/ckpt-18'
-```
-##### Configure the Expert Success Goals Data Directory
-In ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py and ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py change the following line:
-```
-p.test.expert_success_goals = DotMap(use=True,
-							         dirname='PATH/TO/DATA/expert_success_goals/sbpd_projected_grid')
-```
-##### Configure the Training Data Directory (Optional)
-In ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py and ./params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py change the following line:
-```
-p.data_creation.data_dir = ['PATH/TO/DATA/sbpd_projected_grid_include_last_step_successful_goals_only/area3/full_episode_random_v1_100k',
-						    'PATH/TO/DATA/sbpd_projected_grid_include_last_step_successful_goals_only/area4/full_episode_random_v1_100k',
-   							'PATH/TO/DATA/sbpd_projected_grid_include_last_step_successful_goals_only/area5a/full_episode_random_v1_100k']
-```
-
 
 ### Run the Tests
 To ensure you have successfully installed the WayptNav codebase run the following command. All tests should pass.
@@ -147,16 +115,6 @@ PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_control
 Results will be saved in the following directory:
 ```
 path/to/pretrained_weights/session_2019-01-27-23-34-22/test/checkpoint_18/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_control_simulator
-```
-## Training Your Own Networks
-We also provide the training data we used to train both the model-based and end-to-end methods. You can experiment with training your own models on this training data using the following commands:
-### Train Our Model-Based Method
-```
-PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py train --job-dir PATH/TO/LOG/DIR --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py -d 0
-```
-### Train A Comparable End-to-End Method
-```
-PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_control_trainer.py train --job-dir PATH/TO/LOG/DIR --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py -d 0
 ```
 
 ## Generating More Training Data
