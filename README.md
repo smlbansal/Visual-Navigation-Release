@@ -46,9 +46,9 @@ In the terminal run:
 sudo apt-get install libassimp-dev
 ```
 
-### Download and unzip the necessary data from Google Drive (~13 GB).
+### Download and unzip the necessary data from Google Drive (~3.7 GB).
 ```
-https://drive.google.com/drive/folders/1Fokqmz-wzs6xAmgsC3-ddi7QZjUqsvFR?usp=sharing
+https://drive.google.com/file/d/1a7GOEz01X4lBmPDj69eYgRWMNHVsiICG/view?usp=sharing
 ```
 ### Configure WayptNav to look for your data installation.
 In ./params/base_data_directory_params.py change the following line
@@ -131,12 +131,22 @@ PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoin
 ## Citing This Work
 If you use the WayPtNav simulator or algorithms in your research please cite:
 ```
-@misc{bansal2019combining,
-    title={Combining Optimal Control and Learning for Visual Navigation in Novel Environments},
-    author={Somil Bansal and Varun Tolani and Saurabh Gupta and Jitendra Malik and Claire Tomlin},
-    year={2019},
-    eprint={1903.02531},
-    archivePrefix={arXiv},
-    primaryClass={cs.RO}
+@article{DBLP:journals/corr/abs-1903-02531,
+  author    = {Somil Bansal and
+               Varun Tolani and
+               Saurabh Gupta and
+               Jitendra Malik and
+               Claire Tomlin},
+  title     = {Combining Optimal Control and Learning for Visual Navigation in Novel
+               Environments},
+  journal   = {CoRR},
+  volume    = {abs/1903.02531},
+  year      = {2019},
+  url       = {http://arxiv.org/abs/1903.02531},
+  archivePrefix = {arXiv},
+  eprint    = {1903.02531},
+  timestamp = {Sun, 31 Mar 2019 19:01:24 +0200},
+  biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1903-02531},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 ```
