@@ -24,6 +24,7 @@ sudo apt-get install g++
 ### Setup A Virtual Environment
 ```
 conda env create -f environment.yml
+source activate venv-mpc
 ```
 
 #### Install Tensorflow (v 1.10.1)
@@ -48,12 +49,20 @@ sudo apt-get install libassimp-dev
 
 ### Download and unzip the necessary data from Google Drive (~3.7 GB).
 ```
+# To download the data via the command line run the following
+pip install gdown
+gdown https://drive.google.com/uc?id=1a7GOEz01X4lBmPDj69eYgRWMNHVsiICG
+
+# To download the data via your browser visit the following url
 https://drive.google.com/file/d/1a7GOEz01X4lBmPDj69eYgRWMNHVsiICG/view?usp=sharing
+
+# Unzip the file LB_WayPtNav_Data.tar.gz
+tar -zxf LB_WayPtNav_Data.tar.gz -C DESIRED_OUTPUT_DIRECTORY
 ```
 ### Configure WayptNav to look for your data installation.
 In ./params/base_data_directory_params.py change the following line
 ```
-return 'PATH/TO/DATA'
+return 'PATH/TO/LB_WayPtNav_Data'
 ```
 
 ### Run the Tests
