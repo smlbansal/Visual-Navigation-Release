@@ -24,7 +24,7 @@ sudo apt-get install g++
 ### Setup A Virtual Environment
 ```
 conda env create -f environment.yml
-source activate venv-mpc
+conda activate venv-mpc
 ```
 
 #### Install Tensorflow (v 1.10.1)
