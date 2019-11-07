@@ -51,10 +51,10 @@ sudo apt-get install libassimp-dev
 ```
 # To download the data via the command line run the following
 pip install gdown
-gdown https://drive.google.com/uc?id=1a7GOEz01X4lBmPDj69eYgRWMNHVsiICG
+gdown https://drive.google.com/uc?id=1wpQMm_pfNgPAUduLjUggTSBs6psavJSK
 
 # To download the data via your browser visit the following url
-https://drive.google.com/file/d/1a7GOEz01X4lBmPDj69eYgRWMNHVsiICG/view?usp=sharing
+https://drive.google.com/file/d/1wpQMm_pfNgPAUduLjUggTSBs6psavJSK/view?usp=sharing
 
 # Unzip the file LB_WayPtNav_Data.tar.gz
 tar -zxf LB_WayPtNav_Data.tar.gz -C DESIRED_OUTPUT_DIRECTORY
@@ -108,7 +108,7 @@ Along with the codebase, we provide implementations of our model-based method as
 ### Test Our Model-Based Method
 Example Command
 ```
-PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test --job-dir reproduce_WayptNavResults --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py -d 0
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test --job-dir reproduce_WayptNavResults --params params/rgb_trainer/reproduce_LB_WayPtNav_results/rgb_waypoint_trainer_finetune_params.py -d 0
 ```
 Results will be saved in the following directory:
 
@@ -119,7 +119,7 @@ path/to/pretrained_weights/session_2019-01-27-23-32-01/test/checkpoint_9/reprodu
 ### Test A Comparable End-to-End Method
 Example Command
 ```
-PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_control_trainer.py test --job-dir reproduce_WayptNavResults --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_control_trainer_finetune_params.py -d 0
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_control_trainer.py test --job-dir reproduce_WayptNavResults --params params/rgb_trainer/reproduce_LB_WayPtNav_results/rgb_control_trainer_finetune_params.py -d 0
 ```
 Results will be saved in the following directory:
 ```
