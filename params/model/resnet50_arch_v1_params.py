@@ -1,6 +1,6 @@
 from dotmap import DotMap
 from params.model.model_params import create_params as create_model_params
-from params.base_data_directory import base_dir
+from params.base_data_directory import base_data_dir
 
 def create_params():
     p = create_model_params()
@@ -20,6 +20,6 @@ def create_params():
                                     size_maxpool_filters=2)
 
     # Location of the resnet50 weights
-    p.arch.resnet50_weights_path = os.path.join(base_dir(), 'resnet50_weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
+    p.arch.resnet50_weights_path = os.path.join(base_data_dir(), 'resnet50_weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
 
     return p

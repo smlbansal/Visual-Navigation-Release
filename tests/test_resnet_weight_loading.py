@@ -3,6 +3,8 @@ import tensorflow as tf
 tf.enable_eager_execution()
 layers = tf.keras.layers
 from training_utils.architecture.resnet50.resnet_50 import ResNet50
+from params.base_data_directory import base_data_dir
+import os
 
 
 def resnet50_cnn(image_size=[224, 224, 3], num_inputs=4, num_outputs=3, dtype=tf.float32):
@@ -25,7 +27,7 @@ def resnet50_cnn(image_size=[224, 224, 3], num_inputs=4, num_outputs=3, dtype=tf
     model = tf.keras.Model(inputs=[input_image], outputs=x)
     
     # Load the Resnet50 weights
-    model.load_weights('/home/ext_drive/somilb/data/resnet50_weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5', by_name=True)
+    model.load_weights(os.path.join(base_data_dir(), 'resnet50_weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'), by_name=True)
     
     return model, is_training
 
