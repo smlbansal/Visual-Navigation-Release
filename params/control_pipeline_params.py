@@ -1,5 +1,6 @@
 from utils import utils
 import numpy as np
+import os
 from dotmap import DotMap
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from trajectory.spline.spline_3rd_order import Spline3rdOrder

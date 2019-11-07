@@ -1,6 +1,7 @@
 from dotmap import DotMap
 from params.model.model_params import create_params as create_model_params
 from params.base_data_directory import base_data_dir
+import os
 
 def create_params():
     p = create_model_params()

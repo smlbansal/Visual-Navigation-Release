@@ -1,4 +1,6 @@
+import os
 from dotmap import DotMap
+from params.base_data_directory import base_data_dir
 
 
 def create_rgb_trainer_params():
@@ -68,7 +70,7 @@ def create_params():
     )
 
     # Checkpoint directory
-    p.trainer.ckpt_path = '/home/ext_drive/somilb/data/data_for_release/pretrained_weights/WayPtNav/session_2019-01-27_23-32-01/checkpoints/ckpt-9'
+    p.trainer.ckpt_path = os.path.join(base_data_dir(), 'pretrained_weights/WayPtNav/session_2019-01-27_23-32-01/checkpoints/ckpt-9')
 
     # Change the data_dir
     p.data_creation.data_dir = [
@@ -82,7 +84,7 @@ def create_params():
 
     # Test the network only on goals where the expert succeeded
     p.test.expert_success_goals = DotMap(use=True,
-                                         dirname='/home/ext_drive/somilb/data/expert_data/sbpd/sbpd_projected_grid')
+                                         dirname=os.path.join(base_data_dir(), 'expert_data/sbpd/sbpd_projected_grid'))
     
     # Let's not look at the expert
     p.test.simulate_expert = False
