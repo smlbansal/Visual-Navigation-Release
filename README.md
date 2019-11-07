@@ -51,10 +51,10 @@ sudo apt-get install libassimp-dev
 ```
 # To download the data via the command line run the following
 pip install gdown
-gdown https://drive.google.com/uc?id=1a7GOEz01X4lBmPDj69eYgRWMNHVsiICG
+gdown https://drive.google.com/uc?id=1wpQMm_pfNgPAUduLjUggTSBs6psavJSK
 
 # To download the data via your browser visit the following url
-https://drive.google.com/file/d/1a7GOEz01X4lBmPDj69eYgRWMNHVsiICG/view?usp=sharing
+https://drive.google.com/file/d/1wpQMm_pfNgPAUduLjUggTSBs6psavJSK/view?usp=sharing
 
 # Unzip the file LB_WayPtNav_Data.tar.gz
 tar -zxf LB_WayPtNav_Data.tar.gz -C DESIRED_OUTPUT_DIRECTORY
