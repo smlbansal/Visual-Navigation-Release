@@ -30,6 +30,9 @@ class DataSource(object):
         """
         # Get all the files in the directory
         file_list = self.get_file_list()
+        
+        # Sort the files by their file number
+        file_list.sort(key=lambda x: int(x.split('/')[-1].split('file')[-1].split('.pkl')[0]))
 
         # Concatenate the data corresponding to a list of files
         data = self.concatenate_file_data(file_list)

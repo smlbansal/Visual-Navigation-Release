@@ -46,4 +46,4 @@ def get_traversible_dir():
 
 
 def get_sbpd_data_dir():
-    return os.path.join(base_data_directory, '/stanford_building_parser_dataset')
+    return os.path.join(base_data_dir(), 'stanford_building_parser_dataset')
