@@ -8,6 +8,9 @@ def create_params():
     p.building_name = 'area1'
     p.flip = False
 
+    p.load_meshes = True
+    p.load_traversible_from_pickle_file = True
+
     p.camera_params = DotMap(modalities=['occupancy_grid'],  # occupancy_grid, rgb, or depth
                              width=64,
                              height=64,  # the remaining params are for rgb and depth only

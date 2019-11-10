@@ -138,19 +138,20 @@ class SBPDRenderer():
         is 2.7 return a precomputed traversible (from python 3.6) as some of the
         loading libraries do not match currently.
         """
-        
+
         traversible_dir = self.p.traversible_dir
         traversible_dir = os.path.join(traversible_dir, self.p.building_name)
 
-        if sys.version[0] == '2':
+        if self.p.load_traversible_from_pickle_file or not self.p.load_meshes:
             filename = os.path.join(traversible_dir, 'data.pkl')
             with open(filename, 'rb') as f:
                 data = pickle.load(f)
             resolution = data['resolution']
             traversible = data['traversible']
-        elif sys.version[0] == '3':
+        else:
+            assert sys.version[0] == '3'
             resolution, traversible = self.building.env.resolution, self.building.traversible
-            
+
             utils.mkdir_if_missing(traversible_dir)
 
             filenames = os.listdir(traversible_dir)
@@ -159,6 +160,5 @@ class SBPDRenderer():
                         'traversible': traversible}
                 with open(os.path.join(traversible_dir, 'data.pkl'), 'wb') as f:
                     pickle.dump(data, f, protocol=2) # Save with protocol = 2 for python2.7
-        else:
-            raise NotImplementedError
-        return resolution, traversible
+
+        return resolution, traversible 
