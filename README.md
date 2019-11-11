@@ -1,12 +1,12 @@
-WayPtNav
+LB-WayPtNav
 ==========
-Welcome to WayPtNav, a codebase for simulation of robot navigational scenarios in indoor-office environments! We are a team of researchers from UC Berkeley and Facebook AI Research.
+Welcome to LB-WayPtNav (Learning-Based Waypoint Navigation), a codebase for simulation of robot navigational scenarios in indoor-office environments! We are a team of researchers from UC Berkeley and Facebook AI Research.
 
-In this codebase we explore ["Combining Optimal Control and Learning for Visual Navigation in Novel Environments"](https://vtolani95.github.io/WayPtNav/). We provide code to run our pretrained model based method as well as a comparable end-to-end method on geometric, point-navigation tasks in the [Stanford Building Parser Dataset](http://buildingparser.stanford.edu/dataset.html).
+In this codebase we explore ["Combining Optimal Control and Learning for Visual Navigation in Novel Environments"](https://vtolani95.github.io/LB-WayPtNav/). We provide code to run our pretrained model based method as well as a comparable end-to-end method on geometric, point-navigation tasks in the [Stanford Building Parser Dataset](http://buildingparser.stanford.edu/dataset.html).
 
 Additionally, we provide all code needed to generate more training data, train your own agent, and deploy it in a variety of different simulations rendered from scans of Stanford Buildings.
 
-More information on the model-based and end-to-end methods we use is available [here](https://vtolani95.github.io/WayPtNav/).
+More information on the model-based and end-to-end methods we use is available [here](https://vtolani95.github.io/LB-WayPtNav/).
 
 
 ## Setup
@@ -59,21 +59,21 @@ https://drive.google.com/file/d/1wpQMm_pfNgPAUduLjUggTSBs6psavJSK/view?usp=shari
 # Unzip the file LB_WayPtNav_Data.tar.gz
 tar -zxf LB_WayPtNav_Data.tar.gz -C DESIRED_OUTPUT_DIRECTORY
 ```
-### Configure WayptNav to look for your data installation.
+### Configure LB-WayptNav to look for your data installation.
 In ./params/base_data_directory_params.py change the following line
 ```
 return 'PATH/TO/LB_WayPtNav_Data'
 ```
 
 ### Run the Tests
-To ensure you have successfully installed the WayptNav codebase run the following command. All tests should pass.
+To ensure you have successfully installed the LB-WayptNav codebase run the following command. All tests should pass.
 ```
 PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/run_all_tests.py
 ```
 
 ## Getting Started
 #### Overview
-The WayptNav codebase is designed to allow you to:
+The LB-WayPtNav codebase is designed to allow you to:
 
 	1. Create training data using an expert policy
 	2. Train a network (for either model based or end-to-end navigation)  
@@ -105,25 +105,28 @@ The output of testing the sine function will be saved in 'PATH/TO/PREVIOUSLY/RUN
 
 Along with the codebase, we provide implementations of our model-based method as well as a state-of-the-art end-to-end method trained for the task of geometric point navigation in indoor office settings. To test both of these methods on a held out set of navigational goals in a novel office building not seen at training time run the following commands.
 
+### Note:
+The metrics from these tests (success rate, collision rate, etc.) may deviate by a few percent from those reported in our work due to numerical inaccuracies across different machines.
+
 ### Test Our Model-Based Method
 Example Command
 ```
-PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test --job-dir reproduce_WayptNavResults --params params/rgb_trainer/reproduce_LB_WayPtNav_results/rgb_waypoint_trainer_finetune_params.py -d 0
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py test --job-dir reproduce_LB_WayptNavResults --params params/rgb_trainer/reproduce_LB_WayPtNav_results/rgb_waypoint_trainer_finetune_params.py -d 0
 ```
 Results will be saved in the following directory:
 
 ```
-path/to/pretrained_weights/session_2019-01-27-23-32-01/test/checkpoint_9/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_waypoint_simulator
+path/to/pretrained_weights/session_2019-01-27-23-32-01/test/checkpoint_9/reproduce_LB_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_waypoint_simulator
 ```
 
 ### Test A Comparable End-to-End Method
 Example Command
 ```
-PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_control_trainer.py test --job-dir reproduce_WayptNavResults --params params/rgb_trainer/reproduce_LB_WayPtNav_results/rgb_control_trainer_finetune_params.py -d 0
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_control_trainer.py test --job-dir reproduce_LB_WayptNavResults --params params/rgb_trainer/reproduce_LB_WayPtNav_results/rgb_control_trainer_finetune_params.py -d 0
 ```
 Results will be saved in the following directory:
 ```
-path/to/pretrained_weights/session_2019-01-27-23-34-22/test/checkpoint_18/reproduce_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_control_simulator
+path/to/pretrained_weights/session_2019-01-27-23-34-22/test/checkpoint_18/reproduce_LB_WayptNavResults/session_CURRENT_DATE_TIME/rgb_resnet50_nn_control_simulator
 ```
 
 ## Generating More Training Data
