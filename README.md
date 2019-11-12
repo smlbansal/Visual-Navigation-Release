@@ -1,6 +1,6 @@
 LB-WayPtNav
 ==========
-Welcome to LB-WayPtNav (Learning-Based Waypoint Navigation), a codebase for simulation of robot navigational scenarios in indoor-office environments! We are a team of researchers from UC Berkeley and Facebook AI Research.
+Welcome to LB-WayPtNav (Learning-Based Waypoint Navigation), a codebase for simulation of robot navigational scenarios in indoor-office environments! We are a team of researchers from UC Berkeley and UIUC.
 
 In this codebase we explore ["Combining Optimal Control and Learning for Visual Navigation in Novel Environments"](https://vtolani95.github.io/LB-WayPtNav/). We provide code to run our pretrained model based method as well as a comparable end-to-end method on geometric, point-navigation tasks in the [Stanford Building Parser Dataset](http://buildingparser.stanford.edu/dataset.html).
 
@@ -48,6 +48,7 @@ sudo apt-get install libassimp-dev
 ```
 
 ### Download and unzip the necessary data from Google Drive (~3.7 GB).
+To run our code you will need to download data from google drive which includes textured meshes for simulating buildings from the Stanford Building Parser Dataset, checkpoints from our pretrained models, and data needed for testing agents on a set of navigational problems in previously unseen (at training time) simulated buildings from the Stanford Building Parser Dataset.
 ```
 # To download the data via the command line run the following
 pip install gdown
@@ -132,33 +133,27 @@ path/to/pretrained_weights/session_2019-01-27-23-34-22/test/checkpoint_18/reprod
 ## Generating More Training Data
 In addition to testing and training on our data we also offer functionality to generate your own training data using our optimal control based expert planner. You can then train and test a network on your own dataset. To generate more data run the following command:  
 #### Change the data_dir to reflect the desired directory for your new data
-In params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py
+In params/rgb_trainer/reproduce_LB_WayPtNav_results/rgb_waypoint_trainer_finetune_params.py
 ```
 p.data_creation.data_dir = 'PATH/TO/NEW/DATA'
 ```
 Run the following command to create new data.
 ```
-PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py generate-data --job-dir PATH/TO/LOG/DIR --params params/rgb_trainer/sbpd/projected_grid/resnet50/rgb_waypoint_trainer_finetune_params.py -d 0
+PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoint_trainer.py generate-data --job-dir PATH/TO/LOG/DIR --params params/rgb_trainer/reproduce_LB_WayPtNav_results/rgb_waypoint_trainer_finetune_params.py -d 0
 ```
 ## Citing This Work
 If you use the WayPtNav simulator or algorithms in your research please cite:
 ```
-@article{DBLP:journals/corr/abs-1903-02531,
-  author    = {Somil Bansal and
-               Varun Tolani and
-               Saurabh Gupta and
-               Jitendra Malik and
-               Claire Tomlin},
-  title     = {Combining Optimal Control and Learning for Visual Navigation in Novel
-               Environments},
-  journal   = {CoRR},
-  volume    = {abs/1903.02531},
+@proceedings{DBLP:conf/corl/2019,
+  title     = {3rd Annual Conference on Robot Learning, CoRL 2019, Osaka,
+               Japan, 29 October - 1 November, 2019, Proceedings},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {100},
+  publisher = {{PMLR}},
   year      = {2019},
-  url       = {http://arxiv.org/abs/1903.02531},
-  archivePrefix = {arXiv},
-  eprint    = {1903.02531},
-  timestamp = {Sun, 31 Mar 2019 19:01:24 +0200},
-  biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1903-02531},
+  url       = {http://proceedings.mlr.press/v100/},
+  timestamp = {Wed, 03 Apr 2019 18:17:24 +0200},
+  biburl    = {https://dblp.org/rec/bib/conf/corl/2019},
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 ```
