@@ -2,11 +2,11 @@ LB-WayPtNav
 ==========
 Welcome to LB-WayPtNav (Learning-Based Waypoint Navigation), a codebase for simulation of robot navigational scenarios in indoor-office environments! We are a team of researchers from UC Berkeley and UIUC.
 
-In this codebase we explore ["Combining Optimal Control and Learning for Visual Navigation in Novel Environments"](https://vtolani95.github.io/LB-WayPtNav/). We provide code to run our pretrained model based method as well as a comparable end-to-end method on geometric, point-navigation tasks in the [Stanford Building Parser Dataset](http://buildingparser.stanford.edu/dataset.html).
+In this codebase we explore ["Combining Optimal Control and Learning for Visual Navigation in Novel Environments"](https://smlbansal.github.io/LB-WayPtNav/). We provide code to run our pretrained model based method as well as a comparable end-to-end method on geometric, point-navigation tasks in the [Stanford Building Parser Dataset](http://buildingparser.stanford.edu/dataset.html).
 
 Additionally, we provide all code needed to generate more training data, train your own agent, and deploy it in a variety of different simulations rendered from scans of Stanford Buildings.
 
-More information on the model-based and end-to-end methods we use is available [here](https://vtolani95.github.io/LB-WayPtNav/).
+More information on the model-based and end-to-end methods we use is available [here](https://smlbansal.github.io/LB-WayPtNav/).
 
 
 ## Setup
