@@ -144,16 +144,10 @@ PYOPENGL_PLATFORM=egl PYTHONPATH='.' python executables/rgb/resnet50/rgb_waypoin
 ## Citing This Work
 If you use the WayPtNav simulator or algorithms in your research please cite:
 ```
-@proceedings{DBLP:conf/corl/2019,
-  title     = {3rd Annual Conference on Robot Learning, CoRL 2019, Osaka,
-               Japan, 29 October - 1 November, 2019, Proceedings},
-  series    = {Proceedings of Machine Learning Research},
-  volume    = {100},
-  publisher = {{PMLR}},
-  year      = {2019},
-  url       = {http://proceedings.mlr.press/v100/},
-  timestamp = {Wed, 03 Apr 2019 18:17:24 +0200},
-  biburl    = {https://dblp.org/rec/bib/conf/corl/2019},
-  bibsource = {dblp computer science bibliography, https://dblp.org}
+@article{bansal2019-lb-wayptnav,
+  title={Combining Optimal Control and Learning for Visual Navigation in Novel Environments},
+  author={Somil Bansal and Varun Tolani and Saurabh Gupta and Jitendra Malik and Claire Tomlin},
+  booktitle={3rd Annual Conference on Robot Learning (CoRL)},  
+  year={2019}
 }
 ```
