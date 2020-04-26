@@ -47,19 +47,28 @@ In the terminal run:
 sudo apt-get install libassimp-dev
 ```
 
-### Download and unzip the necessary data from Google Drive (~3.7 GB).
-To run our code you will need to download data from google drive which includes textured meshes for simulating buildings from the Stanford Building Parser Dataset, checkpoints from our pretrained models, and data needed for testing agents on a set of navigational problems in previously unseen (at training time) simulated buildings from the Stanford Building Parser Dataset.
+### Download and unzip the necessary data from Google Drive (~3.1 GB).
+To run our code you will need to download data from google drive which includes checkpoints from our pretrained models, and data needed for testing agents on a set of navigational problems in previously unseen (at training time) simulated buildings from the Stanford Building Parser Dataset.
 ```
 # To download the data via the command line run the following
 pip install gdown
-gdown https://drive.google.com/uc?id=1wpQMm_pfNgPAUduLjUggTSBs6psavJSK
+gdown https://drive.google.com/uc?id=1EyTXHPf7Kj2wTSOMnpzgPy58LhQXimeO
 
 # To download the data via your browser visit the following url
-https://drive.google.com/file/d/1wpQMm_pfNgPAUduLjUggTSBs6psavJSK/view?usp=sharing
+https://drive.google.com/open?id=1EyTXHPf7Kj2wTSOMnpzgPy58LhQXimeO
 
 # Unzip the file LB_WayPtNav_Data.tar.gz
 tar -zxf LB_WayPtNav_Data.tar.gz -C DESIRED_OUTPUT_DIRECTORY
 ```
+
+### Download and configure the SD3DIS data
+We use textured meshes for simulating buildings from the [Stanford 3d Indoor Spaces Dataset](http://buildingparser.stanford.edu/dataset.html). To download and configure the data follow the instructions in ./sbpd/README.md.
+
+Move the building data into the LB-WayptNav data installation
+```
+mv sbpd/stanford_building_parser_dataset PATH/TO/LB_WayPtNav_Data
+```
+
 ### Configure LB-WayptNav to look for your data installation.
 In ./params/base_data_directory_params.py change the following line
 ```
