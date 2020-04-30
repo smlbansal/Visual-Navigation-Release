@@ -10,7 +10,7 @@ We follow the method outlined in ["Cognitive Mapping and Planning for Visual Nav
 
 2.  Preprocess the data.
 
-    1.  Extract meshes using `preprocess_meshes.sh`. After
+    1.  Extract meshes using `bash preprocess_meshes.sh`. After
         this `ls stanford_building_parser_dataset/mesh` should have 6
         folders `area1`, `area3`, `area4`, `area5a`, `area5b`, `area6`, with
         textures and obj files within each directory. Note: This script assumes you have downloaded data for all 6 areas, if you downloaded data for a subset of the areas, modify preprocess_meshes.sh.
