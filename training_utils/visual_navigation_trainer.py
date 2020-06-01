@@ -352,6 +352,7 @@ class VisualNavigationTrainer(TrainerFrontendHelper):
             data['vehicle_data'] = vehicle_data
             data['vehicle_data_last_step'] = vehicle_data_last_step
             data['commanded_actions_1kf'] = vehicle_commanded_actions_1kf
+            data['goal_config'] = simulator.goal_config.to_numpy_repr()
 
             data['episode_number'] = i
             data['episode_type_int'] = simulator.episode_type
