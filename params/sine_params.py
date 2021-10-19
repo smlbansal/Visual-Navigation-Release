@@ -98,7 +98,7 @@ def create_params():
                                 data_points_per_file=10000,
                                 
                                 # Data directory
-                                data_dir='/home/somilb/Documents/Projects/visual_mpc/tmp'
+                                data_dir='./visual_mpc/tmp'
     )
     
     # Test parameters
