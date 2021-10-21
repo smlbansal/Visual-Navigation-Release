@@ -85,6 +85,8 @@ class TrainerHelper(object):
             # Note: This allows the user to specify how many checkpoints should be saved.
             # Tensorflow does not expose the parameter in tfe.Checkpoint for max_to_keep,
             # however under the hood it uses a Saver object so we can hack around this.
+            # Kaustav: this procedure runs unsuccessfully sometimes
+            '''
             from tensorflow.python.training.saver import Saver
             default_args = list(Saver.__init__.__code__.co_varnames)
             default_values = list(Saver.__init__.__defaults__)
@@ -95,7 +97,7 @@ class TrainerHelper(object):
                 Saver.__init__.__defaults__ = tuple(default_values)
             else:
                 assert(False)
-
+            '''
         # Save the checkpoint
         if epoch % self.p.ckpt_save_frequency == 0:
             self.checkpoint.save(os.path.join(self.ckpt_dir, 'ckpt'))
