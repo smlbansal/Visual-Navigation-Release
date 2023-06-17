@@ -15,15 +15,15 @@ def resnet50_cnn(image_size, num_inputs, num_outputs, params, dtype=tf.float32):
     # false is buggy in Keras applications for the Batch Normalization layer. See these issues for details:
     # https://github.com/keras-team/keras/pull/9965
     # http://blog.datumbox.com/the-batch-normalization-layer-of-keras-is-broken/
-    with tf.variable_scope('resnet50'):
+    with tf.compat.v1.variable_scope('resnet50'):
         resnet50 = ResNet50(data_format='channels_last',
                             name='resnet50',
                             include_top=False,
                             pooling=None)
 
         # Used to control batch_norm during training vs test time
-        is_training = tf.contrib.eager.Variable(False, dtype=tf.bool, name='is_training')
-        x = resnet50.call(x, is_training,
+        is_training = tf.Variable(False, dtype=tf.bool, name='is_training',trainable=False)
+        x = resnet50.call(x, False,
                           output_layer=params.resnet_output_layer)
 
     # Optional strided convolution on the output

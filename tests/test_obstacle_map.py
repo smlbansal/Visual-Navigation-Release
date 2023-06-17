@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 from dotmap import DotMap
 import matplotlib.pyplot as plt
 from trajectory.trajectory import Trajectory

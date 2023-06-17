@@ -71,7 +71,7 @@ def create_params():
                         batch_size=10000,
                         
                         # The training optimizer
-                        optimizer=tf.train.AdamOptimizer,
+                        optimizer=tf.compat.v1.train.AdamOptimizer,
         
                         # Learning rate
                         lr=1e-2,
@@ -85,8 +85,7 @@ def create_params():
         
                         # Checkpoint settings
                         ckpt_save_frequency=4,
-                        ckpt_path='/Users/somil/Documents/research/Projects/model_based_navigation/temp/'
-                                  'session_2018-09-28_17-45-36/checkpoints/ckpt-5'
+                        ckpt_path='/home/vatsuak/Desktop/Visual-Navigation-Release/LB_WayPtNav_Data_Public/session_2023-05-02_22-39-47/checkpoints/ckpt-5'
     )
     
     # Data creation parameters
@@ -98,7 +97,7 @@ def create_params():
                                 data_points_per_file=10000,
                                 
                                 # Data directory
-                                data_dir='/home/somilb/Documents/Projects/visual_mpc/tmp'
+                                data_dir='/home/vatsuak/Desktop/Visual-Navigation-Release/LB_WayPtNav_Data_Public'
     )
     
     # Test parameters

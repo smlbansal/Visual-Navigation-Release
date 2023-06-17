@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from trajectory.spline.spline_3rd_order import Spline3rdOrder
 from trajectory.trajectory import SystemConfig
 from dotmap import DotMap
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 
 
 def test_spline_3rd_order(visualize=False):

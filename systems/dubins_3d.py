@@ -72,8 +72,8 @@ class Dubins3D(DubinsCar):
         """ A utility function for assembling a trajectory object
         from x_nkd, u_nkf, a list of states and actions for the system.
         Here d=3=state dimension and u=2=action dimension. """
-        n = x_nkd.shape[0].value
-        k = x_nkd.shape[1].value
+        n = x_nkd.shape[0]
+        k = x_nkd.shape[1]
         u_nkf = self._pad_control_vector(u_nkf, k, pad_mode=pad_mode)
         position_nk2, heading_nk1 = x_nkd[:, :, :2], x_nkd[:, :, 2:3]
         speed_nk1, angular_speed_nk1 = u_nkf[:, :, 0:1], u_nkf[:, :, 1:2]

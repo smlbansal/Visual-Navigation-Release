@@ -240,6 +240,6 @@ class LQRSolver:
         to ensure its positive-definite properties
         """
         if self.inv:
-            return tf.matrix_inverse(mat)
+            return tf.compat.v1.matrix_inverse(mat)
         else:
             raise NotImplementedError

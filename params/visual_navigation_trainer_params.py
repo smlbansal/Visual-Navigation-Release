@@ -51,7 +51,7 @@ def create_params(simulator_params):
                         batch_size=64,
                         
                         # The training optimizer
-                        optimizer=tf.train.AdamOptimizer,
+                        optimizer=tf.compat.v1.train.AdamOptimizer,
         
                         # Learning rate
                         lr=1e-4,

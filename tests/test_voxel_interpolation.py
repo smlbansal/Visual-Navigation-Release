@@ -45,6 +45,6 @@ def test_voxel_interpolation():
 
 
 if __name__ == '__main__':
-    tf.enable_eager_execution()
+    # tf.enable_eager_execution()
     np.random.seed(seed=1)
     test_voxel_interpolation()

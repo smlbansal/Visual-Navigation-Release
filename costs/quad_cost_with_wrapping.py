@@ -38,11 +38,11 @@ class QuadraticRegulatorRef(DiscreteCost):
 
         x_dim, u_dim = self._x_dim, self._u_dim
 
-        C_gg = tf.diag(p.quad_coeffs, name='lqr_coeffs_quad')
+        C_gg = tf.compat.v1.diag(p.quad_coeffs, name='lqr_coeffs_quad')
         c_g = tf.constant(p.linear_coeffs, name='lqr_coeffs_linear', dtype=tf.float32)
         # Check dimensions
         assert ((tf.reduce_all(tf.equal(C_gg[:x_dim, x_dim:], tf.transpose(C_gg[x_dim:, :x_dim]))).numpy()))
-        assert ((x_dim + u_dim) == C_gg.shape[0].value == C_gg.shape[1].value == c_g.shape[0].value)
+        assert ((x_dim + u_dim) == C_gg.shape[0] == C_gg.shape[1] == c_g.shape[0])
 
         trajectory_ref = self.trajectory_ref
         n, k, g = trajectory_ref.n, trajectory_ref.k, C_gg.shape[0]

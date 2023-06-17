@@ -1,5 +1,5 @@
 import tensorflow as tf
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 import numpy as np
 from utils.angle_utils import rotate_pos_nk2, angle_normalize
 from utils import utils

@@ -130,7 +130,7 @@ class DubinsCar(Dynamics):
         in the world coordinate frame. If mode is assign the result is assigned to
         K_world_nkfd, else a new tensor is created."""
         theta_n11 = -ref_config.heading_nk1()
-        n, k, f, d = [x.value for x in K_egocentric_nkfd.shape]
+        n, k, f, d = [x for x in K_egocentric_nkfd.shape]
         rot_matrix_nkdd = padded_rotation_matrix(theta_n11, shape=(n, k, d), lower_identity=True)
         if mode == 'assign':
             tf.assign(K_world_nkfd, tf.matmul(K_egocentric_nkfd, rot_matrix_nkdd))
@@ -145,7 +145,7 @@ class DubinsCar(Dynamics):
         in the world coordinate frame. If mode is assign the result is assigned to
         K_world_nkfd, else a new tensor is created."""
         theta_n11 = ref_config.heading_nk1()
-        n, k, f, d = [x.value for x in K_world_nkfd.shape]
+        n, k, f, d = [x for x in K_world_nkfd.shape]
         rot_matrix_nkdd = padded_rotation_matrix(theta_n11, shape=(n, k, d), lower_identity=True)
         if mode == 'assign':
             tf.assign(K_world_nkfd, tf.matmul(K_world_nkfd, rot_matrix_nkdd))

@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe
+# import tensorflow.contrib.eager as tfe
 import matplotlib.pyplot as plt
 import os
 
@@ -35,8 +35,8 @@ class TrainerHelper(object):
             data_source.shuffle_datasets()
 
             # Define the metrics to keep a track of average loss over the epoch.
-            training_loss_metric = tfe.metrics.Mean()
-            validation_loss_metric = tfe.metrics.Mean()
+            training_loss_metric = tf.metrics.Mean()
+            validation_loss_metric = tf.metrics.Mean()
             
             # For loop over the training samples
             for j in range(0, num_training_samples, self.p.batch_size):
@@ -50,7 +50,7 @@ class TrainerHelper(object):
                 # Take an optimization step
                 grads = tape.gradient(loss, model.get_trainable_vars())
                 self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
-                                               global_step=tf.train.get_or_create_global_step())
+                                               global_step=tf.get_or_create_global_step())
                 
                 # Record the average loss for the training and the validation batch
                 self.record_average_loss_for_batch(model, training_batch, validation_batch, training_loss_metric,
@@ -67,10 +67,10 @@ class TrainerHelper(object):
         Load a given checkpoint.
         """
         # Create a checkpoint
-        self.checkpoint = tfe.Checkpoint(optimizer=self.create_optimizer(), model=model.arch)
+        self.checkpoint = tf.train.Checkpoint(optimizer=self.create_optimizer(), model=model.arch)
         
         # Restore the checkpoint
-        self.checkpoint.restore(self.p.ckpt_path)
+        self.checkpoint.restore(self.p.ckpt_path).expect_partial()
     
     def save_checkpoint(self, epoch, model):
         """
@@ -80,7 +80,7 @@ class TrainerHelper(object):
         self.ckpt_dir = os.path.join(self.session_dir, 'checkpoints')
         if not os.path.exists(self.ckpt_dir):
             os.makedirs(self.ckpt_dir)
-            self.checkpoint = tfe.Checkpoint(optimizer=self.optimizer, model=model.arch)
+            self.checkpoint = tf.train.Checkpoint(optimizer=self.optimizer, model=model.arch)
            
             # Note: This allows the user to specify how many checkpoints should be saved.
             # Tensorflow does not expose the parameter in tfe.Checkpoint for max_to_keep,
@@ -106,7 +106,7 @@ class TrainerHelper(object):
         """
         Create an optimizer for the training and initialize the learning rate variable.
         """
-        self.lr = tfe.Variable(self.p.lr, dtype=tf.float64)
+        self.lr = tf.Variable(self.p.lr, dtype=tf.float32)
         return self.p.optimizer(learning_rate=self.lr)
     
     def record_average_loss_for_batch(self, model, training_batch, validation_batch, training_loss_metric,

@@ -9,12 +9,13 @@ Additionally, we provide all code needed to generate more training data, train y
 More information on the model-based and end-to-end methods we use is available [here](https://smlbansal.github.io/LB-WayPtNav/).
 
 
+
+### Please Note: This branch is primarily aimed at porting the code to tensorflow2 while updating some of the older libraries. This is still exipemental. We would appreciate any feedback for regarding the reproducability of this code. 
+
 ## Setup
 ### Install Anaconda, gcc, g++
 ```
-# Install Anaconda
-wget https://repo.anaconda.com/archive/Anaconda3-2019.07-Linux-x86_64.sh
-bash Anaconda3-2019.07-Linux-x86_64.sh
+# Install [Anaconda](https://docs.anaconda.com/free/anaconda/install/index.html)
 
 # Install gcc and g++ if you don't already have them
 sudo apt-get install gcc
@@ -23,28 +24,50 @@ sudo apt-get install g++
 
 ### Setup A Virtual Environment
 ```
-conda env create -f environment.yml
+conda create -n venv-mpc
 conda activate venv-mpc
+conda install python=3.10
 ```
 
-#### Install Tensorflow (v 1.10.1)
-For an ubuntu machine with GPU support run the following:
-```
-pip install https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.10.1-cp36-cp36m-linux_x86_64.whl
+### Install Tensorflow (v 2.10.0)
+Please follow the [official docs](https://www.tensorflow.org/install)
+We have tested our code on Tensorflow-2.10.0.
+
+
+## Install the renderer dependencies
+
+### Swiftshader 
+We use [Swiftshader](https://github.com/google/swiftshader.git), a CPU based renderer to render the meshes. 
+
+```Shell
+mkdir -p deps
+git clone --recursive https://github.com/google/swiftshader.git deps/swiftshader-src
+cd deps/swiftshader-src && git checkout 91da6b00584afd7dcaed66da88e2b617429b3950
+git submodule update
+mkdir build && cd build && cmake .. && make -j 16 libEGL libGLESv2
+cd ../../../
+cp deps/swiftshader-src/build/libEGL* libEGL.so.1
+cp deps/swiftshader-src/build/libGLESv2* libGLESv2.so.2
 ```
 
-#### Patch the OpenGL Installation
-In the terminal from the root directory of the project run the following commands.
+### PyAssimp
+We use [PyAssimp](https://github.com/assimp/assimp.git) to load meshes.
+```Shell
+mkdir -p deps
+git clone https://github.com/assimp/assimp.git deps/assimp-src
+cd deps/assimp-src
+git checkout 2afeddd5cb63d14bc77b53740b38a54a97d94ee8
+cmake CMakeLists.txt -G 'Unix Makefiles' && make -j 16
+cd port/PyAssimp && python setup.py install
+cd ../../../..
+cp deps/assimp-src/lib/libassimp* .
 ```
-1. cd mp_env
-2. bash patches/apply_patches_3.sh
-```
-If the script fails there are instructions in apply_patches_3.sh describing how to manually apply the patch.
 
-#### Install Libassimp-dev
-In the terminal run:
+## Install additional dependencies
+
 ```
-sudo apt-get install libassimp-dev
+conda install -c conda-forge matplotlib dotmap opencv imgaug scikit-fmm
+pip install PyOpenGL PyOpenGL_accelerate
 ```
 
 ### Download and unzip the necessary data from Google Drive (~3.1 GB).

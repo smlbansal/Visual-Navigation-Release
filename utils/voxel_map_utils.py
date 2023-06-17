@@ -29,8 +29,8 @@ class VoxelMap(object):
 
         # Define the lower and upper voxels. Mod is done to make sure that the invalid voxels have been
         # assigned a valid voxel. However, these invalid voxels will be discarded later.
-        lower_voxel_indices_nk2_xy = tf.mod(tf.cast(tf.floor(voxel_space_position_nk2), tf.int32), self.map_size_int32_2)
-        upper_voxel_indices_nk2_xy = tf.mod(lower_voxel_indices_nk2_xy + 1, self.map_size_int32_2)
+        lower_voxel_indices_nk2_xy = tf.compat.v1.mod(tf.cast(tf.floor(voxel_space_position_nk2), tf.int32), self.map_size_int32_2)
+        upper_voxel_indices_nk2_xy = tf.compat.v1.mod(lower_voxel_indices_nk2_xy + 1, self.map_size_int32_2)
 
         lower_voxel_float_nk2 = tf.cast(lower_voxel_indices_nk2_xy, dtype=tf.float32)
         upper_voxel_float_nk2 = tf.cast(upper_voxel_indices_nk2_xy, dtype=tf.float32)
