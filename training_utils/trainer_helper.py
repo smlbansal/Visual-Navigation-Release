@@ -50,7 +50,7 @@ class TrainerHelper(object):
                 # Take an optimization step
                 grads = tape.gradient(loss, model.get_trainable_vars())
                 self.optimizer.apply_gradients(zip(grads, model.get_trainable_vars()),
-                                               global_step=tf.get_or_create_global_step())
+                                               global_step=tf.compat.v1.train.get_or_create_global_step())
                 
                 # Record the average loss for the training and the validation batch
                 self.record_average_loss_for_batch(model, training_batch, validation_batch, training_loss_metric,
