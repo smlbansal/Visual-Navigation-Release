@@ -181,7 +181,7 @@ class Spline3rdOrder(Spline):
         
         # Valid horizon for each trajectory in the batch
         # in discrete time steps
-        self.valid_horizons_n1 = tf.ceil(self.final_times_n1/self.dt)
+        self.valid_horizons_n1 = tf.compat.v1.ceil(self.final_times_n1/self.dt)
 
         # Reevaluate the spline to be consistent with the new horizon
         self.eval_spline(self.ts_nk)

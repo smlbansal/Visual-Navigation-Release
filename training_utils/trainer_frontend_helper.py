@@ -21,7 +21,7 @@ class TrainerFrontendHelper(object):
     
     """
     def run(self):
-        tf.enable_eager_execution(**utils.tf_session_config())
+        # tf.enable_eager_execution(**utils.tf_session_config())
         self.setup_parser()
     
     def setup_parser(self):
@@ -118,7 +118,7 @@ class TrainerFrontendHelper(object):
         # Set the random seed
         if self.p.trainer.seed != -1:
             np.random.seed(seed=self.p.trainer.seed)
-            tf.set_random_seed(seed=self.p.trainer.seed)
+            tf.compat.v1.set_random_seed(seed=self.p.trainer.seed)
 
         # Start the training
         with tf.device(self.p.device):
@@ -154,7 +154,7 @@ class TrainerFrontendHelper(object):
         # Set the random seed
         if self.p.test.seed != -1:
             np.random.seed(seed=self.p.test.seed)
-            tf.set_random_seed(seed=self.p.test.seed)
+            tf.compat.v1.set_random_seed(seed=self.p.test.seed)
 
         # Load the checkpoint
         with tf.device(self.p.device):

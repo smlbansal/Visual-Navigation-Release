@@ -47,7 +47,7 @@ class NNWaypointPlanner(NNPlanner):
         self.opt_traj.assign_from_trajectory_batch_idx(trajectories_lqr, min_idx)
 
         # Convert horizon in seconds to horizon in # of steps
-        min_horizon = int(tf.ceil(horizons_s[min_idx, 0]/self.params.dt).numpy())
+        min_horizon = int(tf.compat.v1.ceil(horizons_s[min_idx, 0]/self.params.dt).numpy())
 
         data = {'system_config': SystemConfig.copy(start_config),
                 'waypoint_config': SystemConfig.copy(self.opt_waypt),

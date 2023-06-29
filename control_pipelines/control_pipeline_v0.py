@@ -3,7 +3,7 @@ import os
 import sys
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe
+# import tensorflow.contrib.eager as tf
 from optCtrl.lqr import LQRSolver
 from trajectory.trajectory import Trajectory, SystemConfig
 from control_pipelines.base import ControlPipelineBase
@@ -256,7 +256,7 @@ class ControlPipelineV0(ControlPipelineBase):
                 # trajectories in the world frame
                 self.spline_trajectories_world = self.spline_trajectories
                 if self.params.convert_K_to_world_coordinates:
-                    self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(K)) for K in self.K_nkfd]
+                    self.Ks_world_nkfd = [tf.Variable(tf.zeros_like(K)) for K in self.K_nkfd]
             else:
                 self.trajectories_world = [Trajectory(dt=dt, n=goal_config.n,
                                                       k=self.params.planning_horizon,
@@ -267,7 +267,7 @@ class ControlPipelineV0(ControlPipelineBase):
                                                   variable=True,
                                                   track_trajectory_acceleration=self.params.track_trajectory_acceleration)]
                 if self.params.convert_K_to_world_coordinates:
-                    self.Ks_world_nkfd = [tfe.Variable(tf.zeros_like(self.K_nkfd[0][0:1]))]
+                    self.Ks_world_nkfd = [tf.Variable(tf.zeros_like(self.K_nkfd[0][0:1]))]
 
     def _rebin_data_by_initial_velocity(self, data):
         """Take incorrecly binned data and rebins it according to the dynamically feasible initial velocity of

@@ -79,7 +79,7 @@ class BaseModel(object):
             # Do not use dropouts
             tf.keras.backend.set_learning_phase(0)
         
-        return self.arch.predict_on_batch(data)
+        return self.arch(data)
 
     def predict_nn_output_with_postprocessing(self, data, is_training=None):
         """

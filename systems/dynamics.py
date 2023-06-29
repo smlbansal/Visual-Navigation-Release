@@ -98,7 +98,7 @@ class Dynamics(object):
     def _pad_control_vector(self, u_nkf, k, pad_mode=None):
         """Pads the control vector if needed by either
         zero padding or repeating the last control sequence."""
-        n = u_nkf.shape[0].value
+        n = u_nkf.shape[0]
         if pad_mode == 'zero':  # the last action is 0
             if u_nkf.shape[1]+1 == k:
                 u_nkf = tf.concat([u_nkf, tf.zeros((n, 1, self._u_dim))],

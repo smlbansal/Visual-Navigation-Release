@@ -35,6 +35,6 @@ def test_fmm_map():
 
 
 if __name__ == '__main__':
-    tf.enable_eager_execution()
+    # tf.enable_eager_execution()
     np.random.seed(seed=1)
     test_fmm_map()

@@ -28,8 +28,8 @@ else:
 
 def _get_xy_bounding_box(vertex, padding):
   """Returns the xy bounding box of the environment."""
-  min_ = np.floor(np.min(vertex[:, :2], axis=0) - padding).astype(np.int)
-  max_ = np.ceil(np.max(vertex[:, :2], axis=0) + padding).astype(np.int)
+  min_ = np.floor(np.min(vertex[:, :2], axis=0) - padding).astype(np.int32)
+  max_ = np.ceil(np.max(vertex[:, :2], axis=0) + padding).astype(np.int32)
   return min_, max_
 
 def _project_to_map(map, vertex, wt=None, ignore_points_outside_map=False):
@@ -37,7 +37,7 @@ def _project_to_map(map, vertex, wt=None, ignore_points_outside_map=False):
   location."""
   num_points = np.zeros((map.size[1], map.size[0]))
   vertex_ = vertex[:, :2] - map.origin
-  vertex_ = np.round(vertex_ / map.resolution).astype(np.int)
+  vertex_ = np.round(vertex_ / map.resolution).astype(np.int32)
   if ignore_points_outside_map:
     good_ind = np.all(np.array([vertex_[:,1] >= 0, vertex_[:,1] < map.size[1],
                                 vertex_[:,0] >= 0, vertex_[:,0] < map.size[0]]),

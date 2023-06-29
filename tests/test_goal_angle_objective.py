@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 
 from obstacles.sbpd_map import SBPDMap
 from objectives.angle_distance import AngleDistance

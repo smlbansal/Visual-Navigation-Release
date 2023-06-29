@@ -56,7 +56,7 @@ class Resnet50ModelBase(VisualNavigationModelBase):
             tf.keras.backend.set_learning_phase(0)
 
             # Use precomputed batch norm statistics from imagenet training
-            tf.assign(self.is_batchnorm_training, False)
+            tf.compat.v1.assign(self.is_batchnorm_training, False)
 
             # Note (Varun T.). Tensorflow backend sometimes updates
             # Batch Norm Mean/ Variance values with NAN at test time.
@@ -64,6 +64,6 @@ class Resnet50ModelBase(VisualNavigationModelBase):
             # values and then reassign them post prediction.
             old_bn_parameter_values = [1.*parameter for parameter in self.bn_parameters]
             preds = self.arch.predict_on_batch(data)
-            [tf.assign(parameter, old_parameter_value) for parameter, old_parameter_value in
+            [tf.compat.v1.assign(parameter, old_parameter_value) for parameter, old_parameter_value in
              zip(self.bn_parameters, old_bn_parameter_values)]
         return preds

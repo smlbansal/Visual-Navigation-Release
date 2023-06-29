@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 from costs.quad_cost_with_wrapping import QuadraticRegulatorRef
 from systems.dubins_v1 import DubinsV1
 from dotmap import DotMap
@@ -53,7 +53,7 @@ def test_quad_cost_with_wrapping():
     cost_nk, _ = cost_fn.compute_trajectory_cost(trajectory)
 
     cost = .5*(a*goal_x**2+a*goal_y**2)
-    assert(cost_nk.shape[0].value == n and cost_nk.shape[1].value == k)
+    assert(cost_nk.shape[0]== n and cost_nk.shape[1]== k)
     assert((cost_nk.numpy() == cost).all())
 
     H_xx_nkdd, H_xu_nkdf, H_uu_nkff, J_x_nkd, J_u_nkf = cost_fn.quad_coeffs(trajectory)

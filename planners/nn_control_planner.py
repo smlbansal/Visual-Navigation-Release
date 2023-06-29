@@ -62,7 +62,7 @@ class NNControlPlanner(NNPlanner):
         along the batch dim after masking."""
 
         # Extract the Index of the Last Data Segment
-        data_times = np.cumsum([u_nk2.shape[1].value for u_nk2 in data['optimal_control_nk2']])
+        data_times = np.cumsum([u_nk2.shape[1] for u_nk2 in data['optimal_control_nk2']])
         valid_mask = (data_times <= k)
         data_last = {}
         last_data_idxs = np.where(np.logical_not(valid_mask))[0]

@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe
+# import tensorflow.contrib.eager as tfe
 import matplotlib.pyplot as plt
 
 
@@ -53,19 +53,19 @@ class Trajectory(object):
         else:
             if variable:
                 # Translational trajectories
-                self._position_nk2 = tfe.Variable(tf.zeros([n, k, 2], dtype=dtype) if position_nk2 is None
+                self._position_nk2 = tf.Variable(tf.zeros([n, k, 2], dtype=dtype) if position_nk2 is None
                                                   else position_nk2)
-                self._speed_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if speed_nk1 is None
+                self._speed_nk1 = tf.Variable(tf.zeros([n, k, 1], dtype=dtype) if speed_nk1 is None
                                                else tf.constant(speed_nk1, dtype=dtype))
-                self._acceleration_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if acceleration_nk1 is None
+                self._acceleration_nk1 = tf.Variable(tf.zeros([n, k, 1], dtype=dtype) if acceleration_nk1 is None
                                                       else tf.constant(acceleration_nk1, dtype=dtype))
 
                 # Rotational trajectories
-                self._heading_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if heading_nk1 is None
+                self._heading_nk1 = tf.Variable(tf.zeros([n, k, 1], dtype=dtype) if heading_nk1 is None
                                                  else tf.constant(heading_nk1, dtype=dtype))
-                self._angular_speed_nk1 = tfe.Variable(tf.zeros([n, k, 1], dtype=dtype) if angular_speed_nk1 is None
+                self._angular_speed_nk1 = tf.Variable(tf.zeros([n, k, 1], dtype=dtype) if angular_speed_nk1 is None
                                                        else tf.constant(angular_speed_nk1, dtype=dtype))
-                self._angular_acceleration_nk1 = tfe.Variable(
+                self._angular_acceleration_nk1 = tf.Variable(
                     tf.zeros([n, k, 1], dtype=dtype) if angular_acceleration_nk1 is None
                     else tf.constant(angular_acceleration_nk1, dtype=dtype))
 
@@ -137,12 +137,12 @@ class Trajectory(object):
     def assign_trajectory_from_tensors(self, position_nk2, speed_nk1, acceleration_nk1,
                                        heading_nk1, angular_speed_nk1, angular_acceleration_nk1,
                                        valid_horizons_n1):
-        tf.assign(self.position_nk2(), position_nk2)
-        tf.assign(self.speed_nk1(), speed_nk1)
-        tf.assign(self.acceleration_nk1(), acceleration_nk1)
-        tf.assign(self.heading_nk1(), heading_nk1)
-        tf.assign(self.angular_speed_nk1(), angular_speed_nk1)
-        tf.assign(self.angular_acceleration_nk1(), angular_acceleration_nk1)
+        tf.compat.v1.assign(self.position_nk2(), position_nk2)
+        tf.compat.v1.assign(self.speed_nk1(), speed_nk1)
+        tf.compat.v1.assign(self.acceleration_nk1(), acceleration_nk1)
+        tf.compat.v1.assign(self.heading_nk1(), heading_nk1)
+        tf.compat.v1.assign(self.angular_speed_nk1(), angular_speed_nk1)
+        tf.compat.v1.assign(self.angular_acceleration_nk1(), angular_acceleration_nk1)
         self.valid_horizons_n1 = valid_horizons_n1
 
     def gather_across_batch_dim(self, idxs):
@@ -189,7 +189,7 @@ class Trajectory(object):
 
         dt = trajs[0].dt
         k = trajs[0].k
-        n = position_nk2.shape[0].value
+        n = position_nk2.shape[0]
         return cls(dt=dt, n=n, k=k, position_nk2=position_nk2,
                    speed_nk1=speed_nk1, acceleration_nk1=acceleration_nk1,
                    heading_nk1=heading_nk1, angular_speed_nk1=angular_speed_nk1,
