@@ -42,7 +42,7 @@ class SamplingPlanner(Planner):
         self.opt_traj.assign_from_trajectory_batch_idx(trajectories_lqr, min_idx)
 
         # Convert horizon in seconds to horizon in # of steps
-        min_horizon = int(tf.ceil(horizons_s[min_idx, 0] / self.params.dt).numpy())
+        min_horizon = int(tf.compat.v1.ceil(horizons_s[min_idx, 0] / self.params.dt).numpy())
 
         # If the real LQR data has been discarded just take the first element
         # since it will be all zeros
