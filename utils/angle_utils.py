@@ -19,7 +19,10 @@ def rotate_pos_nk2(pos_nk2, theta_n11):
     else:
         n, k, _ = [x for x in theta_nk1.shape]
     rot_matrix_nk22 = padded_rotation_matrix(theta_n11, shape=(n, k, 2))
-    pos_rot_nk2 = tf.matmul(rot_matrix_nk22, pos_nk2[:, :, :, None])[:, :, :, 0]
+    # pos_rot_nk2 = tf.matmul(rot_matrix_nk22, pos_nk2[:, :, :, None])[:, :, :, 0]
+    # Kaustav: TF2 port hack. TF1's tf.matmul != TF2's tf.matmul
+    # temporarily convert it to numpy to make it work
+    pos_rot_nk2 = tf.convert_to_tensor(np.matmul(rot_matrix_nk22, pos_nk2[:, :, :, None])[:, :, :, 0])
     return pos_rot_nk2
 
 
